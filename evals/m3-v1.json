@@ -1,0 +1,27 @@
+{
+  "suite_version": "m3-v1",
+  "validation": {
+    "batch_size": 8,
+    "batches": 20,
+    "split": "validation"
+  },
+  "generation": {
+    "seed": 1337,
+    "max_new_tokens": 32,
+    "temperature": 0.8,
+    "top_k": 40,
+    "prompts": [
+      "The ",
+      "Don ",
+      "Il "
+    ]
+  },
+  "contamination": {
+    "validation_fraction": 0.1,
+    "block_exact_overlap": true
+  },
+  "comparison": {
+    "primary_metric": "validation_loss",
+    "lower_is_better": true
+  }
+}
