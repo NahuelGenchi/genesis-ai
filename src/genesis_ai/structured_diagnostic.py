@@ -36,22 +36,18 @@ def _common_prefix_length(left: list[int], right: list[int]) -> int:
     return count
 
 
-def _safe_json_list(text: str) -> list[Any] | None:
-    try:
-        value = json.loads(text)
-    except (json.JSONDecodeError, TypeError):
-        return None
-    return value if isinstance(value, list) else None
-
-
 def _multiset_overlap(actual: list[Any], expected: list[Any]) -> int:
-    # Structured v1 tasks contain integer lists. Keep this generic/fail-closed so
-    # later task changes cannot silently reinterpret non-hashable values.
     if not all(isinstance(value, int) and not isinstance(value, bool) for value in actual + expected):
         return 0
     actual_counts = collections.Counter(actual)
     expected_counts = collections.Counter(expected)
     return sum(min(actual_counts[value], expected_counts[value]) for value in expected_counts)
+
+
+def _quartile_index(position: int, length: int) -> int:
+    if length <= 0 or not 0 <= position < length:
+        raise ValueError("position must be inside a positive-length sequence")
+    return min(3, (position * 4) // length)
 
 
 def _mean(values: list[float]) -> float:
@@ -97,6 +93,8 @@ def run_diagnostic(
     total_oracle_tokens = 0
     total_teacher_correct = 0
     teacher_full_sequences = 0
+    teacher_quartile_correct = [0, 0, 0, 0]
+    teacher_quartile_total = [0, 0, 0, 0]
     total_free_positional_correct = 0
     total_expected_free_positions = 0
     strict_correct = 0
@@ -147,6 +145,9 @@ def run_diagnostic(
         for position, matched in enumerate(teacher_matches):
             teacher_position_correct[position] += int(matched)
             teacher_position_total[position] += 1
+            quartile = _quartile_index(position, len(teacher_matches))
+            teacher_quartile_correct[quartile] += int(matched)
+            teacher_quartile_total[quartile] += 1
 
         prompt_ids = tokenizer.encode(task["prompt"] + "\nAnswer:")
         raw_text, answer, did_terminate, generated_count = generate_until_terminated(
@@ -169,25 +170,23 @@ def run_diagnostic(
         prefix = _common_prefix_length(expected_answer_ids, generated_answer_ids)
         prefix_lengths.append(prefix)
         normalized_prefixes.append(prefix / max(1, len(expected_answer_ids)))
-        if prefix < len(expected_answer_ids):
-            first_error_positions.append(prefix)
-            normalized_first_error_positions.append(prefix / max(1, len(expected_answer_ids)))
-        else:
-            first_error_positions.append(len(expected_answer_ids))
-            normalized_first_error_positions.append(1.0)
+        first_error_positions.append(min(prefix, len(expected_answer_ids)))
+        normalized_first_error_positions.append(min(prefix, len(expected_answer_ids)) / max(1, len(expected_answer_ids)))
         total_expected_free_positions += len(expected_answer_ids)
         total_free_positional_correct += sum(
             int(index < len(generated_answer_ids) and generated_answer_ids[index] == target)
             for index, target in enumerate(expected_answer_ids)
         )
 
-        parsed_any = None
+        parsed_valid = False
+        parsed_any: Any = None
         try:
             parsed_any = json.loads(answer)
+            parsed_valid = True
             valid_json += 1
         except (json.JSONDecodeError, TypeError):
             pass
-        parsed_list = parsed_any if isinstance(parsed_any, list) else None
+        parsed_list = parsed_any if parsed_valid and isinstance(parsed_any, list) else None
         if parsed_list is not None:
             json_list += 1
             correct_length += int(len(parsed_list) == len(expected))
@@ -210,7 +209,7 @@ def run_diagnostic(
                     "generated_tokens": generated_count,
                     "terminated": did_terminate,
                     "strict": strict_pass,
-                    "valid_json": parsed_any is not None,
+                    "valid_json": parsed_valid,
                     "json_list": parsed_list is not None,
                     "correct_length": parsed_list is not None and len(parsed_list) == len(expected),
                     "position_correct": (
@@ -231,25 +230,10 @@ def run_diagnostic(
         correct / total if total else 0.0
         for correct, total in zip(teacher_position_correct, teacher_position_total)
     ]
-    quartile_accuracy: list[float] = []
-    for quartile in range(4):
-        matches = 0
-        count = 0
-        for task in tasks:
-            # Recompute only target-length bucket boundaries from deterministic
-            # oracle text; no model calls are repeated here.
-            target_ids = tokenizer.encode(oracle_response(task) + delimiter)
-            start = (len(target_ids) * quartile) // 4
-            end = (len(target_ids) * (quartile + 1)) // 4
-            if end <= start:
-                continue
-            # Position-level aggregate above is indexed globally, so sum the
-            # applicable positions with their original task-count denominators.
-            for position in range(start, end):
-                if position < len(teacher_position_correct):
-                    matches += teacher_position_correct[position]
-                    count += teacher_position_total[position]
-        quartile_accuracy.append(matches / count if count else 0.0)
+    quartile_accuracy = [
+        correct / total if total else 0.0
+        for correct, total in zip(teacher_quartile_correct, teacher_quartile_total)
+    ]
 
     return {
         "format_version": "1.0",
@@ -277,6 +261,7 @@ def run_diagnostic(
             "full_sequence_accuracy": teacher_full_sequences / task_count,
             "position_accuracy": position_accuracy,
             "quartile_position_accuracy": quartile_accuracy,
+            "quartile_token_totals": teacher_quartile_total,
         },
         "free_generation": {
             "strict_correct": strict_correct,
