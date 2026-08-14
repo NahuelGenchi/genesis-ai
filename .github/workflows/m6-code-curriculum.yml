@@ -76,10 +76,14 @@ jobs:
           import json
           from pathlib import Path
           result = json.loads(Path('research/m6-code-curriculum-v1.json').read_text())
+          procedural = result['training']['procedural']
           assert result['curriculum_version'] == 'm6-code-curriculum-v1', result
           assert result['selected_domain'] == 'code', result
           assert result['selection']['baseline_exact_accuracy'] == 0.0, result
-          assert result['training']['procedural']['examples'] == 4096, result
+          assert procedural['examples'] == 4096, result
+          assert procedural['prefix_truncated_examples'] > 0, result
+          assert procedural['truncation_policy'] == 'left_prefix_only_preserve_all_response_tokens', result
+          assert procedural['max_training_window_tokens'] <= 129, result
           assert result['training']['procedural_batch_fraction'] == 0.8, result
           assert result['training']['public_text_batch_fraction'] == 0.2, result
           assert result['training']['target_training_tokens'] == 2_000_000, result
