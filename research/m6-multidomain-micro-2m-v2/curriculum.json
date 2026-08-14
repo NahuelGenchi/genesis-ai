@@ -1,0 +1,46 @@
+{
+  "cash_compute_cost_usd": 0.0,
+  "context_length": 128,
+  "curriculum_version": "m6-multidomain-curriculum-v2",
+  "difficulty": 1,
+  "evaluation": {
+    "exact_prompt_overlap_count": 0,
+    "suite_sha256": "e04f1298d1705c5d00a43170f01e79f129fce53da26dead637b7b74d79d83afc",
+    "suite_version": "m6-domain-selection-v2"
+  },
+  "format_version": "1.0",
+  "procedural": {
+    "domains": {
+      "code": {
+        "attempts": 5246,
+        "examples": 4096,
+        "terminated_response_tokens": 65668
+      },
+      "math": {
+        "attempts": 4340,
+        "examples": 4096,
+        "terminated_response_tokens": 15058
+      },
+      "structured": {
+        "attempts": 4096,
+        "examples": 4096,
+        "terminated_response_tokens": 89604
+      }
+    },
+    "exact_holdout_prompt_overlap_count": 0,
+    "examples": 12288,
+    "examples_per_domain": 4096,
+    "prompt_set_sha256": "25f55a6950ca4447e48efbedfdc63978c76e1297ead7cfb81edd6df54b216f7c",
+    "record_set_sha256": "c9a61e21c88020fcfaa7a3d378d6b9a3cdea5aeddc5aa9ab02d2d2f7007c2772",
+    "records_file_sha256": "36be45065e9bb171c4df0c703792b19d796996642e2f32bd9324f6ac463c183b",
+    "records_file_size_bytes": 5942199
+  },
+  "procedural_fraction": 0.8,
+  "public_fraction": 0.2,
+  "public_text": {
+    "manifest_sha256": "8126c6a8008ea39fa9db138078c5b0f15becf510eebf6160053807d665149a76"
+  },
+  "target_training_tokens": 6000000,
+  "tokenizer_sha256": "6f66eba7d552fd22e4c35ba23c1998bbc549ab26ad89a1e0d245524bc802d398",
+  "training_seed": 100001
+}

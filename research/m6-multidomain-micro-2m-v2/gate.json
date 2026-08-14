@@ -1,0 +1,173 @@
+{
+  "baseline_checkpoint_sha256": "0ba16a931451ffbdc369aa685845b0ddb9b6ed03910ac773b50e837fd9886d7e",
+  "candidate_checkpoint_sha256": "7f95f31d2fa8a1a4e20c2d4fc673df5ffe224bf8e6efcf07a4208cc893532407",
+  "decision": "reject",
+  "domain_exact_accuracy": {
+    "code": 0.9833333333333333,
+    "math": 0.016666666666666666,
+    "structured": 0.0
+  },
+  "format_version": "1.0",
+  "gate_version": "m6-multidomain-promotion-v2",
+  "gates": [
+    {
+      "name": "gci_v1_relative_gain",
+      "observed": {
+        "absolute_points": 1.6666666666666679,
+        "baseline": 31.666666666666668,
+        "candidate": 33.333333333333336,
+        "relative_percent": 5.263157894736846
+      },
+      "passed": false,
+      "requirement": {
+        "min_relative_percent": 100.0
+      }
+    },
+    {
+      "name": "code_exact",
+      "observed": 0.9833333333333333,
+      "passed": true,
+      "requirement": 0.9
+    },
+    {
+      "name": "math_exact",
+      "observed": 0.016666666666666666,
+      "passed": false,
+      "requirement": 0.5
+    },
+    {
+      "name": "structured_exact",
+      "observed": 0.0,
+      "passed": false,
+      "requirement": 0.5
+    },
+    {
+      "name": "m3_validation_loss",
+      "observed": {
+        "baseline": 3.3551116824150085,
+        "candidate": 3.0691986799240114,
+        "regression_fraction": -0.08521713419840526
+      },
+      "passed": true,
+      "requirement": {
+        "max_regression_fraction": 0.02
+      }
+    },
+    {
+      "name": "m3_exact_contamination",
+      "observed": {
+        "blocking": false,
+        "exact_overlap_count": 0,
+        "examples": [],
+        "method": "sha256-nfkc-collapsed-whitespace",
+        "train_documents": 975,
+        "validation_documents": 107
+      },
+      "passed": true,
+      "requirement": {
+        "blocking": false,
+        "exact_overlap_count": 0
+      }
+    },
+    {
+      "name": "reproducibility",
+      "observed": {
+        "checkpoint_bytes_equal": false,
+        "config_equal": true,
+        "format_version": "1.0",
+        "metadata_equal": true,
+        "primary_checkpoint_sha256": "7f95f31d2fa8a1a4e20c2d4fc673df5ffe224bf8e6efcf07a4208cc893532407",
+        "replica_checkpoint_sha256": "e085d5952c857f8a570c349da69afbdf4658c2f98ec7251204ffb1022017819f",
+        "repro_version": "m6-repro-v1",
+        "reproducible": true,
+        "state_keys_equal": true,
+        "step_equal": true,
+        "tokenizer_equal": true,
+        "weights_equal": true
+      },
+      "passed": true,
+      "requirement": {
+        "semantic_weights_equal": true
+      }
+    },
+    {
+      "name": "holdout_overlap",
+      "observed": 0,
+      "passed": true,
+      "requirement": 0
+    },
+    {
+      "name": "full_capacity_balanced_schedule",
+      "observed": {
+        "code": 12502,
+        "math": 12501,
+        "structured": 12501
+      },
+      "passed": true,
+      "requirement": {
+        "code": 12502,
+        "math": 12501,
+        "structured": 12501
+      }
+    },
+    {
+      "name": "training_budget",
+      "observed": {
+        "procedural_updates": 37504,
+        "processed_tokens": 6000640,
+        "schedule_unique_updates": 37504,
+        "target_tokens": 6000000
+      },
+      "passed": true,
+      "requirement": {
+        "procedural_unique_updates": 37504,
+        "target_tokens": 6000000
+      }
+    },
+    {
+      "name": "zero_cash_compute",
+      "observed": {
+        "curriculum": 0.0,
+        "training": 0.0
+      },
+      "passed": true,
+      "requirement": 0.0
+    }
+  ],
+  "gci_v1": {
+    "absolute_point_change": 1.6666666666666679,
+    "baseline": {
+      "checkpoint_sha256": "0ba16a931451ffbdc369aa685845b0ddb9b6ed03910ac773b50e837fd9886d7e",
+      "domain_exact_accuracy": {
+        "code": 0.95,
+        "math": 0.0,
+        "structured": 0.0
+      },
+      "metric_version": "gci-v1",
+      "score": 31.666666666666668,
+      "suite_sha256": "e04f1298d1705c5d00a43170f01e79f129fce53da26dead637b7b74d79d83afc",
+      "suite_version": "m6-domain-selection-v2"
+    },
+    "candidate": {
+      "checkpoint_sha256": "7f95f31d2fa8a1a4e20c2d4fc673df5ffe224bf8e6efcf07a4208cc893532407",
+      "domain_exact_accuracy": {
+        "code": 0.9833333333333333,
+        "math": 0.016666666666666666,
+        "structured": 0.0
+      },
+      "metric_version": "gci-v1",
+      "score": 33.333333333333336,
+      "suite_sha256": "e04f1298d1705c5d00a43170f01e79f129fce53da26dead637b7b74d79d83afc",
+      "suite_version": "m6-domain-selection-v2"
+    },
+    "format_version": "1.0",
+    "metric_version": "gci-v1",
+    "relative_percent_change": 5.263157894736846,
+    "relative_percent_note": null
+  },
+  "promoted": false,
+  "result_provenance": {
+    "source_commit": "48981bec29f643fa222fbacb8c82b22d840a32d1",
+    "workflow_run_id": "31845659688"
+  }
+}
