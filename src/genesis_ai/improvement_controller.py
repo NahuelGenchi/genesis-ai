@@ -9,20 +9,7 @@ from typing import Any
 from .capability_index import GCI_DOMAINS, score_result
 
 CONTROLLER_VERSION = "autonomous-improvement-controller-v1"
-FORBIDDEN_CONTENT_KEYS = {
-    "task",
-    "tasks",
-    "prompt",
-    "prompts",
-    "response",
-    "responses",
-    "answer",
-    "answers",
-    "oracle",
-    "oracles",
-    "text",
-    "texts",
-}
+FORBIDDEN_CONTENT_KEYS = {"task", "tasks", "prompt", "prompts", "response", "responses", "answer", "answers", "oracle", "oracles", "text", "texts"}
 
 
 def _canonical(value: object) -> str:
@@ -62,18 +49,11 @@ def _domain_metrics(evaluation: dict[str, Any]) -> dict[str, dict[str, float]]:
             raise ValueError(f"invalid aggregate oracle loss: {domain}")
         if not isinstance(termination, (int, float)) or isinstance(termination, bool) or not 0.0 <= float(termination) <= 1.0:
             raise ValueError(f"invalid termination rate: {domain}")
-        metrics[domain] = {
-            "exact_accuracy": float(accuracy),
-            "terminated_oracle_loss": float(loss),
-            "termination_rate": float(termination),
-        }
+        metrics[domain] = {"exact_accuracy": float(accuracy), "terminated_oracle_loss": float(loss), "termination_rate": float(termination)}
     return metrics
 
 
 def _cycle_budget(accuracy: float) -> int:
-    # With 4,096 focus examples + 512 replay examples for each preserved
-    # domain, mandatory first/terminator anchors consume 10,240 target updates.
-    # These floors keep meaningful continuation capacity after anchor coverage.
     if accuracy < 0.50:
         return 3_000_000
     if accuracy < 0.80:
@@ -81,19 +61,7 @@ def _cycle_budget(accuracy: float) -> int:
     return 2_000_000
 
 
-def plan_next_cycle(
-    evaluation: dict[str, Any],
-    *,
-    incumbent_checkpoint_sha256: str,
-    max_difficulty: int = 5,
-) -> dict[str, Any]:
-    """Create a deterministic next-cycle plan from aggregate metrics only.
-
-    The controller intentionally cannot consume prompts, answers, task bodies, or
-    other private-holdout content. It may inspect only aggregate per-domain
-    scores/losses plus suite identity metadata.
-    """
-
+def plan_next_cycle(evaluation: dict[str, Any], *, incumbent_checkpoint_sha256: str, max_difficulty: int = 5) -> dict[str, Any]:
     if not incumbent_checkpoint_sha256 or len(incumbent_checkpoint_sha256) != 64:
         raise ValueError("incumbent checkpoint SHA-256 is required")
     if max_difficulty < 1:
@@ -110,22 +78,15 @@ def plan_next_cycle(
     if not isinstance(suite_sha256, str) or len(suite_sha256) != 64:
         raise ValueError("suite_sha256 is required")
 
-    focus = min(
-        GCI_DOMAINS,
-        key=lambda domain: (
-            metrics[domain]["exact_accuracy"],
-            -metrics[domain]["terminated_oracle_loss"],
-            domain,
-        ),
-    )
+    focus = min(GCI_DOMAINS, key=lambda domain: (metrics[domain]["exact_accuracy"], -metrics[domain]["terminated_oracle_loss"], domain))
     focus_accuracy = metrics[focus]["exact_accuracy"]
     all_mastered = all(metrics[domain]["exact_accuracy"] >= 0.80 for domain in GCI_DOMAINS)
     target_difficulty = min(difficulty + 1, max_difficulty) if all_mastered else difficulty
-    mode = "raise-difficulty" if all_mastered and target_difficulty > difficulty else "repair-weakest-domain"
-    budget = _cycle_budget(focus_accuracy)
-
-    gci = score_result(evaluation)
+    requires_new_suite = target_difficulty != difficulty
+    mode = "raise-difficulty" if requires_new_suite else "repair-weakest-domain"
     replay = [domain for domain in GCI_DOMAINS if domain != focus]
+    gci = score_result(evaluation)
+
     plan = {
         "format_version": "1.0",
         "controller_version": CONTROLLER_VERSION,
@@ -137,18 +98,21 @@ def plan_next_cycle(
             "gci_v1": gci["score"],
             "aggregate_domain_metrics": metrics,
         },
+        "evaluation_transition": {
+            "new_suite_required": requires_new_suite,
+            "target_difficulty": target_difficulty,
+            "incumbent_must_be_scored_on_target_suite_before_training": requires_new_suite,
+            "cross_difficulty_improvement_comparison_forbidden": True,
+        },
         "decision": {
             "mode": mode,
             "focus_domain": focus,
             "target_difficulty": target_difficulty,
-            "target_training_tokens": budget,
+            "target_training_tokens": _cycle_budget(focus_accuracy),
             "focus_examples": 4_096,
             "replay_domains": replay,
             "replay_examples_per_domain": 512,
-            "continuation_update_weights": {
-                "focus": 0.70,
-                "each_replay_domain": 0.15,
-            },
+            "continuation_update_weights": {"focus": 0.70, "each_replay_domain": 0.15},
             "mandatory_first_and_terminator_coverage": True,
             "unique_target_contexts_only": True,
             "procedural_fraction": 0.80,
