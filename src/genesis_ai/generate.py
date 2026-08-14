@@ -1,8 +1,41 @@
+from __future__ import annotations
+
 import argparse
 
 import torch
 
-from .checkpoint import load_model
+from .checkpoint import load_model, tokenizer_from_payload
+
+
+def generate_text(
+    checkpoint: str,
+    prompt: str,
+    *,
+    max_new_tokens: int = 100,
+    temperature: float = 0.8,
+    top_k: int | None = 40,
+    seed: int = 1337,
+    device: str = "cpu",
+) -> str:
+    if max_new_tokens < 0:
+        raise ValueError("max_new_tokens must be non-negative")
+    torch.manual_seed(seed)
+    if device.startswith("cuda") and torch.cuda.is_available():
+        torch.cuda.manual_seed_all(seed)
+    model, payload = load_model(checkpoint, device)
+    tokenizer = tokenizer_from_payload(payload)
+    model.eval()
+    prompt_ids = tokenizer.encode(prompt)
+    if not prompt_ids:
+        raise ValueError("prompt must contain at least one token")
+    tokens = torch.tensor([prompt_ids], dtype=torch.long, device=device)
+    output = model.generate(
+        tokens,
+        max_new_tokens,
+        temperature=temperature,
+        top_k=top_k,
+    )[0].tolist()
+    return tokenizer.decode(output, errors="replace")
 
 
 def parse_args() -> argparse.Namespace:
@@ -19,18 +52,18 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> None:
     args = parse_args()
-    torch.manual_seed(args.seed)
-    model, _ = load_model(args.checkpoint, args.device)
-    model.eval()
-    prompt = args.prompt.encode("utf-8")
-    tokens = torch.tensor([list(prompt)], dtype=torch.long, device=args.device)
-    output = model.generate(
-        tokens,
-        args.tokens,
-        temperature=args.temperature,
-        top_k=args.top_k,
-    )[0].tolist()
-    print(bytes(output).decode("utf-8", errors="replace"))
+    top_k = None if args.top_k <= 0 else args.top_k
+    print(
+        generate_text(
+            args.checkpoint,
+            args.prompt,
+            max_new_tokens=args.tokens,
+            temperature=args.temperature,
+            top_k=top_k,
+            seed=args.seed,
+            device=args.device,
+        )
+    )
 
 
 if __name__ == "__main__":

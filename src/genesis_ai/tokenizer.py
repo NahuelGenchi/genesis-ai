@@ -61,7 +61,9 @@ class ByteBPETokenizer:
             vocab.append(vocab[left] + vocab[right])
         return vocab
 
-    def decode(self, token_ids: Iterable[int]) -> str:
+    def decode(self, token_ids: Iterable[int], *, errors: str = "strict") -> str:
+        if errors not in {"strict", "replace"}:
+            raise ValueError("errors must be strict or replace")
         vocab = self.token_bytes()
         chunks: list[bytes] = []
         for token_id in token_ids:
@@ -69,7 +71,7 @@ class ByteBPETokenizer:
                 raise IngestError(f"invalid token id: {token_id}")
             chunks.append(vocab[token_id])
         try:
-            return b"".join(chunks).decode("utf-8")
+            return b"".join(chunks).decode("utf-8", errors=errors)
         except UnicodeDecodeError as exc:
             raise IngestError("token sequence does not decode to valid UTF-8") from exc
 
