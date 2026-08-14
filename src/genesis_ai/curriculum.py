@@ -125,6 +125,7 @@ def generate_procedural_records(
     response_token_count = 0
     prompt_response_token_count = 0
     max_prompt_response_tokens = 0
+    prefix_truncated_examples = 0
     attempts = 0
     max_attempts = desired * 200
 
@@ -140,11 +141,11 @@ def generate_procedural_records(
         response_ids = tokenizer.encode(response)
         if not prompt_ids or not response_ids:
             raise ValueError("procedural example tokenized to an empty sequence")
+        if len(response_ids) > context_length:
+            raise ValueError(f"procedural response exceeds context for {task['id']}")
         sequence_tokens = len(prompt_ids) + len(response_ids)
-        if sequence_tokens > context_length:
-            raise ValueError(
-                f"procedural example exceeds context: {sequence_tokens} > {context_length} for {task['id']}"
-            )
+        if sequence_tokens > context_length + 1:
+            prefix_truncated_examples += 1
         seen_prompt_hashes.add(prompt_hash)
         response_token_count += len(response_ids)
         prompt_response_token_count += sequence_tokens
@@ -184,6 +185,9 @@ def generate_procedural_records(
         "response_tokens": response_token_count,
         "prompt_response_tokens": prompt_response_token_count,
         "max_prompt_response_tokens": max_prompt_response_tokens,
+        "max_training_window_tokens": min(max_prompt_response_tokens, context_length + 1),
+        "prefix_truncated_examples": prefix_truncated_examples,
+        "truncation_policy": "left_prefix_only_preserve_all_response_tokens",
     }
     return records, summary
 
