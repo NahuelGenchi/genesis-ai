@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import re
 from pathlib import Path
 from typing import Any
 
@@ -16,6 +17,7 @@ from .position_alignment import rolling_target_loss
 from .verifiers import verify_task
 
 SUITE_VERSION = "m6-domain-selection-v2"
+LADDER_SUITE_PATTERN = re.compile(r"^m6-domain-ladder-d([1-5])-v1$")
 SELECTION_RULE = "highest_exact_accuracy_then_lowest_terminated_oracle_loss_then_domain_name"
 
 
@@ -43,7 +45,11 @@ def load_terminated_suite(path: str | Path) -> dict[str, Any]:
     }
     if not isinstance(raw, dict) or set(raw) != required:
         raise ValueError("invalid terminated domain suite")
-    if raw.get("format_version") != "1.0" or raw.get("suite_version") != SUITE_VERSION:
+    if raw.get("format_version") != "1.0":
+        raise ValueError("unsupported terminated domain suite")
+    suite_version = raw.get("suite_version")
+    ladder_match = LADDER_SUITE_PATTERN.fullmatch(str(suite_version))
+    if suite_version != SUITE_VERSION and ladder_match is None:
         raise ValueError("unsupported terminated domain suite")
     if raw.get("selection_rule") != SELECTION_RULE:
         raise ValueError("unsupported terminated selection rule")
@@ -53,6 +59,8 @@ def load_terminated_suite(path: str | Path) -> dict[str, Any]:
         raise ValueError("tasks_per_domain must be positive")
     if not isinstance(raw["difficulty"], int) or isinstance(raw["difficulty"], bool) or not 1 <= raw["difficulty"] <= 5:
         raise ValueError("difficulty must be in [1,5]")
+    if ladder_match is not None and int(ladder_match.group(1)) != int(raw["difficulty"]):
+        raise ValueError("ladder suite version difficulty does not match suite difficulty")
     domains = raw["domains"]
     if not isinstance(domains, list) or sorted(domains) != sorted(DOMAINS) or len(set(domains)) != len(domains):
         raise ValueError("suite must contain each supported domain exactly once")
@@ -255,7 +263,7 @@ def run_terminated_selection(
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Evaluate Genesis with the M6 stop-aware domain suite v2.")
+    parser = argparse.ArgumentParser(description="Evaluate Genesis with a frozen stop-aware domain suite.")
     parser.add_argument("--checkpoint", type=Path, required=True)
     parser.add_argument("--suite", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
