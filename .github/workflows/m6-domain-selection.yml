@@ -1,83 +1,31 @@
-name: M6 useful-domain selection
+name: M6 useful-domain selection — frozen
 
 on:
   workflow_dispatch:
-  push:
-    branches: [main]
-    paths:
-      - evals/m6-domain-selection-v1.json
-      - src/genesis_ai/domain_selection.py
-      - tests/test_domain_selection.py
-      - .github/workflows/m6-domain-selection.yml
 
 permissions:
-  contents: write
-
-concurrency:
-  group: m6-domain-selection-v1
-  cancel-in-progress: false
+  contents: read
 
 jobs:
-  evaluate:
+  verify-record:
     runs-on: [self-hosted, linux, x64]
-    timeout-minutes: 15
+    timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
-
-      - name: Prepare persistent Python environment
+      - name: Verify frozen selection record
         run: |
-          ENV_DIR="$HOME/.cache/genesis-ai-ci/venv"
-          if [ ! -x "$ENV_DIR/bin/python" ]; then python3 -m venv "$ENV_DIR"; fi
-          if ! "$ENV_DIR/bin/python" -c 'import torch' >/dev/null 2>&1; then
-            "$ENV_DIR/bin/python" -m pip install --upgrade pip
-            "$ENV_DIR/bin/python" -m pip install --index-url https://download.pytorch.org/whl/cpu torch
-          fi
-
-      - name: Measure frozen baseline domains
-        run: |
-          PY="$HOME/.cache/genesis-ai-ci/venv/bin/python"
-          PYTHONPATH=src "$PY" -m genesis_ai.domain_selection \
-            --checkpoint checkpoints/genesis-tiny-v0.pt \
-            --suite evals/m6-domain-selection-v1.json \
-            --output research/m6-domain-selection-v1.json \
-            --device cpu
-          PYTHONPATH=src "$PY" -m genesis_ai.result_provenance \
-            research/m6-domain-selection-v1.json \
-            --source-commit "$GITHUB_SHA" \
-            --workflow-run-id "$GITHUB_RUN_ID"
-
-      - name: Validate selection contract
-        run: |
-          PY="$HOME/.cache/genesis-ai-ci/venv/bin/python"
-          "$PY" - <<'PY'
+          python3 - <<'PY'
           import json
           from pathlib import Path
+
           result = json.loads(Path('research/m6-domain-selection-v1.json').read_text())
-          assert result['suite_version'] == 'm6-domain-selection-v1', result
-          assert result['tasks_per_domain'] == 60, result
-          assert set(result['domains']) == {'math', 'structured', 'code'}, result
-          selected = min(
-              result['domains'],
-              key=lambda domain: (
-                  -result['domains'][domain]['exact_accuracy'],
-                  result['domains'][domain]['oracle_target_loss'],
-                  domain,
-              ),
-          )
-          assert result['selected_domain'] == selected, result
+          assert result['suite_version'] == 'm6-domain-selection-v1'
+          assert result['tasks_per_domain'] == 60
+          assert result['checkpoint_sha256'] == '4db01f8239cfc28933bc3152b7b698ffe089491ce1acf5b66de8adc53b9f8ed9'
+          assert result['selected_domain'] == 'code'
+          assert all(result['domains'][domain]['exact_accuracy'] == 0.0 for domain in ('math', 'structured', 'code'))
+          assert result['domains']['code']['oracle_target_loss'] < result['domains']['structured']['oracle_target_loss']
+          assert result['domains']['structured']['oracle_target_loss'] < result['domains']['math']['oracle_target_loss']
+          assert result['result_provenance']['workflow_run_id'] == '31810825418'
+          print('m6 domain-selection v1 record verified')
           PY
-
-      - name: Validate repository
-        run: PYTHON_BIN="$HOME/.cache/genesis-ai-ci/venv/bin/python" ./scripts/test_local.sh
-
-      - name: Commit baseline selection safely
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add research/m6-domain-selection-v1.json
-          if ! git diff --cached --quiet; then
-            git commit -m "M6: record useful-domain baseline (#95)"
-            git fetch origin main
-            git rebase origin/main
-            git push origin HEAD:main
-          fi
