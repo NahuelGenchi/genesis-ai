@@ -34,6 +34,7 @@ class ImprovementControllerTest(unittest.TestCase):
         self.assertTrue(decision["mandatory_first_and_terminator_coverage"])
         self.assertTrue(decision["unique_target_contexts_only"])
         self.assertEqual(decision["cash_compute_cost_usd"], 0.0)
+        self.assertFalse(plan["evaluation_transition"]["new_suite_required"])
 
     def test_budget_decreases_only_after_capability_rises(self):
         weak = plan_next_cycle(evaluation(0.95, 0.20, 0.50), incumbent_checkpoint_sha256=SHA)
@@ -50,11 +51,15 @@ class ImprovementControllerTest(unittest.TestCase):
         )
         self.assertEqual(plan["decision"]["focus_domain"], "structured")
 
-    def test_all_mastered_advances_difficulty(self):
+    def test_all_mastered_advances_difficulty_and_requires_new_baseline(self):
         plan = plan_next_cycle(evaluation(0.90, 0.85, 0.80, difficulty=2), incumbent_checkpoint_sha256=SHA)
         self.assertEqual(plan["decision"]["mode"], "raise-difficulty")
         self.assertEqual(plan["decision"]["target_difficulty"], 3)
         self.assertEqual(plan["decision"]["focus_domain"], "structured")
+        transition = plan["evaluation_transition"]
+        self.assertTrue(transition["new_suite_required"])
+        self.assertTrue(transition["incumbent_must_be_scored_on_target_suite_before_training"])
+        self.assertTrue(transition["cross_difficulty_improvement_comparison_forbidden"])
 
     def test_private_holdout_content_is_rejected(self):
         value = evaluation(0.9, 0.8, 0.7)
