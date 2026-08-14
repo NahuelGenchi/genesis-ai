@@ -27,15 +27,26 @@ The controller deterministically chooses the weakest domain by:
 
 When all domains reach at least 80% strict exact accuracy, the controller raises difficulty instead of repeatedly polishing the same easy suite.
 
-## Adaptive compute
+## Replay-safe adaptive compute
 
-Focus budget is bounded by observed aggregate capability:
+Each cycle uses:
 
-- <50% exact: 2M focus-training tokens;
-- 50–80% exact: 1M;
-- >=80% exact: 0.5M.
+- 4,096 fresh focus-domain verifier-oracle examples;
+- 512 replay examples from each non-focus domain;
+- mandatory first-answer and terminator coverage;
+- unique target contexts only;
+- continuation capacity weighted 70% to the focus skill and 15% to each replay skill;
+- an 80/20 procedural/public-data step mix.
 
-Every cycle also specifies incumbent-domain replay and an 80/20 procedural/public-data mix. This is a planning budget, not permission to bypass the separate training and promotion gates.
+The total training budget is bounded by observed focus capability:
+
+- <50% exact: 3M tokens;
+- 50–80% exact: 2.5M;
+- >=80% exact: 2M.
+
+The 2M floor is intentional. With 4,096 focus records plus two 512-record replay sets, first-answer and terminator anchors already require 10,240 procedural target updates. Smaller budgets would recreate the anchor-starvation failure measured in #136.
+
+This is a planning budget, not permission to bypass separate training and promotion gates.
 
 ## Promotion boundary
 
