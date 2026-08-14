@@ -2,7 +2,6 @@ import json
 import tempfile
 import unittest
 from pathlib import Path
-from types import SimpleNamespace
 
 import torch
 
@@ -10,6 +9,16 @@ from genesis_ai.ingest import sha256_file
 from genesis_ai.multidomain_curriculum_v2 import CURRICULUM_VERSION, EXAMPLES_PER_DOMAIN, TARGET_TRAINING_TOKENS
 from genesis_ai.multidomain_gate_v2 import gate
 from genesis_ai.multidomain_training_v2 import TRAINING_POLICY_VERSION, build_balanced_schedule
+
+
+class FakeDataset:
+    def __init__(self, anchors, continuation, record_ordinals):
+        self.anchor_indices = tuple(anchors)
+        self.continuation_indices = tuple(continuation)
+        self.record_ordinals = tuple(record_ordinals)
+
+    def __len__(self):
+        return len(self.record_ordinals)
 
 
 class MultidomainV2ScheduleTest(unittest.TestCase):
@@ -25,12 +34,10 @@ class MultidomainV2ScheduleTest(unittest.TestCase):
         record_ordinals = []
         anchors = []
         continuation = []
-        # Two mandatory anchors per record.
         for ordinal in range(len(records)):
             for _ in range(2):
                 anchors.append(len(record_ordinals))
                 record_ordinals.append(ordinal)
-        # Supply exactly enough continuation contexts for the frozen balanced quota.
         quotas = {"code": 4310, "math": 4309, "structured": 4309}
         offsets = {domain: 0 for domain in domains}
         for ordinal, record in enumerate(records):
@@ -39,16 +46,7 @@ class MultidomainV2ScheduleTest(unittest.TestCase):
                 continuation.append(len(record_ordinals))
                 record_ordinals.append(ordinal)
                 offsets[domain] += 1
-        dataset = SimpleNamespace(
-            anchor_indices=tuple(anchors),
-            continuation_indices=tuple(continuation),
-            record_ordinals=tuple(record_ordinals),
-            __len__=lambda self: len(record_ordinals),
-        )
-        # SimpleNamespace does not dispatch special methods from instance fields.
-        dataset.__class__ = type("FakeDataset", (), {
-            "__len__": lambda self: len(self.record_ordinals),
-        })
+        dataset = FakeDataset(anchors, continuation, record_ordinals)
         selected, accounting = build_balanced_schedule(dataset, records, total_samples=37504, seed=123)
         self.assertEqual(len(selected), 37504)
         self.assertEqual(len(torch.unique(selected)), 37504)
