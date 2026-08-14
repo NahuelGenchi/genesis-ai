@@ -7,14 +7,22 @@
   "format_version": "1.0",
   "requested_training_flop_budget": 500000000000,
   "result_provenance": {
-    "recovery_note": "Computation and CI succeeded; original result push was rejected as non-fast-forward. Result recovered verbatim from workflow log without recomputation.",
-    "source_commit": "6b17ba9c2dffc86f85b9de393487f3b28334e18f",
-    "workflow_run_id": "31772851844"
+    "source_commit": "679c53097e23b5538fb244e6d3ffe9b0a873fd70",
+    "workflow_run_id": "31773193621"
   },
   "results": [
     {
       "batch_size": 8,
-      "config": {"context_length": 128, "d_ff": 384, "d_model": 96, "dropout": 0.0, "n_heads": 4, "n_layers": 3, "position_encoding": "learned", "vocab_size": 512},
+      "config": {
+        "context_length": 128,
+        "d_ff": 384,
+        "d_model": 96,
+        "dropout": 0.0,
+        "n_heads": 4,
+        "n_layers": 3,
+        "position_encoding": "learned",
+        "vocab_size": 512
+      },
       "estimated_training_flops": 497748934656,
       "final_validation_loss": 3.597770023345947,
       "flop_estimator": "dense-training-v1",
@@ -29,13 +37,22 @@
       "tokens_per_step": 1024,
       "tokens_seen": 177152,
       "training_flops_per_token": 2809728,
-      "training_seconds": 1.6096246580018487,
-      "training_tokens_per_second": 110057.95613240197,
+      "training_seconds": 2.130051012001786,
+      "training_tokens_per_second": 83167.9612374708,
       "validation_batches": 20
     },
     {
       "batch_size": 8,
-      "config": {"context_length": 128, "d_ff": 384, "d_model": 96, "dropout": 0.0, "n_heads": 4, "n_layers": 3, "position_encoding": "rotary", "vocab_size": 512},
+      "config": {
+        "context_length": 128,
+        "d_ff": 384,
+        "d_model": 96,
+        "dropout": 0.0,
+        "n_heads": 4,
+        "n_layers": 3,
+        "position_encoding": "rotary",
+        "vocab_size": 512
+      },
       "estimated_training_flops": 498696192000,
       "final_validation_loss": 3.5177480578422546,
       "flop_estimator": "dense-training-v1",
@@ -50,13 +67,22 @@
       "tokens_per_step": 1024,
       "tokens_seen": 182272,
       "training_flops_per_token": 2736000,
-      "training_seconds": 2.8184591600002022,
-      "training_tokens_per_second": 64670.79693288404,
+      "training_seconds": 2.8459379809974052,
+      "training_tokens_per_second": 64046.371079428725,
       "validation_batches": 20
     },
     {
       "batch_size": 4,
-      "config": {"context_length": 256, "d_ff": 384, "d_model": 96, "dropout": 0.0, "n_heads": 4, "n_layers": 3, "position_encoding": "rotary", "vocab_size": 512},
+      "config": {
+        "context_length": 256,
+        "d_ff": 384,
+        "d_model": 96,
+        "dropout": 0.0,
+        "n_heads": 4,
+        "n_layers": 3,
+        "position_encoding": "rotary",
+        "vocab_size": 512
+      },
       "estimated_training_flops": 497961271296,
       "final_validation_loss": 3.672014570236206,
       "flop_estimator": "dense-training-v1",
@@ -71,8 +97,8 @@
       "tokens_per_step": 1024,
       "tokens_seen": 156672,
       "training_flops_per_token": 3178368,
-      "training_seconds": 2.61503798099875,
-      "training_tokens_per_second": 59911.94052950732,
+      "training_seconds": 2.549314111998683,
+      "training_tokens_per_second": 61456.53031244858,
       "validation_batches": 20
     }
   ],
