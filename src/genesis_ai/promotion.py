@@ -61,6 +61,13 @@ def load_policy(path: str | Path) -> dict[str, Any]:
             raise ValueError(f"invalid promotion threshold: {name}")
     if not isinstance(policy["required_suite_version"], str) or not policy["required_suite_version"]:
         raise ValueError("required_suite_version must be non-empty")
+    for name in (
+        "require_zero_exact_contamination",
+        "require_same_parameter_count",
+        "require_experience_loss_decreased",
+    ):
+        if not isinstance(policy[name], bool):
+            raise ValueError(f"promotion policy flag must be boolean: {name}")
     return policy
 
 
@@ -80,6 +87,10 @@ def _validate_eval_pair(parent: dict[str, Any], candidate: dict[str, Any], polic
         contamination = result.get("contamination")
         if not isinstance(contamination, dict):
             raise ValueError("evaluation contamination record missing")
+        overlap = contamination.get("exact_overlap_count")
+        blocking = contamination.get("blocking")
+        if not isinstance(overlap, int) or isinstance(overlap, bool) or overlap < 0 or not isinstance(blocking, bool):
+            raise ValueError("evaluation contamination record is invalid")
 
 
 def _validate_benchmark_pair(parent: dict[str, Any], candidate: dict[str, Any]) -> None:
@@ -113,6 +124,10 @@ def decide_promotion(
 ) -> dict[str, Any]:
     parent_checkpoint = Path(parent_checkpoint)
     candidate_checkpoint = Path(candidate_checkpoint)
+    parent_evaluation = Path(parent_evaluation)
+    candidate_evaluation = Path(candidate_evaluation)
+    parent_benchmark = Path(parent_benchmark)
+    candidate_benchmark = Path(candidate_benchmark)
     policy_path = Path(policy_path)
     policy = load_policy(policy_path)
     parent_eval = _load_json(parent_evaluation)
@@ -159,10 +174,10 @@ def decide_promotion(
     parent_contamination = parent_eval["contamination"]
     candidate_contamination = candidate_eval["contamination"]
     contamination_clear = (
-        parent_contamination.get("blocking") is False
-        and candidate_contamination.get("blocking") is False
-        and int(parent_contamination.get("exact_overlap_count", 0)) == 0
-        and int(candidate_contamination.get("exact_overlap_count", 0)) == 0
+        parent_contamination["blocking"] is False
+        and candidate_contamination["blocking"] is False
+        and parent_contamination["exact_overlap_count"] == 0
+        and candidate_contamination["exact_overlap_count"] == 0
     )
     same_parameters = parent_bench["parameter_count"] == candidate_bench["parameter_count"]
     experience_loss_decreased = self_improvement.get("experience_loss_decreased") is True
@@ -178,10 +193,10 @@ def decide_promotion(
             "exact_contamination",
             contamination_clear if policy["require_zero_exact_contamination"] else True,
             observed={
-                "parent_overlap": parent_contamination.get("exact_overlap_count"),
-                "candidate_overlap": candidate_contamination.get("exact_overlap_count"),
+                "parent_overlap": parent_contamination["exact_overlap_count"],
+                "candidate_overlap": candidate_contamination["exact_overlap_count"],
             },
-            requirement={"zero_overlap": bool(policy["require_zero_exact_contamination"])},
+            requirement={"zero_overlap": policy["require_zero_exact_contamination"]},
         ),
         _gate(
             "decode_throughput",
@@ -205,7 +220,7 @@ def decide_promotion(
             "parameter_count",
             same_parameters if policy["require_same_parameter_count"] else True,
             observed={"parent": parent_bench["parameter_count"], "candidate": candidate_bench["parameter_count"]},
-            requirement={"same": bool(policy["require_same_parameter_count"])},
+            requirement={"same": policy["require_same_parameter_count"]},
         ),
         _gate(
             "experience_learning",
@@ -215,7 +230,7 @@ def decide_promotion(
                 "after": self_improvement.get("experience_loss_after"),
                 "decreased": self_improvement.get("experience_loss_decreased"),
             },
-            requirement={"decreased": bool(policy["require_experience_loss_decreased"])},
+            requirement={"decreased": policy["require_experience_loss_decreased"]},
         ),
     ]
     promoted = all(gate["passed"] for gate in gates)
@@ -225,6 +240,12 @@ def decide_promotion(
         "policy_sha256": sha256_file(policy_path),
         "parent_checkpoint_sha256": parent_hash,
         "candidate_checkpoint_sha256": candidate_hash,
+        "measurement_inputs": {
+            "parent_evaluation_sha256": sha256_file(parent_evaluation),
+            "candidate_evaluation_sha256": sha256_file(candidate_evaluation),
+            "parent_benchmark_sha256": sha256_file(parent_benchmark),
+            "candidate_benchmark_sha256": sha256_file(candidate_benchmark),
+        },
         "suite_version": parent_eval["suite_version"],
         "suite_sha256": parent_eval["suite_sha256"],
         "data_manifest_sha256": parent_eval["data_manifest_sha256"],
