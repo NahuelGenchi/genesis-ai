@@ -2,14 +2,6 @@ name: M4 context experiment
 
 on:
   workflow_dispatch:
-  push:
-    branches: [main]
-    paths:
-      - experiments/m4-context-v1.json
-      - src/genesis_ai/config.py
-      - src/genesis_ai/model.py
-      - src/genesis_ai/research.py
-      - .github/workflows/m4-context-experiment.yml
 
 permissions:
   contents: write
