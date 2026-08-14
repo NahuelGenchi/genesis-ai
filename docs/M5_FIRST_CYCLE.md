@@ -12,6 +12,21 @@ Issue: #87.
 - Acceptance: deterministic verifier score exactly `1.0`.
 - Candidate threshold: **8 accepted answers**.
 
+## Measured result
+Workflow run `31808968420` at source commit `413792faf6c82fe75b3dd0faa8c5a216d9e510fa` completed successfully.
+
+- Attempted: **60**.
+- Accepted: **0**.
+- Rejected: **60**.
+- Acceptance rate: **0%**.
+- Status: **`no_candidate`**.
+- Reason: `insufficient_verified_experience`.
+- Candidate training: **skipped**.
+- Evaluation/benchmark/promotion: **skipped**.
+- Parent checkpoint remained unchanged: SHA-256 `4db01f8239cfc28933bc3152b7b698ffe089491ce1acf5b66de8adc53b9f8ed9`.
+
+This is a valid safety result: the baseline is not yet capable enough to provide verified self-training signal under v1, so the system refused to manufacture one.
+
 ## Fail closed
 If fewer than 8 answers pass, the cycle records:
 - `status: no_candidate`;
@@ -33,7 +48,7 @@ Only when the threshold is met:
 Candidate files and raw experience remain ephemeral. Only the compact cycle JSON is committed.
 
 ## Immutability
-The workflow hashes the parent before and after the cycle and fails if it changes.
+The executed workflow hashed the parent before and after the cycle and failed if it changed.
 
 ## Record
 `research/m5-cycle-v1.json` binds:
@@ -45,4 +60,5 @@ The workflow hashes the parent before and after the cycle and fails if it change
 - final cycle status;
 - deterministic record SHA-256.
 
-After the first accepted run, the automatic workflow is frozen to manual-only so the historical v1 result cannot silently rerun.
+## Frozen
+The v1 workflow is now **manual-only** and verifies the committed record rather than recomputing the cycle. The historical result cannot silently change.
