@@ -26,6 +26,7 @@ genesis-promote = "genesis_ai.promotion:main"
 genesis-cycle-record = "genesis_ai.cycle:main"
 genesis-scale = "genesis_ai.scaling:main"
 genesis-domain-select = "genesis_ai.domain_selection:main"
+genesis-curriculum = "genesis_ai.curriculum:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
