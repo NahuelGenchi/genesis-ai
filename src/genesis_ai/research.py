@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import argparse
 import json
-import math
 import time
 from dataclasses import dataclass
 from pathlib import Path
@@ -16,7 +15,7 @@ from .ingest import sha256_file
 from .model import GenesisLM
 from .tokenizer import ByteBPETokenizer
 
-FLOP_ESTIMATOR_VERSION = "dense-training-v1"
+FLOP_ESTIMATOR_VERSION = "active-training-v2"
 
 
 @dataclass(frozen=True)
@@ -24,6 +23,7 @@ class CandidatePlan:
     name: str
     config: ModelConfig
     parameter_count: int
+    active_parameter_count: int
     training_flops_per_token: int
     batch_size: int
     tokens_per_step: int
@@ -33,11 +33,9 @@ class CandidatePlan:
 
 def estimated_training_flops_per_token(model: GenesisLM) -> int:
     config = model.config
-    # Coarse training estimator: 6 FLOPs/parameter/token plus explicit
-    # quadratic attention work (QK + AV, forward/backward approximation).
-    dense = 6 * model.parameter_count()
+    dense_or_active = 6 * model.estimated_active_parameter_count()
     attention = 12 * config.n_layers * config.context_length * config.d_model
-    return dense + attention
+    return dense_or_active + attention
 
 
 def plan_candidate(
@@ -59,6 +57,7 @@ def plan_candidate(
         name=name,
         config=config,
         parameter_count=model.parameter_count(),
+        active_parameter_count=model.estimated_active_parameter_count(),
         training_flops_per_token=flops_per_token,
         batch_size=batch_size,
         tokens_per_step=tokens_per_step,
@@ -101,6 +100,7 @@ def run_candidate(
     optimizer = torch.optim.AdamW(model.parameters(), lr=learning_rate)
 
     initial_loss, initial_batches = _validation_loss(model, validation_data, device, validation_batches)
+    model.reset_routing_stats()
     started = time.perf_counter()
     model.train()
     last_loss = float("nan")
@@ -115,13 +115,15 @@ def run_candidate(
         optimizer.step()
         last_loss = float(loss.detach().cpu())
     elapsed = time.perf_counter() - started
+    routing = model.routing_metrics()
     final_loss, final_batches = _validation_loss(model, validation_data, device, validation_batches)
 
-    return {
+    result: dict[str, object] = {
         "name": plan.name,
         "seed": seed,
         "config": plan.config.to_dict(),
         "parameter_count": plan.parameter_count,
+        "active_parameter_count": plan.active_parameter_count,
         "flop_estimator": FLOP_ESTIMATOR_VERSION,
         "training_flops_per_token": plan.training_flops_per_token,
         "estimated_training_flops": plan.estimated_flops,
@@ -138,6 +140,9 @@ def run_candidate(
         "training_tokens_per_second": (plan.steps * plan.tokens_per_step) / elapsed,
         "loss_improvement": initial_loss - final_loss,
     }
+    if routing:
+        result["routing"] = routing
+    return result
 
 
 def load_experiment(path: Path, tokenizer: ByteBPETokenizer) -> dict:
@@ -196,8 +201,6 @@ def run_experiment(
         )
         plans.append(plan)
 
-    max_context = max(plan.config.context_length for plan in plans)
-    train_data = TokenDataset(data_dir, tokenizer, max_context, split="train")
     validation_cache: dict[int, TokenDataset] = {}
     for plan in plans:
         train_for_context = TokenDataset(data_dir, tokenizer, plan.config.context_length, split="train")
@@ -236,7 +239,7 @@ def run_experiment(
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Run fixed-compute Genesis AI architecture experiments.")
+    parser = argparse.ArgumentParser(description="Run fixed-active-compute Genesis AI architecture experiments.")
     parser.add_argument("--definition", type=Path, required=True)
     parser.add_argument("--data", type=Path, required=True)
     parser.add_argument("--tokenizer", type=Path, required=True)
