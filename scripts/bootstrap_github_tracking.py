@@ -74,19 +74,40 @@ def main() -> None:
     }
     for spec in issues_manifest:
         title = spec["title"]
-        if title in issue_by_title:
-            continue
         milestone_number = by_title[spec["milestone"]]["number"]
+        labels = spec.get("labels", [])
+        desired_state = spec.get("state", "open")
+        existing = issue_by_title.get(title)
+        if existing is not None:
+            patch: dict = {}
+            if existing.get("body") != spec["body"]:
+                patch["body"] = spec["body"]
+            if (existing.get("milestone") or {}).get("number") != milestone_number:
+                patch["milestone"] = milestone_number
+            existing_labels = sorted(item["name"] for item in existing.get("labels", []))
+            if existing_labels != sorted(labels):
+                patch["labels"] = labels
+            if existing.get("state") != desired_state:
+                patch["state"] = desired_state
+                if desired_state == "closed":
+                    patch["state_reason"] = "completed"
+            if patch:
+                updated = request(
+                    "PATCH", f"/repos/{repo}/issues/{existing['number']}", token, patch
+                )
+                issue_by_title[title] = updated
+                print(f"reconciled issue #{existing['number']}: {title}")
+            continue
         payload = {
             "title": title,
             "body": spec["body"],
             "milestone": milestone_number,
-            "labels": spec.get("labels", []),
+            "labels": labels,
         }
         created = request("POST", f"/repos/{repo}/issues", token, payload)
         issue_by_title[title] = created
         print(f"created issue #{created['number']}: {title}")
-        if spec.get("state") == "closed":
+        if desired_state == "closed":
             request(
                 "PATCH",
                 f"/repos/{repo}/issues/{created['number']}",
