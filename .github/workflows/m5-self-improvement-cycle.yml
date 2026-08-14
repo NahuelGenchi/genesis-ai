@@ -1,230 +1,37 @@
-name: M5 first self-improvement cycle
+name: M5 first self-improvement cycle — frozen
 
 on:
   workflow_dispatch:
-  push:
-    branches: [main]
-    paths:
-      - src/genesis_ai/cycle.py
-      - tests/test_cycle.py
-      - .github/workflows/m5-self-improvement-cycle.yml
 
 permissions:
-  contents: write
-
-concurrency:
-  group: m5-first-self-improvement-cycle
-  cancel-in-progress: false
+  contents: read
 
 jobs:
-  cycle:
+  verify-record:
     runs-on: [self-hosted, linux, x64]
-    timeout-minutes: 30
-    env:
-      TASK_COUNT: "60"
-      MIN_ACCEPTED: "8"
-      CHALLENGE_SEED: "20260814"
-      GENERATION_SEED: "9107"
-      PARENT: checkpoints/genesis-tiny-v0.pt
-      WORK: runs/m5-cycle-v1
-      RESULT: research/m5-cycle-v1.json
+    timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
-
-      - name: Prepare persistent Python environment
+      - name: Verify frozen v1 record
         run: |
-          ENV_DIR="$HOME/.cache/genesis-ai-ci/venv"
-          if [ ! -x "$ENV_DIR/bin/python" ]; then python3 -m venv "$ENV_DIR"; fi
-          if ! "$ENV_DIR/bin/python" -c 'import torch' >/dev/null 2>&1; then
-            "$ENV_DIR/bin/python" -m pip install --upgrade pip
-            "$ENV_DIR/bin/python" -m pip install --index-url https://download.pytorch.org/whl/cpu torch
-          fi
-
-      - name: Generate deterministic challenger tasks
-        run: |
-          PY="$HOME/.cache/genesis-ai-ci/venv/bin/python"
-          rm -rf "$WORK"
-          mkdir -p "$WORK"
-          sha256sum "$PARENT" | cut -d' ' -f1 > "$WORK/parent-before.sha256"
-          PYTHONPATH=src "$PY" -m genesis_ai.challenger \
-            --output "$WORK/tasks.jsonl" \
-            --seed "$CHALLENGE_SEED" \
-            --count "$TASK_COUNT" \
-            --min-difficulty 1 \
-            --max-difficulty 1 \
-            --domains math structured code
-
-      - name: Collect exact Genesis experience
-        run: |
-          PY="$HOME/.cache/genesis-ai-ci/venv/bin/python"
-          PYTHONPATH=src "$PY" -m genesis_ai.experience \
-            --tasks "$WORK/tasks.jsonl" \
-            --checkpoint "$PARENT" \
-            --output-dir "$WORK/experience" \
-            --min-score 1.0 \
-            --tokens 16 \
-            --temperature 1.0 \
-            --top-k 1 \
-            --seed "$GENERATION_SEED" \
-            --device cpu
-
-      - name: Check verified-experience threshold
-        id: threshold
-        run: |
-          PY="$HOME/.cache/genesis-ai-ci/venv/bin/python"
-          ACCEPTED=$("$PY" - <<'PY'
-          import json, os
+          python3 - <<'PY'
+          import hashlib
+          import json
           from pathlib import Path
-          manifest = json.loads((Path(os.environ['WORK']) / 'experience' / 'manifest.json').read_text())
-          print(manifest['accepted'])
+
+          path = Path('research/m5-cycle-v1.json')
+          record = json.loads(path.read_text(encoding='utf-8'))
+          recorded_hash = record.pop('record_sha256')
+          canonical = json.dumps(record, ensure_ascii=False, separators=(',', ':'), sort_keys=True)
+          actual_hash = hashlib.sha256(canonical.encode('utf-8')).hexdigest()
+          assert actual_hash == recorded_hash, (actual_hash, recorded_hash)
+          assert record['cycle_version'] == 'm5-v1'
+          assert record['status'] == 'no_candidate'
+          assert record['candidate_trained'] is False
+          assert record['promotion_attempted'] is False
+          assert record['experience']['attempted'] == 60
+          assert record['experience']['accepted'] == 0
+          assert record['experience']['rejected'] == 60
+          assert record['challenge']['min_accepted'] == 8
+          print('m5-v1 frozen record verified')
           PY
-          )
-          echo "accepted=$ACCEPTED"
-          if [ "$ACCEPTED" -ge "$MIN_ACCEPTED" ]; then
-            echo "candidate=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "candidate=false" >> "$GITHUB_OUTPUT"
-          fi
-
-      - name: Record safe no-candidate outcome
-        if: steps.threshold.outputs.candidate == 'false'
-        run: |
-          PY="$HOME/.cache/genesis-ai-ci/venv/bin/python"
-          PYTHONPATH=src "$PY" -m genesis_ai.cycle no-candidate \
-            --parent "$PARENT" \
-            --tasks "$WORK/tasks.jsonl" \
-            --experience "$WORK/experience" \
-            --task-count "$TASK_COUNT" \
-            --min-accepted "$MIN_ACCEPTED" \
-            --challenge-seed "$CHALLENGE_SEED" \
-            --generation-seed "$GENERATION_SEED" \
-            --source-commit "$GITHUB_SHA" \
-            --workflow-run-id "$GITHUB_RUN_ID" \
-            --output "$RESULT"
-
-      - name: Train N+1 candidate
-        if: steps.threshold.outputs.candidate == 'true'
-        run: |
-          PY="$HOME/.cache/genesis-ai-ci/venv/bin/python"
-          PYTHONPATH=src "$PY" -m genesis_ai.candidate \
-            --parent "$PARENT" \
-            --experience "$WORK/experience" \
-            --checkpoint "$WORK/candidate-training.pt" \
-            --export "$WORK/candidate.pt" \
-            --steps 50 \
-            --batch-size 4 \
-            --lr 0.0001 \
-            --seed 12001 \
-            --min-accepted "$MIN_ACCEPTED" \
-            --required-min-score 1.0 \
-            --checkpoint-every 25 \
-            --device cpu
-
-      - name: Rebuild approved evaluation corpus
-        if: steps.threshold.outputs.candidate == 'true'
-        run: |
-          PY="$HOME/.cache/genesis-ai-ci/venv/bin/python"
-          PYTHONPATH=src "$PY" -m genesis_ai.bootstrap_corpus \
-            --catalog data/bootstrap-tokenizer-sources.json \
-            --workspace "$WORK/corpus" \
-            --output "$WORK/rebuilt-tokenizer.json" \
-            --lock data/bootstrap-tokenizer-lock.json \
-            --vocab-size 512
-          cmp tokenizers/genesis-v0.json "$WORK/rebuilt-tokenizer.json"
-
-      - name: Evaluate parent and candidate
-        if: steps.threshold.outputs.candidate == 'true'
-        run: |
-          PY="$HOME/.cache/genesis-ai-ci/venv/bin/python"
-          for SPEC in "parent:$PARENT" "candidate:$WORK/candidate.pt"; do
-            NAME="${SPEC%%:*}"
-            CHECKPOINT="${SPEC#*:}"
-            PYTHONPATH=src "$PY" -m genesis_ai.eval_lab \
-              --checkpoint "$CHECKPOINT" \
-              --data "$WORK/corpus/filtered" \
-              --suite evals/m3-v1.json \
-              --output "$WORK/$NAME-eval.json" \
-              --device cpu
-          done
-
-      - name: Benchmark parent and candidate
-        if: steps.threshold.outputs.candidate == 'true'
-        run: |
-          PY="$HOME/.cache/genesis-ai-ci/venv/bin/python"
-          PYTHONPATH=src "$PY" -m genesis_ai.benchmark \
-            --checkpoint "$PARENT" \
-            --output "$WORK/parent-benchmark.json" \
-            --device cpu \
-            --hourly-cost 0 \
-            --batch-size 8 \
-            --training-steps 20 \
-            --decode-tokens 64
-          PYTHONPATH=src "$PY" -m genesis_ai.benchmark \
-            --checkpoint "$WORK/candidate.pt" \
-            --output "$WORK/candidate-benchmark.json" \
-            --device cpu \
-            --hourly-cost 0 \
-            --batch-size 8 \
-            --training-steps 20 \
-            --decode-tokens 64
-
-      - name: Apply promotion gate
-        if: steps.threshold.outputs.candidate == 'true'
-        run: |
-          PY="$HOME/.cache/genesis-ai-ci/venv/bin/python"
-          set +e
-          PYTHONPATH=src "$PY" -m genesis_ai.promotion \
-            --parent "$PARENT" \
-            --candidate "$WORK/candidate.pt" \
-            --parent-eval "$WORK/parent-eval.json" \
-            --candidate-eval "$WORK/candidate-eval.json" \
-            --parent-benchmark "$WORK/parent-benchmark.json" \
-            --candidate-benchmark "$WORK/candidate-benchmark.json" \
-            --policy evals/promotion-v1.json \
-            --output "$WORK/promotion.json"
-          STATUS=$?
-          set -e
-          if [ "$STATUS" -ne 0 ] && [ "$STATUS" -ne 2 ]; then exit "$STATUS"; fi
-
-      - name: Record candidate outcome
-        if: steps.threshold.outputs.candidate == 'true'
-        run: |
-          PY="$HOME/.cache/genesis-ai-ci/venv/bin/python"
-          PYTHONPATH=src "$PY" -m genesis_ai.cycle candidate \
-            --parent "$PARENT" \
-            --candidate "$WORK/candidate.pt" \
-            --tasks "$WORK/tasks.jsonl" \
-            --experience "$WORK/experience" \
-            --parent-eval "$WORK/parent-eval.json" \
-            --candidate-eval "$WORK/candidate-eval.json" \
-            --parent-benchmark "$WORK/parent-benchmark.json" \
-            --candidate-benchmark "$WORK/candidate-benchmark.json" \
-            --promotion "$WORK/promotion.json" \
-            --task-count "$TASK_COUNT" \
-            --min-accepted "$MIN_ACCEPTED" \
-            --challenge-seed "$CHALLENGE_SEED" \
-            --generation-seed "$GENERATION_SEED" \
-            --source-commit "$GITHUB_SHA" \
-            --workflow-run-id "$GITHUB_RUN_ID" \
-            --output "$RESULT"
-
-      - name: Verify parent immutability
-        run: |
-          BEFORE=$(cat "$WORK/parent-before.sha256")
-          AFTER=$(sha256sum "$PARENT" | cut -d' ' -f1)
-          test "$BEFORE" = "$AFTER"
-
-      - name: Validate repository
-        run: PYTHON_BIN="$HOME/.cache/genesis-ai-ci/venv/bin/python" ./scripts/test_local.sh
-
-      - name: Commit compact cycle record safely
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add "$RESULT"
-          if ! git diff --cached --quiet; then
-            git commit -m "M5: record first self-improvement cycle (#87)"
-            git fetch origin main
-            git rebase origin/main
-            git push origin HEAD:main
-          fi
