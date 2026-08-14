@@ -21,13 +21,27 @@ def evaluation(code, math, structured, *, code_loss=1.0, math_loss=1.0, structur
 
 
 class ImprovementControllerTest(unittest.TestCase):
-    def test_selects_weakest_domain_and_preserves_replay(self):
+    def test_selects_weakest_domain_and_preserves_replay_without_anchor_starvation(self):
         plan = plan_next_cycle(evaluation(0.95, 0.20, 0.50), incumbent_checkpoint_sha256=SHA)
-        self.assertEqual(plan["decision"]["focus_domain"], "math")
-        self.assertEqual(plan["decision"]["mode"], "repair-weakest-domain")
-        self.assertEqual(plan["decision"]["focus_training_tokens"], 2_000_000)
-        self.assertEqual(plan["decision"]["replay_domains"], ["code", "structured"])
-        self.assertEqual(plan["decision"]["cash_compute_cost_usd"], 0.0)
+        decision = plan["decision"]
+        self.assertEqual(decision["focus_domain"], "math")
+        self.assertEqual(decision["mode"], "repair-weakest-domain")
+        self.assertEqual(decision["target_training_tokens"], 3_000_000)
+        self.assertEqual(decision["focus_examples"], 4096)
+        self.assertEqual(decision["replay_domains"], ["code", "structured"])
+        self.assertEqual(decision["replay_examples_per_domain"], 512)
+        self.assertEqual(decision["continuation_update_weights"], {"focus": 0.70, "each_replay_domain": 0.15})
+        self.assertTrue(decision["mandatory_first_and_terminator_coverage"])
+        self.assertTrue(decision["unique_target_contexts_only"])
+        self.assertEqual(decision["cash_compute_cost_usd"], 0.0)
+
+    def test_budget_decreases_only_after_capability_rises(self):
+        weak = plan_next_cycle(evaluation(0.95, 0.20, 0.50), incumbent_checkpoint_sha256=SHA)
+        medium = plan_next_cycle(evaluation(0.95, 0.60, 0.70), incumbent_checkpoint_sha256=SHA)
+        strong = plan_next_cycle(evaluation(0.95, 0.85, 0.90), incumbent_checkpoint_sha256=SHA)
+        self.assertEqual(weak["decision"]["target_training_tokens"], 3_000_000)
+        self.assertEqual(medium["decision"]["target_training_tokens"], 2_500_000)
+        self.assertEqual(strong["decision"]["target_training_tokens"], 2_000_000)
 
     def test_tie_breaks_by_higher_aggregate_loss(self):
         plan = plan_next_cycle(
