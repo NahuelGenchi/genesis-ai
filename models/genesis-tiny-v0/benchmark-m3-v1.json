@@ -1,0 +1,34 @@
+{
+  "checkpoint_sha256": "4db01f8239cfc28933bc3152b7b698ffe089491ce1acf5b66de8adc53b9f8ed9",
+  "checkpoint_size_bytes": 1594143,
+  "cost_formula": "hourly_cost * 1_000_000 / (tokens_per_second * 3600)",
+  "cost_scope": "Cash compute only; excludes electricity, hardware ownership, networking, storage, and labor.",
+  "decode": {
+    "estimated_cost_per_million_tokens": 0.0,
+    "generated_tokens": 128,
+    "seconds": 0.11866549499973189,
+    "tokens_per_second": 1078.662335671285
+  },
+  "device": "cpu",
+  "estimated_active_flops_per_token": 2367360,
+  "format_version": "1.0",
+  "hardware": {
+    "cpu_count": 28,
+    "machine": "x86_64",
+    "processor": "x86_64",
+    "torch_threads": 20,
+    "torch_version": "2.13.0+cpu"
+  },
+  "hourly_compute_cost_assumption": 0.0,
+  "parameter_count": 394560,
+  "peak_process_rss_mb": 356.17578125,
+  "training": {
+    "batch_size": 8,
+    "context_length": 128,
+    "estimated_cost_per_million_tokens": 0.0,
+    "measured_steps": 50,
+    "seconds": 0.5807270030018117,
+    "tokens": 51200,
+    "tokens_per_second": 88165.35090557908
+  }
+}
