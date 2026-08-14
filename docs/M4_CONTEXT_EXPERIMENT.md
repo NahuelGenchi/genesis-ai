@@ -11,16 +11,18 @@ Same approved corpus/tokenizer, seed 7331, optimizer/LR, ~500B estimated trainin
 ## Results
 | Candidate | Val loss | Params | Est. FLOPs | CPU tok/s |
 |---|---:|---:|---:|---:|
-| learned-128 | 3.59777 | 394,560 | 497.75B | 110,058 |
-| rotary-128 | **3.51775** | 382,272 | 498.70B | 64,671 |
-| rotary-256 | 3.67201 | 382,272 | 497.96B | 59,912 |
+| learned-128 | 3.59777 | 394,560 | 497.75B | 83,168 |
+| rotary-128 | **3.51775** | 382,272 | 498.70B | 64,046 |
+| rotary-256 | 3.67201 | 382,272 | 497.96B | 61,457 |
 
 ## Decision
 - **Quality winner:** rotary-128; ~2.2% lower validation loss than learned-128 at essentially equal estimated FLOPs and ~3.1% fewer parameters.
-- **Operational default:** keep learned-128 for now. The current rotary implementation is ~41% lower CPU throughput than learned-128.
+- **Operational default:** keep learned-128 for now. The current rotary implementation is ~23.0% lower CPU throughput than learned-128.
 - Reject rotary-256 at this scale/budget: worse validation loss and lower CPU throughput.
 
 RoPE remains a promising quality hypothesis, but it must be optimized before promotion. This tiny-scale ranking is not assumed to hold at frontier scale.
 
 ## Provenance
-The computation and CI succeeded in workflow run `31772851844` at source commit `6b17ba9c...`. Its original push lost a race with an unrelated workflow; the result was recovered from the immutable job log without rerunning compute.
+Final accepted run: workflow `31773193621`, source commit `679c53097e23b5538fb244e6d3ffe9b0a873fd70`.
+
+The validation losses matched the earlier run exactly. Only wall-time/throughput changed. #65 froze this experiment after the final accepted run.
