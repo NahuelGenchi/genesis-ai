@@ -1,0 +1,19 @@
+{
+  "format_version": "1.0",
+  "suite_version": "m6-domain-ladder-d5-v1",
+  "base_seed": 40001,
+  "tasks_per_domain": 60,
+  "difficulty": 5,
+  "domains": ["math", "structured", "code"],
+  "generation": {
+    "max_new_tokens": 96,
+    "temperature": 1.0,
+    "top_k": 1,
+    "seed": 40101
+  },
+  "termination": {
+    "delimiter": "\n",
+    "required": true
+  },
+  "selection_rule": "highest_exact_accuracy_then_lowest_terminated_oracle_loss_then_domain_name"
+}
