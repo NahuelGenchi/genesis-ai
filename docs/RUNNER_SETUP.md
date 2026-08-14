@@ -1,11 +1,13 @@
 # Zero-cost runner
 
-Use one trusted Linux x64 machine as a GitHub self-hosted runner.
+Use one trusted Linux x64 machine as the GitHub self-hosted runner.
 
 ## Requirements
 
 - Git
 - `python3` 3.11+
-- PyTorch available to `python3` for model tests
+- Python `venv` support
 
-Run `./scripts/test_local.sh` before relying on the runner.
+CI creates a persistent environment at `~/.cache/genesis-ai-ci/venv` and installs CPU PyTorch there only when missing.
+
+Keep the runner process online while GitHub jobs should execute.
