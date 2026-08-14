@@ -19,7 +19,7 @@ First end-to-end model trained from random weights. **Pipeline baseline only.**
 - Train tokens: 247453
 - Probe loss: 6.278069019317627 → 3.982328414916992
 - Last training loss: 3.9865145683288574
-- CPU time: 1.386398927999835 s
+- CPU time: 1.6513313829964318 s
 
 ## Evaluation
 - Split: validation
@@ -39,8 +39,8 @@ First end-to-end model trained from random weights. **Pipeline baseline only.**
 - `gutenberg-pride-prejudice-1342` — language `en` — sample SHA `c7246fa08df958e075cf6343b68103cea963fd99deecf6977e016ae0824ecf83`
 
 ## Checkpoint
-- SHA-256: `4db01f8239cfc28933bc3152b7b698ffe089491ce1acf5b66de8adc53b9f8ed9`
-- Bytes: 1594143
+- SHA-256: `329e38a2ee885212ce7ff4d94ea93c89fca826c9e93f352bc273a9799fc4bbb8`
+- Bytes: 1594207
 
 ## Seeded sample
 ```text
