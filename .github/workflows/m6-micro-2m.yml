@@ -23,13 +23,18 @@ concurrency:
 jobs:
   train:
     runs-on: [self-hosted, linux, x64]
-    timeout-minutes: 20
+    timeout-minutes: 90
     env:
       WORK: runs/m6-micro-2m-v1
       RESULT_DIR: research/m6-micro-2m-v1
       CANDIDATE: runs/m6-micro-2m-v1/candidate-a.pt
       PUBLISHED: checkpoints/genesis-micro-2m-v1.pt
       MODEL_DIR: models/genesis-micro-2m-v1
+      OMP_NUM_THREADS: "1"
+      MKL_NUM_THREADS: "1"
+      OPENBLAS_NUM_THREADS: "1"
+      NUMEXPR_NUM_THREADS: "1"
+      VECLIB_MAXIMUM_THREADS: "1"
     steps:
       - uses: actions/checkout@v4
 
