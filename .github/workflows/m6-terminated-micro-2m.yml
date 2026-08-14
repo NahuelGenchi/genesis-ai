@@ -1,0 +1,263 @@
+name: M6 explicit-termination micro-2m
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - evals/m6-domain-selection-v2.json
+      - src/genesis_ai/terminated_eval.py
+      - src/genesis_ai/terminated_training.py
+      - src/genesis_ai/terminated_gate.py
+      - src/genesis_ai/terminated_model_card.py
+      - tests/test_terminated_eval.py
+      - tests/test_terminated_training.py
+      - tests/test_terminated_gate.py
+      - .github/workflows/m6-terminated-micro-2m.yml
+
+permissions:
+  contents: write
+
+concurrency:
+  group: m6-terminated-micro-2m-v1
+  cancel-in-progress: false
+
+jobs:
+  train:
+    runs-on: [self-hosted, linux, x64]
+    timeout-minutes: 30
+    env:
+      WORK: runs/m6-terminated-micro-2m-v1
+      RESULT_DIR: research/m6-terminated-micro-2m-v1
+      CANDIDATE: runs/m6-terminated-micro-2m-v1/candidate-a.pt
+      PUBLISHED: checkpoints/genesis-micro-2m-v1.pt
+      MODEL_DIR: models/genesis-micro-2m-v1
+      OMP_NUM_THREADS: "1"
+      MKL_NUM_THREADS: "1"
+      OPENBLAS_NUM_THREADS: "1"
+      NUMEXPR_NUM_THREADS: "1"
+      VECLIB_MAXIMUM_THREADS: "1"
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Prepare persistent Python environment
+        run: |
+          ENV_DIR="$HOME/.cache/genesis-ai-ci/venv"
+          if [ ! -x "$ENV_DIR/bin/python" ]; then python3 -m venv "$ENV_DIR"; fi
+          if ! "$ENV_DIR/bin/python" -c 'import torch' >/dev/null 2>&1; then
+            "$ENV_DIR/bin/python" -m pip install --upgrade pip
+            "$ENV_DIR/bin/python" -m pip install --index-url https://download.pytorch.org/whl/cpu torch
+          fi
+
+      - name: Rebuild frozen training inputs
+        run: |
+          PY="$HOME/.cache/genesis-ai-ci/venv/bin/python"
+          rm -rf "$WORK" "$RESULT_DIR"
+          mkdir -p "$WORK" "$RESULT_DIR"
+          cp data/bootstrap-tokenizer-lock.json "$WORK/bootstrap-tokenizer-lock.json"
+          PYTHONPATH=src "$PY" -m genesis_ai.bootstrap_corpus \
+            --catalog data/bootstrap-tokenizer-sources.json \
+            --workspace "$WORK/public-corpus" \
+            --output "$WORK/rebuilt-tokenizer.json" \
+            --lock "$WORK/bootstrap-tokenizer-lock.json" \
+            --vocab-size 512
+          cmp data/bootstrap-tokenizer-lock.json "$WORK/bootstrap-tokenizer-lock.json"
+          cmp tokenizers/genesis-v0.json "$WORK/rebuilt-tokenizer.json"
+          PYTHONPATH=src "$PY" -m genesis_ai.curriculum \
+            --spec experiments/m6-code-curriculum-v1.json \
+            --selection research/m6-domain-selection-v1.json \
+            --evaluation-suite evals/m6-domain-selection-v1.json \
+            --tokenizer tokenizers/genesis-v0.json \
+            --public-data "$WORK/public-corpus/filtered" \
+            --public-source-lock data/bootstrap-tokenizer-lock.json \
+            --public-source-catalog data/bootstrap-tokenizer-sources.json \
+            --records "$WORK/procedural.jsonl" \
+            --output "$WORK/curriculum-lock.json"
+          "$PY" - <<'PY'
+          import json
+          from pathlib import Path
+          generated = json.loads(Path('runs/m6-terminated-micro-2m-v1/curriculum-lock.json').read_text())
+          frozen = json.loads(Path('research/m6-code-curriculum-v1.json').read_text())
+          frozen.pop('result_provenance', None)
+          assert generated == frozen, 'rebuilt curriculum differs from #96'
+          PY
+
+      - name: Freeze promoted baseline on stop-aware suite before candidate training
+        run: |
+          PY="$HOME/.cache/genesis-ai-ci/venv/bin/python"
+          PYTHONPATH=src "$PY" -m genesis_ai.terminated_eval \
+            --checkpoint checkpoints/genesis-tiny-v0.pt \
+            --suite evals/m6-domain-selection-v2.json \
+            --output "$WORK/baseline-domain-v2.json" \
+            --device cpu
+          "$PY" - <<'PY'
+          import json
+          from pathlib import Path
+          v1 = json.loads(Path('research/m6-domain-selection-v1.json').read_text())
+          v2 = json.loads(Path('runs/m6-terminated-micro-2m-v1/baseline-domain-v2.json').read_text())
+          assert v2['suite_version'] == 'm6-domain-selection-v2', v2
+          assert v2['domains']['code']['task_set_sha256'] == v1['domains']['code']['task_set_sha256'], (v1, v2)
+          assert v2['domains']['code']['task_set_sha256'] == 'edea452777c7328fd13d550ced322bd5815eac664be5f3924047f15122cc17c8', v2
+          assert v2['termination'] == {'delimiter': '\n', 'required': True}, v2
+          PY
+
+      - name: Train primary terminated candidate
+        run: |
+          PY="$HOME/.cache/genesis-ai-ci/venv/bin/python"
+          PYTHONPATH=src "$PY" -m genesis_ai.terminated_training \
+            --ladder-definition experiments/m6-scaling-ladder-v1.json \
+            --ladder-result research/m6-scaling-ladder-v1.json \
+            --curriculum-lock research/m6-code-curriculum-v1.json \
+            --records "$WORK/procedural.jsonl" \
+            --public-data "$WORK/public-corpus/filtered" \
+            --tokenizer tokenizers/genesis-v0.json \
+            --checkpoint "$WORK/candidate-a-training.pt" \
+            --export "$CANDIDATE" \
+            --run "$WORK/training.json" \
+            --device cpu
+
+      - name: Train independent terminated replica
+        run: |
+          PY="$HOME/.cache/genesis-ai-ci/venv/bin/python"
+          PYTHONPATH=src "$PY" -m genesis_ai.terminated_training \
+            --ladder-definition experiments/m6-scaling-ladder-v1.json \
+            --ladder-result research/m6-scaling-ladder-v1.json \
+            --curriculum-lock research/m6-code-curriculum-v1.json \
+            --records "$WORK/procedural.jsonl" \
+            --public-data "$WORK/public-corpus/filtered" \
+            --tokenizer tokenizers/genesis-v0.json \
+            --checkpoint "$WORK/candidate-b-training.pt" \
+            --export "$WORK/candidate-b.pt" \
+            --run "$WORK/training-replica.json" \
+            --device cpu
+
+      - name: Verify independent reproduction
+        run: |
+          PY="$HOME/.cache/genesis-ai-ci/venv/bin/python"
+          PYTHONPATH=src "$PY" -m genesis_ai.scale_repro \
+            --primary "$CANDIDATE" \
+            --replica "$WORK/candidate-b.pt" \
+            --output "$WORK/reproduction.json"
+
+      - name: Evaluate candidate on stop-aware suite
+        run: |
+          PY="$HOME/.cache/genesis-ai-ci/venv/bin/python"
+          PYTHONPATH=src "$PY" -m genesis_ai.terminated_eval \
+            --checkpoint "$CANDIDATE" \
+            --suite evals/m6-domain-selection-v2.json \
+            --output "$WORK/candidate-domain-v2.json" \
+            --device cpu
+          "$PY" - <<'PY'
+          import json
+          from pathlib import Path
+          baseline = json.loads(Path('runs/m6-terminated-micro-2m-v1/baseline-domain-v2.json').read_text())
+          candidate = json.loads(Path('runs/m6-terminated-micro-2m-v1/candidate-domain-v2.json').read_text())
+          assert candidate['suite_sha256'] == baseline['suite_sha256'], (baseline, candidate)
+          assert candidate['domains']['code']['task_set_sha256'] == baseline['domains']['code']['task_set_sha256'], (baseline, candidate)
+          PY
+
+      - name: Evaluate M3 general-language regression
+        run: |
+          PY="$HOME/.cache/genesis-ai-ci/venv/bin/python"
+          PYTHONPATH=src "$PY" -m genesis_ai.eval_lab \
+            --checkpoint checkpoints/genesis-tiny-v0.pt \
+            --data "$WORK/public-corpus/filtered" \
+            --suite evals/m3-v1.json \
+            --output "$WORK/baseline-m3.json" \
+            --device cpu
+          PYTHONPATH=src "$PY" -m genesis_ai.eval_lab \
+            --checkpoint "$CANDIDATE" \
+            --data "$WORK/public-corpus/filtered" \
+            --suite evals/m3-v1.json \
+            --output "$WORK/candidate-m3.json" \
+            --device cpu
+
+      - name: Stage immutable experiment inputs
+        run: |
+          cp "$WORK/baseline-domain-v2.json" "$RESULT_DIR/baseline-domain-v2.json"
+          cp "$WORK/training.json" "$RESULT_DIR/training.json"
+          cp "$WORK/reproduction.json" "$RESULT_DIR/reproduction.json"
+          cp "$WORK/candidate-domain-v2.json" "$RESULT_DIR/candidate-domain-v2.json"
+          cp "$WORK/baseline-m3.json" "$RESULT_DIR/baseline-m3.json"
+          cp "$WORK/candidate-m3.json" "$RESULT_DIR/candidate-m3.json"
+
+      - name: Apply terminated M6 promotion gate
+        id: gate
+        run: |
+          PY="$HOME/.cache/genesis-ai-ci/venv/bin/python"
+          set +e
+          PYTHONPATH=src "$PY" -m genesis_ai.terminated_gate \
+            --baseline-checkpoint checkpoints/genesis-tiny-v0.pt \
+            --candidate "$CANDIDATE" \
+            --training-run "$RESULT_DIR/training.json" \
+            --reproduction "$RESULT_DIR/reproduction.json" \
+            --baseline-domain "$RESULT_DIR/baseline-domain-v2.json" \
+            --candidate-domain "$RESULT_DIR/candidate-domain-v2.json" \
+            --baseline-m3 "$RESULT_DIR/baseline-m3.json" \
+            --candidate-m3 "$RESULT_DIR/candidate-m3.json" \
+            --ladder-result research/m6-scaling-ladder-v1.json \
+            --curriculum-lock research/m6-code-curriculum-v1.json \
+            --output "$RESULT_DIR/gate.json"
+          STATUS=$?
+          set -e
+          if [ "$STATUS" -ne 0 ] && [ "$STATUS" -ne 2 ]; then exit "$STATUS"; fi
+          PYTHONPATH=src "$PY" -m genesis_ai.result_provenance \
+            "$RESULT_DIR/gate.json" \
+            --source-commit "$GITHUB_SHA" \
+            --workflow-run-id "$GITHUB_RUN_ID"
+          PROMOTED=$("$PY" - <<'PY'
+          import json
+          from pathlib import Path
+          print(str(json.loads(Path('research/m6-terminated-micro-2m-v1/gate.json').read_text())['promoted']).lower())
+          PY
+          )
+          echo "promoted=$PROMOTED" >> "$GITHUB_OUTPUT"
+
+      - name: Publish promoted checkpoint and model card
+        if: steps.gate.outputs.promoted == 'true'
+        run: |
+          PY="$HOME/.cache/genesis-ai-ci/venv/bin/python"
+          cp "$CANDIDATE" "$PUBLISHED"
+          PYTHONPATH=src "$PY" -m genesis_ai.terminated_model_card \
+            --checkpoint "$PUBLISHED" \
+            --training-run "$RESULT_DIR/training.json" \
+            --baseline-domain "$RESULT_DIR/baseline-domain-v2.json" \
+            --candidate-domain "$RESULT_DIR/candidate-domain-v2.json" \
+            --baseline-m3 "$RESULT_DIR/baseline-m3.json" \
+            --candidate-m3 "$RESULT_DIR/candidate-m3.json" \
+            --gate "$RESULT_DIR/gate.json" \
+            --curriculum-lock research/m6-code-curriculum-v1.json \
+            --output-dir "$MODEL_DIR"
+
+      - name: Verify publication boundary
+        run: |
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          gate = json.loads(Path('research/m6-terminated-micro-2m-v1/gate.json').read_text())
+          published = Path('checkpoints/genesis-micro-2m-v1.pt')
+          card = Path('models/genesis-micro-2m-v1/MODEL_CARD.md')
+          metrics = Path('models/genesis-micro-2m-v1/metrics.json')
+          if gate['promoted']:
+              assert published.is_file() and card.is_file() and metrics.is_file(), gate
+          else:
+              assert not published.exists() and not card.exists() and not metrics.exists(), gate
+          PY
+
+      - name: Validate repository
+        run: PYTHON_BIN="$HOME/.cache/genesis-ai-ci/venv/bin/python" ./scripts/test_local.sh
+
+      - name: Commit experiment result safely
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add "$RESULT_DIR"
+          if [ "${{ steps.gate.outputs.promoted }}" = "true" ]; then
+            git add "$PUBLISHED" "$MODEL_DIR"
+          fi
+          if ! git diff --cached --quiet; then
+            git commit -m "M6: record explicit-termination candidate (#128)"
+            git fetch origin main
+            git rebase origin/main
+            git push origin HEAD:main
+          fi
