@@ -1,0 +1,25 @@
+{
+  "schema_version": "1.0",
+  "id": "example-public-domain-source",
+  "name": "Example public-domain source",
+  "origin": "https://example.org/dataset",
+  "rights": {
+    "basis": "Example only: source is documented as public domain.",
+    "license_id": "CC0-1.0",
+    "evidence": ["https://example.org/dataset/rights"],
+    "training_allowed": true,
+    "redistribution_allowed": true
+  },
+  "retrieval": {
+    "retrieved_at": "2026-08-14T00:00:00Z",
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "size_bytes": 0
+  },
+  "content": {
+    "languages": ["en"],
+    "domains": ["example"],
+    "formats": ["text"]
+  },
+  "filtering_steps": [],
+  "notes": "Illustrative metadata only; this is not an approved training corpus."
+}

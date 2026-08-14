@@ -1,0 +1,90 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "dataset-source.schema.json",
+  "title": "Genesis AI dataset source",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "id",
+    "name",
+    "origin",
+    "rights",
+    "retrieval",
+    "content",
+    "filtering_steps"
+  ],
+  "properties": {
+    "schema_version": {"const": "1.0"},
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+    },
+    "name": {"type": "string", "minLength": 1},
+    "origin": {"type": "string", "minLength": 1},
+    "rights": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["basis", "training_allowed", "redistribution_allowed"],
+      "properties": {
+        "basis": {"type": "string", "minLength": 1},
+        "license_id": {"type": ["string", "null"]},
+        "evidence": {
+          "type": "array",
+          "items": {"type": "string", "minLength": 1},
+          "uniqueItems": true
+        },
+        "training_allowed": {"const": true},
+        "redistribution_allowed": {"type": "boolean"}
+      }
+    },
+    "retrieval": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["retrieved_at", "sha256", "size_bytes"],
+      "properties": {
+        "retrieved_at": {"type": "string", "format": "date-time"},
+        "sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "size_bytes": {"type": "integer", "minimum": 0}
+      }
+    },
+    "content": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["languages", "domains", "formats"],
+      "properties": {
+        "languages": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "pattern": "^[A-Za-z]{2,3}(?:-[A-Za-z0-9]{2,8})*$"
+          }
+        },
+        "domains": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {"type": "string", "minLength": 1}
+        },
+        "formats": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "enum": ["text", "code", "math", "structured-data"]
+          }
+        }
+      }
+    },
+    "filtering_steps": {
+      "type": "array",
+      "items": {"type": "string", "minLength": 1}
+    },
+    "notes": {"type": "string"}
+  }
+}
