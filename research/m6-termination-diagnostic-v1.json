@@ -1,0 +1,140 @@
+{
+  "checkpoint_sha256": "8717e5ed1d9f9d2887e7ab9c4cfceb1ead6bae3b49c1b0adfc15006d3ac9e727",
+  "checkpoint_step": 1955,
+  "diagnostic_version": "m6-termination-diagnostic-v1",
+  "domain": "code",
+  "format_version": "1.0",
+  "generation": {
+    "max_new_tokens": 32,
+    "seed": 36101,
+    "temperature": 1.0,
+    "top_k": 1
+  },
+  "newline_immediately_after_oracle": {
+    "count": 0,
+    "rate": 0.0
+  },
+  "oracle_prefix_then_extra": {
+    "count": 0,
+    "rate": 0.0
+  },
+  "oracle_text_prefix": {
+    "count": 0,
+    "rate": 0.0
+  },
+  "oracle_token_prefix": {
+    "count": 0,
+    "rate": 0.0
+  },
+  "response_set_sha256": "245864e29c18a803def70b3f487c412b06cdaf626745fa652628ce909793a2e5",
+  "result_provenance": {
+    "source_commit": "9f9b2bd756cd6383ec9d57cf4ad512156f1456d2",
+    "workflow_run_id": "31837683797"
+  },
+  "samples": [
+    {
+      "extra_after_oracle": null,
+      "generated": "5555*x1*1*y 8*x8*x 8*x55555555y1",
+      "generated_token_count": 32,
+      "oracle": "5*x + 1*y + -8",
+      "oracle_text_prefix": false,
+      "oracle_token_count": 14,
+      "oracle_token_prefix": false,
+      "strict_pass": false,
+      "strict_reason": "invalid_syntax",
+      "task_id": "task-5fed84dae1a1a450d083"
+    },
+    {
+      "extra_after_oracle": null,
+      "generated": "2222*x36666*x888*x 2002020209000",
+      "generated_token_count": 32,
+      "oracle": "2*x + -3*y + 8",
+      "oracle_text_prefix": false,
+      "oracle_token_count": 14,
+      "oracle_token_prefix": false,
+      "strict_pass": false,
+      "strict_reason": "invalid_syntax",
+      "task_id": "task-2d29aa3133ce92f5dd0f"
+    },
+    {
+      "extra_after_oracle": null,
+      "generated": "77777638*3*x366666*x 77777776888",
+      "generated_token_count": 32,
+      "oracle": "7*x + 3*y + -3",
+      "oracle_text_prefix": false,
+      "oracle_token_count": 14,
+      "oracle_token_prefix": false,
+      "strict_pass": false,
+      "strict_reason": "invalid_syntax",
+      "task_id": "task-03e2fc5be00aa8fc4837"
+    },
+    {
+      "extra_after_oracle": null,
+      "generated": "66660000209000900000000000000000",
+      "generated_token_count": 32,
+      "oracle": "6*x + 2*y + 9",
+      "oracle_text_prefix": false,
+      "oracle_token_count": 13,
+      "oracle_token_prefix": false,
+      "strict_pass": false,
+      "strict_reason": "magnitude_limit",
+      "task_id": "task-31f34f16a0517447804b"
+    },
+    {
+      "extra_after_oracle": null,
+      "generated": "555*x 22200000999000007*x7*x0200",
+      "generated_token_count": 32,
+      "oracle": "5*x + -2*y + -9",
+      "oracle_text_prefix": false,
+      "oracle_token_count": 15,
+      "oracle_token_prefix": false,
+      "strict_pass": false,
+      "strict_reason": "invalid_syntax",
+      "task_id": "task-f52fea6feb56880393dd"
+    },
+    {
+      "extra_after_oracle": null,
+      "generated": "8*x8*x1*y1*x13333*x3*x8*8*8*3*1*",
+      "generated_token_count": 32,
+      "oracle": "-8*x + -1*y + 13",
+      "oracle_text_prefix": false,
+      "oracle_token_count": 16,
+      "oracle_token_prefix": false,
+      "strict_pass": false,
+      "strict_reason": "invalid_syntax",
+      "task_id": "task-263c0708ec0bad6ed595"
+    },
+    {
+      "extra_after_oracle": null,
+      "generated": "1*y1*y1*1*y 777777*x 1 1*1*1*1*1",
+      "generated_token_count": 32,
+      "oracle": "-1*x + 1*y + -7",
+      "oracle_text_prefix": false,
+      "oracle_token_count": 15,
+      "oracle_token_prefix": false,
+      "strict_pass": false,
+      "strict_reason": "invalid_syntax",
+      "task_id": "task-c20b7327d83500ce5d22"
+    },
+    {
+      "extra_after_oracle": null,
+      "generated": "77777*x 1*1*x888*8*x 77777777771",
+      "generated_token_count": 32,
+      "oracle": "7*x + -1*y + 8",
+      "oracle_text_prefix": false,
+      "oracle_token_count": 14,
+      "oracle_token_prefix": false,
+      "strict_pass": false,
+      "strict_reason": "invalid_syntax",
+      "task_id": "task-7401d47fe75c9037c96d"
+    }
+  ],
+  "strict_exact": {
+    "count": 0,
+    "rate": 0.0
+  },
+  "suite_sha256": "3ff62c0241003198c786afb29c4d64394566ce82dba7eef7681fc9ebe25655d9",
+  "suite_version": "m6-domain-selection-v1",
+  "task_count": 60,
+  "task_set_sha256": "edea452777c7328fd13d550ced322bd5815eac664be5f3924047f15122cc17c8"
+}
