@@ -1,0 +1,140 @@
+{
+  "checkpoint_sha256": "8b0bd214bb38193759b11d141da9b84b5bbd1d7a7ffad6e3a822cd51f6850c7d",
+  "checkpoint_step": 1955,
+  "diagnostic_version": "m6-termination-diagnostic-v1",
+  "domain": "code",
+  "format_version": "1.0",
+  "generation": {
+    "max_new_tokens": 32,
+    "seed": 36101,
+    "temperature": 1.0,
+    "top_k": 1
+  },
+  "newline_immediately_after_oracle": {
+    "count": 0,
+    "rate": 0.0
+  },
+  "oracle_prefix_then_extra": {
+    "count": 60,
+    "rate": 1.0
+  },
+  "oracle_text_prefix": {
+    "count": 60,
+    "rate": 1.0
+  },
+  "oracle_token_prefix": {
+    "count": 60,
+    "rate": 1.0
+  },
+  "response_set_sha256": "e5be0676a071e85298338e636ad516188efce058fec11106c3052b71336ec624",
+  "result_provenance": {
+    "source_commit": "f15f75cbbeff4261ef9c1fb392844bf52b663bc7",
+    "workflow_run_id": "31840711748"
+  },
+  "samples": [
+    {
+      "extra_after_oracle": "*y + 3*y + 5*y + 1",
+      "generated": "5*x + 1*y + -8*y + 3*y + 5*y + 1",
+      "generated_token_count": 32,
+      "oracle": "5*x + 1*y + -8",
+      "oracle_text_prefix": true,
+      "oracle_token_count": 14,
+      "oracle_token_prefix": true,
+      "strict_pass": false,
+      "strict_reason": "wrong_answer",
+      "task_id": "task-5fed84dae1a1a450d083"
+    },
+    {
+      "extra_after_oracle": "*y + 2*y + 2*y + -",
+      "generated": "2*x + -3*y + 8*y + 2*y + 2*y + -",
+      "generated_token_count": 32,
+      "oracle": "2*x + -3*y + 8",
+      "oracle_text_prefix": true,
+      "oracle_token_count": 14,
+      "oracle_token_prefix": true,
+      "strict_pass": false,
+      "strict_reason": "invalid_syntax",
+      "task_id": "task-2d29aa3133ce92f5dd0f"
+    },
+    {
+      "extra_after_oracle": "*y + 3*y + 7*y + 3",
+      "generated": "7*x + 3*y + -3*y + 3*y + 7*y + 3",
+      "generated_token_count": 32,
+      "oracle": "7*x + 3*y + -3",
+      "oracle_text_prefix": true,
+      "oracle_token_count": 14,
+      "oracle_token_prefix": true,
+      "strict_pass": false,
+      "strict_reason": "wrong_answer",
+      "task_id": "task-03e2fc5be00aa8fc4837"
+    },
+    {
+      "extra_after_oracle": "*y + 9*y + 6*y + 2*",
+      "generated": "6*x + 2*y + 9*y + 9*y + 6*y + 2*",
+      "generated_token_count": 32,
+      "oracle": "6*x + 2*y + 9",
+      "oracle_text_prefix": true,
+      "oracle_token_count": 13,
+      "oracle_token_prefix": true,
+      "strict_pass": false,
+      "strict_reason": "invalid_syntax",
+      "task_id": "task-31f34f16a0517447804b"
+    },
+    {
+      "extra_after_oracle": "*y + 9*y + 3*y + ",
+      "generated": "5*x + -2*y + -9*y + 9*y + 3*y +",
+      "generated_token_count": 32,
+      "oracle": "5*x + -2*y + -9",
+      "oracle_text_prefix": true,
+      "oracle_token_count": 15,
+      "oracle_token_prefix": true,
+      "strict_pass": false,
+      "strict_reason": "invalid_syntax",
+      "task_id": "task-f52fea6feb56880393dd"
+    },
+    {
+      "extra_after_oracle": "*y + -8*y + -1-1",
+      "generated": "-8*x + -1*y + 13*y + -8*y + -1-1",
+      "generated_token_count": 32,
+      "oracle": "-8*x + -1*y + 13",
+      "oracle_text_prefix": true,
+      "oracle_token_count": 16,
+      "oracle_token_prefix": true,
+      "strict_pass": false,
+      "strict_reason": "wrong_answer",
+      "task_id": "task-263c0708ec0bad6ed595"
+    },
+    {
+      "extra_after_oracle": "*y + 1*y + 1*y + ",
+      "generated": "-1*x + 1*y + -7*y + 1*y + 1*y +",
+      "generated_token_count": 32,
+      "oracle": "-1*x + 1*y + -7",
+      "oracle_text_prefix": true,
+      "oracle_token_count": 15,
+      "oracle_token_prefix": true,
+      "strict_pass": false,
+      "strict_reason": "invalid_syntax",
+      "task_id": "task-c20b7327d83500ce5d22"
+    },
+    {
+      "extra_after_oracle": "*y + 3*y + 7*y + -",
+      "generated": "7*x + -1*y + 8*y + 3*y + 7*y + -",
+      "generated_token_count": 32,
+      "oracle": "7*x + -1*y + 8",
+      "oracle_text_prefix": true,
+      "oracle_token_count": 14,
+      "oracle_token_prefix": true,
+      "strict_pass": false,
+      "strict_reason": "invalid_syntax",
+      "task_id": "task-7401d47fe75c9037c96d"
+    }
+  ],
+  "strict_exact": {
+    "count": 0,
+    "rate": 0.0
+  },
+  "suite_sha256": "3ff62c0241003198c786afb29c4d64394566ce82dba7eef7681fc9ebe25655d9",
+  "suite_version": "m6-domain-selection-v1",
+  "task_count": 60,
+  "task_set_sha256": "edea452777c7328fd13d550ced322bd5815eac664be5f3924047f15122cc17c8"
+}
