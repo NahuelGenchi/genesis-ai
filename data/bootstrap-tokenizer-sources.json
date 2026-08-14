@@ -1,0 +1,33 @@
+{
+  "format_version": "1.0",
+  "sample_bytes_per_source": 180000,
+  "sources": [
+    {
+      "id": "gutenberg-pride-prejudice-1342",
+      "name": "Pride and Prejudice",
+      "author": "Jane Austen",
+      "ebook_id": 1342,
+      "language": "en",
+      "text_url": "https://www.gutenberg.org/cache/epub/1342/pg1342.txt",
+      "rights_page": "https://www.gutenberg.org/ebooks/1342"
+    },
+    {
+      "id": "gutenberg-don-quijote-2000",
+      "name": "Don Quijote",
+      "author": "Miguel de Cervantes Saavedra",
+      "ebook_id": 2000,
+      "language": "es",
+      "text_url": "https://www.gutenberg.org/cache/epub/2000/pg2000.txt",
+      "rights_page": "https://www.gutenberg.org/ebooks/2000"
+    },
+    {
+      "id": "gutenberg-les-miserables-17489",
+      "name": "Les misérables Tome I: Fantine",
+      "author": "Victor Hugo",
+      "ebook_id": 17489,
+      "language": "fr",
+      "text_url": "https://www.gutenberg.org/cache/epub/17489/pg17489.txt",
+      "rights_page": "https://www.gutenberg.org/ebooks/17489"
+    }
+  ]
+}

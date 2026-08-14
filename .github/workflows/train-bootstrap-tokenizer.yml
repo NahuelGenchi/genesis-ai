@@ -1,0 +1,45 @@
+name: Train bootstrap tokenizer
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - data/bootstrap-tokenizer-sources.json
+      - src/genesis_ai/bootstrap_corpus.py
+      - src/genesis_ai/tokenizer.py
+      - .github/workflows/train-bootstrap-tokenizer.yml
+
+permissions:
+  contents: write
+
+concurrency:
+  group: bootstrap-tokenizer
+  cancel-in-progress: false
+
+jobs:
+  train:
+    runs-on: [self-hosted, linux, x64]
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fetch, filter, and train
+        run: |
+          rm -rf runs/tokenizer-v0
+          PYTHONPATH=src python3 -m genesis_ai.bootstrap_corpus \
+            --catalog data/bootstrap-tokenizer-sources.json \
+            --workspace runs/tokenizer-v0 \
+            --output tokenizers/genesis-v0.json \
+            --lock data/bootstrap-tokenizer-lock.json \
+            --vocab-size 512
+      - name: Validate repository
+        run: ./scripts/test_local.sh
+      - name: Commit reproducible records
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/bootstrap-tokenizer-lock.json tokenizers/genesis-v0.json
+          if ! git diff --cached --quiet; then
+            git commit -m "M1: train genesis-v0 tokenizer (#19)"
+            git push origin HEAD:main
+          fi
