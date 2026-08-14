@@ -8,6 +8,7 @@
   "training_seed": 46001,
   "procedural_examples": 4096,
   "difficulty": 1,
+  "context_length": 128,
   "procedural_batch_fraction": 0.8,
   "public_text_batch_fraction": 0.2,
   "target_training_tokens": 2000000,
