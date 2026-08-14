@@ -20,6 +20,7 @@ genesis-eval-lab = "genesis_ai.eval_lab:main"
 genesis-benchmark = "genesis_ai.benchmark:main"
 genesis-research = "genesis_ai.research:main"
 genesis-challenge = "genesis_ai.challenger:main"
+genesis-experience = "genesis_ai.experience:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
