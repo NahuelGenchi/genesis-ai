@@ -1,0 +1,56 @@
+{
+  "checkpoint_sha256": "4db01f8239cfc28933bc3152b7b698ffe089491ce1acf5b66de8adc53b9f8ed9",
+  "checkpoint_size_bytes": 1594143,
+  "data_manifest_sha256": "8126c6a8008ea39fa9db138078c5b0f15becf510eebf6160053807d665149a76",
+  "format_version": "1.0",
+  "fp32": {
+    "decode": {
+      "generated_tokens": 256,
+      "median_tokens_per_second": 1108.7055857186854,
+      "repeats": 3,
+      "sample_sha256": "fc00e63d9043af5922628af503aa1320f50551e0ae0633cce1044617fad21398",
+      "tokens_per_second_samples": [
+        1155.0917978220102,
+        1105.0669941856959,
+        1108.7055857186854
+      ]
+    },
+    "perplexity": 39.918223165821594,
+    "serialized_state_dict_bytes": 1586699,
+    "validation_loss": 3.686832940578461
+  },
+  "int8": {
+    "decode": {
+      "generated_tokens": 256,
+      "median_tokens_per_second": 806.6076797015086,
+      "repeats": 3,
+      "sample_sha256": "f67fd0928b0b551df1a55f54723e1461c1362f0d16d6d5ac9c7eee3297e10902",
+      "tokens_per_second_samples": [
+        776.3496082110926,
+        806.6076797015086,
+        806.7631662090345
+      ]
+    },
+    "perplexity": 39.90276491761523,
+    "quantized_linear_modules": 13,
+    "serialized_state_dict_bytes": 650116,
+    "validation_loss": 3.686445617675781
+  },
+  "method": "pytorch-dynamic-int8-linear",
+  "result_provenance": {
+    "source_commit": "85857e31dcaf25d72ba514302173d9f514dec740",
+    "workflow_run_id": "31773897730"
+  },
+  "torch_version": "2.13.0+cpu",
+  "tradeoff": {
+    "decode_speed_change_percent": -27.247802293820932,
+    "decode_speedup": 0.7275219770617907,
+    "state_dict_size_ratio": 0.4097286252780143,
+    "state_dict_size_reduction_percent": 59.02713747219857,
+    "validation_loss_delta": -0.000387322902679621,
+    "validation_loss_regression_percent": -0.010505572368535443
+  },
+  "validation_batches": 20,
+  "validation_documents": 107,
+  "validation_tokens": 29360
+}
