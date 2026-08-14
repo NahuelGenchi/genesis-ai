@@ -22,6 +22,7 @@ Promotion fails closed before scoring when:
 - data-manifest hashes differ;
 - benchmark device/hardware metadata differ;
 - evaluation/benchmark checkpoint hashes do not match the supplied files;
+- contamination fields are malformed;
 - candidate lineage does not name the exact parent checkpoint;
 - candidate metadata is not `candidate-training-v1`.
 
@@ -29,6 +30,7 @@ Promotion fails closed before scoring when:
 `genesis-promote` emits deterministic JSON containing:
 - policy SHA-256;
 - parent/candidate checkpoint SHA-256;
+- SHA-256 for the exact parent/candidate evaluation and benchmark JSON inputs;
 - evaluation suite/data identities;
 - every gate, observed value, requirement, and pass/fail;
 - final `promote|reject` decision;
