@@ -1,0 +1,18 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "genesis-ai"
+version = "0.0.1"
+description = "From-scratch zero-budget AI research project"
+requires-python = ">=3.11"
+dependencies = ["torch>=2.0"]
+
+[project.scripts]
+genesis-train = "genesis_ai.train:main"
+genesis-generate = "genesis_ai.generate:main"
+genesis-eval = "genesis_ai.evaluate:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]

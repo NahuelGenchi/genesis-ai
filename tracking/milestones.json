@@ -1,0 +1,11 @@
+[
+  {"title":"M0 — Bootstrap & Rules","description":"Make the project reproducible, tracked, independent, and zero-budget."},
+  {"title":"M1 — Data & Tokenizer","description":"Create provenance-first data ingestion and the first trained tokenizer."},
+  {"title":"M2 — Tiny Baseline Model","description":"Train and evaluate the first from-scratch model end to end."},
+  {"title":"M3 — Evaluation Lab","description":"Measure quality, regressions, compute, memory, speed, and cost."},
+  {"title":"M4 — Efficiency Research","description":"Improve quality per FLOP through controlled architecture experiments."},
+  {"title":"M5 — Self-Improvement Loop","description":"Build challenger, verifier, candidate-training, and promotion workflows."},
+  {"title":"M6 — Scale Useful Capability","description":"Scale only validated improvements toward a genuinely useful small model."},
+  {"title":"M7 — Free Serving & Community","description":"Provide reproducible zero-cost demos, releases, and contribution workflows."},
+  {"title":"M8 — Frontier Efficiency","description":"Long-term research toward frontier-adjacent capability at radically lower inference cost."}
+]

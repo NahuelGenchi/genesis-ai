@@ -1,0 +1,25 @@
+name: Decision
+about: Architecture, data, model, or process decision
+labels: ["type:decision"]
+body:
+  - type: textarea
+    id: question
+    attributes:
+      label: Question
+      description: What must be decided?
+    validations:
+      required: true
+  - type: textarea
+    id: options
+    attributes:
+      label: Options
+      description: Keep this short.
+    validations:
+      required: true
+  - type: textarea
+    id: done
+    attributes:
+      label: Done when
+      value: "- [ ] Evidence recorded\n- [ ] Decision recorded"
+    validations:
+      required: true

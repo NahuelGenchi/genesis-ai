@@ -1,0 +1,294 @@
+[
+  {
+    "milestone": "M0 — Bootstrap & Rules",
+    "title": "Create GitHub repository",
+    "body": "**Goal**\nCreate the private `genesis-ai` repository.\n\n**Why**\nGitHub Milestones + Issues are the project source of truth.\n\n**Done when**\n- [ ] Repository exists under `NahuelGenchi`\n- [ ] Main branch exists",
+    "labels": [
+      "area:infra"
+    ],
+    "state": "closed"
+  },
+  {
+    "milestone": "M0 — Bootstrap & Rules",
+    "title": "Define mission and non-goals",
+    "body": "**Goal**\nLock the project mission and boundaries.\n\n**Why**\nPrevent scope drift.\n\n**Done when**\n- [ ] README states mission\n- [ ] Independence and $0 rules are explicit",
+    "labels": [
+      "area:infra"
+    ],
+    "state": "closed"
+  },
+  {
+    "milestone": "M0 — Bootstrap & Rules",
+    "title": "Enforce issue-first project tracking",
+    "body": "**Goal**\nMake Milestones + Issues the source of truth.\n\n**Why**\nEvery change must remain visible and understandable.\n\n**Done when**\n- [ ] Tracking rules documented\n- [ ] Issue templates added\n- [ ] No untracked-work rule documented",
+    "labels": [
+      "area:infra"
+    ],
+    "state": "closed"
+  },
+  {
+    "milestone": "M0 — Bootstrap & Rules",
+    "title": "Create zero-budget guardrails",
+    "body": "**Goal**\nGuarantee the project requires $0 spend.\n\n**Why**\nBudget is a hard constraint.\n\n**Done when**\n- [ ] Paid dependencies prohibited\n- [ ] Free-resource policy documented",
+    "labels": [
+      "area:infra"
+    ],
+    "state": "closed"
+  },
+  {
+    "milestone": "M0 — Bootstrap & Rules",
+    "title": "Create independent model baseline",
+    "body": "**Goal**\nImplement a randomly initialized causal LM baseline.\n\n**Why**\nValidate training, checkpoint, eval, and generation end to end.\n\n**Done when**\n- [ ] Model builds\n- [ ] Forward pass works\n- [ ] Parameter count is reported",
+    "labels": [
+      "area:infra"
+    ],
+    "state": "closed"
+  },
+  {
+    "milestone": "M0 — Bootstrap & Rules",
+    "title": "Add local smoke tests",
+    "body": "**Goal**\nCatch basic regressions for free.\n\n**Why**\nThe bootstrap must be reproducible.\n\n**Done when**\n- [ ] Unit tests pass locally\n- [ ] No training data required",
+    "labels": [
+      "area:infra"
+    ],
+    "state": "closed"
+  },
+  {
+    "milestone": "M0 — Bootstrap & Rules",
+    "title": "Add minimal CI",
+    "body": "**Goal**\nRun lightweight checks on repository changes.\n\n**Why**\nProtect main without wasting compute.\n\n**Done when**\n- [ ] Tests run in CI\n- [ ] Workflow stays lightweight\n- [ ] No paid service required",
+    "labels": [
+      "area:infra"
+    ],
+    "state": "closed"
+  },
+  {
+    "milestone": "M0 — Bootstrap & Rules",
+    "title": "Fix offline bootstrap validation",
+    "body": "**Goal**\nMake local tests work without downloading build dependencies.\n\n**Why**\nThe first validation failed because this workspace has no package-network access.\n\n**Done when**\n- [ ] Tests run via `PYTHONPATH=src`\n- [ ] Failure is documented",
+    "labels": [
+      "type:bug",
+      "area:infra"
+    ],
+    "state": "closed"
+  },
+  {
+    "milestone": "M0 — Bootstrap & Rules",
+    "title": "Fix Issue template label mismatch",
+    "body": "**Goal**\nUse canonical project labels in Bug and Decision templates.\n\n**Why**\nTemplates referenced generic labels instead of `type:bug` and `type:decision`.\n\n**Done when**\n- [x] Bug template uses `type:bug`\n- [x] Decision template uses `type:decision`\n- [x] Tracking manifest records the defect",
+    "labels": [
+      "type:bug",
+      "area:infra"
+    ],
+    "state": "closed"
+  },
+  {
+    "milestone": "M0 — Bootstrap & Rules",
+    "title": "Automate Milestone and Issue bootstrap",
+    "body": "**Goal**\nCreate GitHub tracking from versioned manifests automatically.\n\n**Why**\nThe connected GitHub tool cannot create Milestones.\n\n**Done when**\n- [ ] Bootstrap script is idempotent\n- [ ] Workflow uses repository `GITHUB_TOKEN`\n- [ ] No paid dependency",
+    "labels": [
+      "area:infra"
+    ],
+    "state": "closed"
+  },
+  {
+    "milestone": "M0 — Bootstrap & Rules",
+    "title": "Verify remote bootstrap",
+    "body": "**Goal**\nVerify repository files, Milestones, Issues, and CI on GitHub.\n\n**Why**\nLocal bootstrap is complete but remote creation still needs GitHub-side verification.\n\n**Done when**\n- [ ] Files are on `main`\n- [ ] 9 Milestones exist\n- [ ] Bootstrap Issues exist with correct states\n- [ ] CI passes",
+    "labels": [
+      "area:infra"
+    ]
+  },
+  {
+    "milestone": "M1 — Data & Tokenizer",
+    "title": "Define dataset provenance schema",
+    "body": "**Goal**\nDescribe every training source consistently.\n\n**Why**\nData provenance is a core quality and legal requirement.\n\n**Done when**\n- [ ] Schema defined\n- [ ] License/usage basis required\n- [ ] Checksums supported",
+    "labels": [
+      "area:data"
+    ]
+  },
+  {
+    "milestone": "M1 — Data & Tokenizer",
+    "title": "Build corpus ingestion CLI",
+    "body": "**Goal**\nIngest approved local/open corpora reproducibly.\n\n**Why**\nManual data handling will not scale.\n\n**Done when**\n- [ ] CLI ingests manifests\n- [ ] Outputs deterministic shards\n- [ ] Invalid sources fail clearly",
+    "labels": [
+      "area:data"
+    ]
+  },
+  {
+    "milestone": "M1 — Data & Tokenizer",
+    "title": "Build deduplication and quality filters",
+    "body": "**Goal**\nRemove duplicates and low-quality material.\n\n**Why**\nData quality is our strongest zero-budget lever.\n\n**Done when**\n- [ ] Exact dedup works\n- [ ] Near-duplicate plan exists\n- [ ] Filter metrics are reported",
+    "labels": [
+      "area:data"
+    ]
+  },
+  {
+    "milestone": "M1 — Data & Tokenizer",
+    "title": "Train first project tokenizer",
+    "body": "**Goal**\nReplace the byte bootstrap with a measured tokenizer.\n\n**Why**\nToken efficiency directly affects training and inference cost.\n\n**Done when**\n- [ ] Tokenizer trained only on approved data\n- [ ] Compression measured\n- [ ] Reversible encoding tested",
+    "labels": [
+      "area:data"
+    ]
+  },
+  {
+    "milestone": "M2 — Tiny Baseline Model",
+    "title": "Train first tiny model from scratch",
+    "body": "**Goal**\nComplete the first real training run from random weights.\n\n**Why**\nProve the full pipeline on minimal compute.\n\n**Done when**\n- [ ] Training loss decreases\n- [ ] Checkpoint saved\n- [ ] Run metadata recorded",
+    "labels": [
+      "area:model"
+    ]
+  },
+  {
+    "milestone": "M2 — Tiny Baseline Model",
+    "title": "Add resumable checkpoints",
+    "body": "**Goal**\nResume interrupted training exactly.\n\n**Why**\nFree compute is unreliable and must not be wasted.\n\n**Done when**\n- [ ] Model state restored\n- [ ] Optimizer state restored\n- [ ] Step restored",
+    "labels": [
+      "area:model"
+    ]
+  },
+  {
+    "milestone": "M2 — Tiny Baseline Model",
+    "title": "Add deterministic generation CLI",
+    "body": "**Goal**\nGenerate text from project checkpoints.\n\n**Why**\nEvery checkpoint needs a simple reproducible interface.\n\n**Done when**\n- [ ] Prompt accepted\n- [ ] Seed supported\n- [ ] Temperature/top-k supported",
+    "labels": [
+      "area:model"
+    ]
+  },
+  {
+    "milestone": "M2 — Tiny Baseline Model",
+    "title": "Record baseline model card",
+    "body": "**Goal**\nDocument the first model's data, architecture, limits, and metrics.\n\n**Why**\nEvery model generation needs an auditable record.\n\n**Done when**\n- [ ] Architecture recorded\n- [ ] Training data recorded\n- [ ] Metrics recorded\n- [ ] Limitations recorded",
+    "labels": [
+      "area:model"
+    ]
+  },
+  {
+    "milestone": "M3 — Evaluation Lab",
+    "title": "Build versioned evaluation harness",
+    "body": "**Goal**\nCompare every checkpoint with identical tests.\n\n**Why**\nProgress must be measured, not guessed.\n\n**Done when**\n- [ ] Eval definitions versioned\n- [ ] Machine-readable results\n- [ ] Incumbent/candidate comparison",
+    "labels": [
+      "area:eval"
+    ]
+  },
+  {
+    "milestone": "M3 — Evaluation Lab",
+    "title": "Add compute and inference benchmarks",
+    "body": "**Goal**\nMeasure time, memory, throughput, and estimated $/M tokens.\n\n**Why**\nEfficiency is a first-class objective.\n\n**Done when**\n- [ ] Training throughput measured\n- [ ] Decode throughput measured\n- [ ] Peak memory measured\n- [ ] Cost formula documented",
+    "labels": [
+      "area:eval"
+    ]
+  },
+  {
+    "milestone": "M3 — Evaluation Lab",
+    "title": "Add contamination checks",
+    "body": "**Goal**\nKeep evaluation holdouts out of training.\n\n**Why**\nContaminated scores are useless.\n\n**Done when**\n- [ ] Exact overlap checked\n- [ ] Results logged\n- [ ] Blocking contamination fails eval",
+    "labels": [
+      "area:eval"
+    ]
+  },
+  {
+    "milestone": "M4 — Efficiency Research",
+    "title": "Create architecture experiment harness",
+    "body": "**Goal**\nCompare architecture changes under equal compute budgets.\n\n**Why**\nOnly measured improvements should scale.\n\n**Done when**\n- [ ] Fixed-budget experiments supported\n- [ ] Results comparable\n- [ ] Seeds recorded",
+    "labels": [
+      "area:research"
+    ]
+  },
+  {
+    "milestone": "M4 — Efficiency Research",
+    "title": "Benchmark attention and context variants",
+    "body": "**Goal**\nFind the best quality/compute context design.\n\n**Why**\nAttention cost dominates longer contexts.\n\n**Done when**\n- [ ] Baseline compared\n- [ ] At least two alternatives tested\n- [ ] Decision recorded",
+    "labels": [
+      "area:research"
+    ]
+  },
+  {
+    "milestone": "M4 — Efficiency Research",
+    "title": "Prototype sparse MoE routing",
+    "body": "**Goal**\nTest sparse expert computation at tiny scale.\n\n**Why**\nSparse activation may improve capacity per active FLOP.\n\n**Done when**\n- [ ] Tiny MoE trains\n- [ ] Routing metrics logged\n- [ ] Dense baseline comparison",
+    "labels": [
+      "area:research"
+    ]
+  },
+  {
+    "milestone": "M4 — Efficiency Research",
+    "title": "Benchmark low-bit inference",
+    "body": "**Goal**\nMeasure quantization quality and speed tradeoffs.\n\n**Why**\nInference cost is a core target.\n\n**Done when**\n- [ ] Baseline measured\n- [ ] Quantized variant measured\n- [ ] Quality regression reported",
+    "labels": [
+      "area:research"
+    ]
+  },
+  {
+    "milestone": "M5 — Self-Improvement Loop",
+    "title": "Build challenger task generator",
+    "body": "**Goal**\nGenerate useful tasks near the model's current capability.\n\n**Why**\nSelf-improvement needs a curriculum that evolves.\n\n**Done when**\n- [ ] Tasks generated without proprietary APIs\n- [ ] Difficulty metadata recorded\n- [ ] Duplicate control exists",
+    "labels": [
+      "area:self-improve"
+    ]
+  },
+  {
+    "milestone": "M5 — Self-Improvement Loop",
+    "title": "Build deterministic verifier framework",
+    "body": "**Goal**\nScore tasks without trusting the model's own opinion.\n\n**Why**\nReliable feedback is required for safe self-improvement.\n\n**Done when**\n- [ ] Math/code/structured verifier interface\n- [ ] Failures are explicit\n- [ ] Scores reproducible",
+    "labels": [
+      "area:self-improve"
+    ]
+  },
+  {
+    "milestone": "M5 — Self-Improvement Loop",
+    "title": "Build candidate experience pipeline",
+    "body": "**Goal**\nTurn verified experience into candidate training data.\n\n**Why**\nOnly high-signal examples should affect future weights.\n\n**Done when**\n- [ ] Provenance retained\n- [ ] Quality thresholds configurable\n- [ ] Rejected data auditable",
+    "labels": [
+      "area:self-improve"
+    ]
+  },
+  {
+    "milestone": "M5 — Self-Improvement Loop",
+    "title": "Implement checkpoint promotion gate",
+    "body": "**Goal**\nPromote N+1 only when it beats N under fixed gates.\n\n**Why**\nPrevent uncontrolled regressions.\n\n**Done when**\n- [ ] Required metrics defined\n- [ ] Blocking regressions defined\n- [ ] Promotion decision reproducible",
+    "labels": [
+      "area:self-improve"
+    ]
+  },
+  {
+    "milestone": "M6 — Scale Useful Capability",
+    "title": "Define model scaling ladder",
+    "body": "**Goal**\nScale through evidence-based parameter/compute stages.\n\n**Why**\nLarge runs must earn their compute.\n\n**Done when**\n- [ ] Stage sizes defined\n- [ ] Promotion criteria defined\n- [ ] Zero-budget feasibility checked",
+    "labels": [
+      "area:model"
+    ]
+  },
+  {
+    "milestone": "M6 — Scale Useful Capability",
+    "title": "Reach first useful-domain checkpoint",
+    "body": "**Goal**\nProduce a model that is measurably useful in at least one domain.\n\n**Why**\nUseful capability is more meaningful than parameter count.\n\n**Done when**\n- [ ] Domain selected by eval evidence\n- [ ] Baseline beaten\n- [ ] Model card published",
+    "labels": [
+      "area:model"
+    ]
+  },
+  {
+    "milestone": "M7 — Free Serving & Community",
+    "title": "Create zero-cost local inference path",
+    "body": "**Goal**\nRun released checkpoints locally with no paid service.\n\n**Why**\nThe project must remain accessible at $0.\n\n**Done when**\n- [ ] One-command local inference\n- [ ] Hardware requirements documented\n- [ ] No network dependency",
+    "labels": [
+      "area:infra"
+    ]
+  },
+  {
+    "milestone": "M7 — Free Serving & Community",
+    "title": "Create contribution workflow",
+    "body": "**Goal**\nMake external experiments reproducible and reviewable.\n\n**Why**\nCommunity compute can accelerate a zero-budget project.\n\n**Done when**\n- [ ] Contribution guide\n- [ ] Experiment result format\n- [ ] Data/license rules enforced",
+    "labels": [
+      "area:infra"
+    ]
+  },
+  {
+    "milestone": "M8 — Frontier Efficiency",
+    "title": "Track frontier quality-per-dollar gap",
+    "body": "**Goal**\nMeasure the gap to frontier systems without depending on them at runtime.\n\n**Why**\nThe long-term mission needs an objective target.\n\n**Done when**\n- [ ] Public benchmark references versioned\n- [ ] Project score tracked\n- [ ] Inference-cost gap tracked",
+    "labels": [
+      "area:research"
+    ]
+  }
+]

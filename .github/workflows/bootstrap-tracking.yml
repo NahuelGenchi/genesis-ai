@@ -1,0 +1,25 @@
+name: Bootstrap tracking
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "tracking/**"
+      - "scripts/bootstrap_github_tracking.py"
+      - ".github/workflows/bootstrap-tracking.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  bootstrap:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Create missing labels, milestones, and issues
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: python scripts/bootstrap_github_tracking.py

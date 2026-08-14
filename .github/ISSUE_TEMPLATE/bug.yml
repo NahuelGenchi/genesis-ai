@@ -1,0 +1,25 @@
+name: Bug
+about: Track every discovered defect
+labels: ["type:bug"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: One sentence.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Reproduce
+      description: Minimal steps.
+    validations:
+      required: true
+  - type: textarea
+    id: done
+    attributes:
+      label: Done when
+      value: "- [ ] Root cause known\n- [ ] Regression test added\n- [ ] Fix verified"
+    validations:
+      required: true

@@ -1,0 +1,31 @@
+name: Task
+about: Any code, docs, research, experiment, tooling, or process work
+labels: []
+body:
+  - type: textarea
+    id: goal
+    attributes:
+      label: Goal
+      description: One sentence.
+    validations:
+      required: true
+  - type: textarea
+    id: why
+    attributes:
+      label: Why
+      description: One sentence.
+    validations:
+      required: true
+  - type: textarea
+    id: done
+    attributes:
+      label: Done when
+      description: Short checklist.
+      value: "- [ ]"
+    validations:
+      required: true
+  - type: textarea
+    id: notes
+    attributes:
+      label: Notes
+      description: Only if needed.

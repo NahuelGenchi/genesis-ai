@@ -1,0 +1,10 @@
+[
+  {"name":"area:infra","color":"5319e7","description":"Repository, CI, tooling, process"},
+  {"name":"area:data","color":"0e8a16","description":"Data and tokenization"},
+  {"name":"area:model","color":"1d76db","description":"Model and training"},
+  {"name":"area:eval","color":"fbca04","description":"Evaluation and benchmarks"},
+  {"name":"area:research","color":"d4c5f9","description":"Architecture and efficiency research"},
+  {"name":"area:self-improve","color":"0052cc","description":"Continual self-improvement system"},
+  {"name":"type:bug","color":"d73a4a","description":"Defect or regression"},
+  {"name":"type:decision","color":"cfd3d7","description":"Decision requiring evidence"}
+]
