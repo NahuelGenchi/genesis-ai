@@ -2,21 +2,6 @@ name: Train tiny baseline
 
 on:
   workflow_dispatch:
-  push:
-    branches: [main]
-    paths:
-      - src/genesis_ai/model.py
-      - src/genesis_ai/config.py
-      - src/genesis_ai/data.py
-      - src/genesis_ai/checkpoint.py
-      - src/genesis_ai/train.py
-      - src/genesis_ai/generate.py
-      - src/genesis_ai/evaluate.py
-      - src/genesis_ai/model_card.py
-      - tokenizers/genesis-v0.json
-      - data/bootstrap-tokenizer-sources.json
-      - data/bootstrap-tokenizer-lock.json
-      - .github/workflows/train-tiny-baseline.yml
 
 permissions:
   contents: write
