@@ -1,0 +1,173 @@
+{
+  "baseline_checkpoint_sha256": "4db01f8239cfc28933bc3152b7b698ffe089491ce1acf5b66de8adc53b9f8ed9",
+  "candidate_checkpoint_sha256": "0ba16a931451ffbdc369aa685845b0ddb9b6ed03910ac773b50e837fd9886d7e",
+  "decision": "promote",
+  "decision_sha256": "a268460301d37886c1820ddc615c0be37219cbe7ed0d730ff74fe9499dc78057",
+  "format_version": "1.0",
+  "gate_version": "m6-terminated-scale-promotion-v1",
+  "gates": [
+    {
+      "name": "code_exact_accuracy_v2",
+      "observed": {
+        "absolute_gain": 0.95,
+        "baseline": 0.0,
+        "candidate": 0.95
+      },
+      "passed": true,
+      "requirement": {
+        "min_absolute_gain": 0.05,
+        "same_suite_required": true
+      }
+    },
+    {
+      "name": "m3_validation_loss",
+      "observed": {
+        "baseline": 3.686832940578461,
+        "candidate": 3.3551116824150085,
+        "regression_fraction": -0.08997458347310024
+      },
+      "passed": true,
+      "requirement": {
+        "max_regression_fraction": 0.02
+      }
+    },
+    {
+      "name": "m3_exact_contamination",
+      "observed": {
+        "blocking": false,
+        "exact_overlap_count": 0,
+        "examples": [],
+        "method": "sha256-nfkc-collapsed-whitespace",
+        "train_documents": 975,
+        "validation_documents": 107
+      },
+      "passed": true,
+      "requirement": {
+        "zero_overlap": true
+      }
+    },
+    {
+      "name": "domain_holdout_overlap",
+      "observed": {
+        "exact_prompt_overlap_count": 0
+      },
+      "passed": true,
+      "requirement": {
+        "exact_prompt_overlap_count": 0
+      }
+    },
+    {
+      "name": "parameter_count",
+      "observed": 1895808,
+      "passed": true,
+      "requirement": 1895808
+    },
+    {
+      "name": "training_budget",
+      "observed": {
+        "processed": 2001920,
+        "target": 2000000
+      },
+      "passed": true,
+      "requirement": {
+        "processed_at_least_target": true,
+        "target": 2000000
+      }
+    },
+    {
+      "name": "training_mix",
+      "observed": {
+        "procedural": 0.8,
+        "public": 0.2
+      },
+      "passed": true,
+      "requirement": {
+        "procedural": 0.8,
+        "public": 0.2
+      }
+    },
+    {
+      "name": "termination_protocol",
+      "observed": {
+        "continuation_target_updates": 4320,
+        "dataset_target_count": 65655,
+        "delimiter": "\n",
+        "first_response_target_coverage": 1.0,
+        "first_response_target_updates": 4096,
+        "first_response_targets": 4096,
+        "one_target_per_generation_context": true,
+        "right_padding_after_predictor_only": true,
+        "schedule_sha256": "ee335a305a7990f31b5c57b2cb6f10aab97b0b9fb493ebe5e795f53c2d29154b",
+        "schedule_target_updates": 12512,
+        "schedule_unique_updates": 12512,
+        "terminated_response_set_sha256": "1ccbd47eb95b631a1c2f68730b9874098076f76f4396418753021244a56af4fa",
+        "terminator_target_coverage": 1.0,
+        "terminator_target_updates": 4096,
+        "terminator_targets": 4096
+      },
+      "passed": true,
+      "requirement": {
+        "delimiter": "newline",
+        "first_target_coverage": 1.0,
+        "terminator_coverage": 1.0,
+        "unique_schedule": true
+      }
+    },
+    {
+      "name": "reproducibility",
+      "observed": {
+        "checkpoint_bytes_equal": false,
+        "config_equal": true,
+        "format_version": "1.0",
+        "metadata_equal": true,
+        "primary_checkpoint_sha256": "0ba16a931451ffbdc369aa685845b0ddb9b6ed03910ac773b50e837fd9886d7e",
+        "replica_checkpoint_sha256": "9e1031ad4c8b3238db91cd53f79f1113d313a0bb0da18d127494783066953755",
+        "repro_version": "m6-repro-v1",
+        "reproducible": true,
+        "state_keys_equal": true,
+        "step_equal": true,
+        "tokenizer_equal": true,
+        "weights_equal": true
+      },
+      "passed": true,
+      "requirement": {
+        "required": true
+      }
+    },
+    {
+      "name": "zero_cash_compute",
+      "observed": {
+        "curriculum": 0.0,
+        "training": 0.0
+      },
+      "passed": true,
+      "requirement": {
+        "required": true
+      }
+    }
+  ],
+  "inputs": {
+    "baseline_domain_sha256": "2fa1ed0a079926ce4a961a446e83bdb8e658631d1b55cae3c131f86663df66e2",
+    "baseline_m3_sha256": "5c89672165d8a9b87d5ca8d465db0236a2b08017dd20945a8f74d13f096924a0",
+    "candidate_domain_sha256": "e850d0a2809b2154faba9729faa3f51e7be59be8788fccc8258a318f9f7caac9",
+    "candidate_m3_sha256": "0f89f35a30ed2607a8689a2760101d677973c056f63ba02ff2443a92a1d4b3ed",
+    "curriculum_lock_sha256": "2965b1a9a44ce1c4109192fc591e3b074da16d749bcb3e6e3d4a6756b0b51355",
+    "ladder_result_sha256": "e9ef09117fe64cbf31b39ece80fc81aa3577f937acf34845abc58a14d7f35790",
+    "reproduction_sha256": "68d9a24263db8efe23521035b6e905b2cfa7389b68c0244ce18f532a69ed212d",
+    "training_run_sha256": "7cd6aad0976ff4e691150f9f904222a78bde811e4e72873e3ba36dc6bd23a885"
+  },
+  "primary_capability": {
+    "absolute_gain": 0.95,
+    "baseline": 0.0,
+    "baseline_termination_rate": 0.0,
+    "candidate": 0.95,
+    "candidate_termination_rate": 1.0,
+    "metric": "terminated_code_exact_accuracy",
+    "suite_version": "m6-domain-selection-v2"
+  },
+  "promoted": true,
+  "result_provenance": {
+    "source_commit": "3d15e9dbc8ba74470d457fc9dd90907c5ca23264",
+    "workflow_run_id": "31843537046"
+  }
+}

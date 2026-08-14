@@ -1,0 +1,74 @@
+{
+  "architecture": {
+    "context_length": 128,
+    "d_ff": 768,
+    "d_model": 192,
+    "dropout": 0.0,
+    "ffn_type": "dense",
+    "moe_aux_loss_weight": 0.01,
+    "moe_experts": 4,
+    "moe_top_k": 2,
+    "n_heads": 6,
+    "n_layers": 4,
+    "position_encoding": "learned",
+    "vocab_size": 512
+  },
+  "capability": {
+    "absolute_gain": 0.95,
+    "baseline_exact_accuracy": 0.0,
+    "baseline_termination_rate": 0.0,
+    "candidate_exact_accuracy": 0.95,
+    "candidate_terminated_oracle_loss": 0.011801357260238909,
+    "candidate_termination_rate": 1.0,
+    "domain": "restricted integer-expression synthesis",
+    "suite": "m6-domain-selection-v2",
+    "task_count": 60
+  },
+  "checkpoint": {
+    "sha256": "0ba16a931451ffbdc369aa685845b0ddb9b6ed03910ac773b50e837fd9886d7e",
+    "size_bytes": 7604191
+  },
+  "curriculum": {
+    "holdout_prompt_overlap": 0,
+    "procedural_examples": 4096,
+    "public_documents": 1082,
+    "public_tokens": 274653,
+    "version": "m6-code-curriculum-v1"
+  },
+  "format_version": "1.0",
+  "general_language": {
+    "baseline_validation_loss": 3.686832940578461,
+    "candidate_validation_loss": 3.3551116824150085,
+    "exact_contamination_count": 0,
+    "regression_fraction": -0.08997458347310024,
+    "suite": "m3-v1"
+  },
+  "limitations": [
+    "Useful-domain research checkpoint, not a general-purpose assistant.",
+    "Demonstrated capability is restricted integer-expression synthesis at difficulty 1.",
+    "The answer-stop protocol is a generated newline, not a dedicated learned EOS token.",
+    "General-language training data remains extremely small.",
+    "No preference tuning, tool-use training, safety tuning, or broad factual training.",
+    "Success on the frozen 60-task holdout does not imply broad coding ability."
+  ],
+  "model": "genesis-micro-2m-v1",
+  "parameter_count": 1895808,
+  "promotion": {
+    "decision_sha256": "a268460301d37886c1820ddc615c0be37219cbe7ed0d730ff74fe9499dc78057",
+    "gate_version": "m6-terminated-scale-promotion-v1"
+  },
+  "training": {
+    "cash_compute_cost_usd": 0.0,
+    "dataset_version": "generation-aligned-terminated-response-v1",
+    "first_response_target_coverage": 1.0,
+    "policy": "m6-micro-2m-terminated-training-v1",
+    "procedural_step_fraction": 0.8,
+    "processed_tokens": 2001920,
+    "public_step_fraction": 0.2,
+    "schedule_target_updates": 12512,
+    "seed": 97001,
+    "steps": 1955,
+    "termination_delimiter": "\n",
+    "terminator_target_coverage": 1.0
+  }
+}
