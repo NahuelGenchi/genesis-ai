@@ -1,0 +1,47 @@
+{
+  "checkpoint_sha256": "f5664ce04080b656dc0b826775afe5ff8511db37a37bd0c97ca89c31d5b99469",
+  "checkpoint_step": 1955,
+  "difficulty": 1,
+  "domains": {
+    "code": {
+      "exact_accuracy": 0.0,
+      "exact_correct": 0,
+      "oracle_set_sha256": "ac951449f47b7395f9d7bad99ced8c88d20a609fcbafb9c09929619377ceacb4",
+      "oracle_target_loss": 0.0006654456918421551,
+      "oracle_target_tokens": 891,
+      "response_set_sha256": "245864e29c18a803def70b3f487c412b06cdaf626745fa652628ce909793a2e5",
+      "task_count": 60,
+      "task_set_sha256": "edea452777c7328fd13d550ced322bd5815eac664be5f3924047f15122cc17c8"
+    },
+    "math": {
+      "exact_accuracy": 0.0,
+      "exact_correct": 0,
+      "oracle_set_sha256": "7152390df9f86d5c74dd6707c59955369ef8ddbba1234ab9d760c246305fad14",
+      "oracle_target_loss": 7.743137467991222,
+      "oracle_target_tokens": 154,
+      "response_set_sha256": "c42f29307fb69c7005f9236b121f50fd2b9e11869d6d75cbd14b79792d64eab0",
+      "task_count": 60,
+      "task_set_sha256": "820ba66788eeea7a10fc07f63f3796558aafaa9a53a2790dea3825db2a5e423c"
+    },
+    "structured": {
+      "exact_accuracy": 0.0,
+      "exact_correct": 0,
+      "oracle_set_sha256": "74f8521c42400c2201543d800e9f37767611cc0ce2b3dc9157f1a380d3163e31",
+      "oracle_target_loss": 7.732207003616927,
+      "oracle_target_tokens": 1259,
+      "response_set_sha256": "ec0ceb4e1a9b0cee5181d9c00b3d90e67481179de458cfe75958180bfbcec358",
+      "task_count": 60,
+      "task_set_sha256": "eaf71820fe558b44d4342b9dd526c41e680e33b30723c33cad35ef6dade1d5c4"
+    }
+  },
+  "format_version": "1.0",
+  "selected_domain": "code",
+  "selected_reason": {
+    "exact_accuracy": 0.0,
+    "oracle_target_loss": 0.0006654456918421551
+  },
+  "selection_rule": "highest_exact_accuracy_then_lowest_oracle_target_loss_then_domain_name",
+  "suite_sha256": "3ff62c0241003198c786afb29c4d64394566ce82dba7eef7681fc9ebe25655d9",
+  "suite_version": "m6-domain-selection-v1",
+  "tasks_per_domain": 60
+}

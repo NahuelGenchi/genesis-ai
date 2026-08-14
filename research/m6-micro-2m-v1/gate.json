@@ -1,0 +1,141 @@
+{
+  "candidate_checkpoint_sha256": "f5664ce04080b656dc0b826775afe5ff8511db37a37bd0c97ca89c31d5b99469",
+  "decision": "reject",
+  "decision_sha256": "39beb54b0274f21336460a30757118245de6264cdf264514c2947b05dbefc097",
+  "format_version": "1.0",
+  "gate_version": "m6-scale-promotion-v1",
+  "gates": [
+    {
+      "name": "code_exact_accuracy",
+      "observed": {
+        "absolute_gain": 0.0,
+        "baseline": 0.0,
+        "candidate": 0.0
+      },
+      "passed": false,
+      "requirement": {
+        "min_absolute_gain": 0.05
+      }
+    },
+    {
+      "name": "m3_validation_loss",
+      "observed": {
+        "baseline": 3.686832940578461,
+        "candidate": 3.2608576655387878,
+        "regression_fraction": -0.11553961947970387
+      },
+      "passed": true,
+      "requirement": {
+        "max_regression_fraction": 0.02
+      }
+    },
+    {
+      "name": "m3_exact_contamination",
+      "observed": {
+        "blocking": false,
+        "exact_overlap_count": 0,
+        "examples": [],
+        "method": "sha256-nfkc-collapsed-whitespace",
+        "train_documents": 975,
+        "validation_documents": 107
+      },
+      "passed": true,
+      "requirement": {
+        "zero_overlap": true
+      }
+    },
+    {
+      "name": "domain_holdout_overlap",
+      "observed": {
+        "exact_prompt_overlap_count": 0
+      },
+      "passed": true,
+      "requirement": {
+        "exact_prompt_overlap_count": 0
+      }
+    },
+    {
+      "name": "parameter_count",
+      "observed": 1895808,
+      "passed": true,
+      "requirement": 1895808
+    },
+    {
+      "name": "training_budget",
+      "observed": {
+        "processed": 2001920,
+        "target": 2000000
+      },
+      "passed": true,
+      "requirement": {
+        "processed_at_least_target": true,
+        "target": 2000000
+      }
+    },
+    {
+      "name": "training_mix",
+      "observed": {
+        "procedural": 0.8,
+        "public": 0.2
+      },
+      "passed": true,
+      "requirement": {
+        "procedural": 0.8,
+        "public": 0.2
+      }
+    },
+    {
+      "name": "reproducibility",
+      "observed": {
+        "checkpoint_bytes_equal": false,
+        "config_equal": true,
+        "format_version": "1.0",
+        "metadata_equal": true,
+        "primary_checkpoint_sha256": "f5664ce04080b656dc0b826775afe5ff8511db37a37bd0c97ca89c31d5b99469",
+        "replica_checkpoint_sha256": "bc1a247806939eef89012848b20fbd0abb74ff433553f3ce32d9d22b03a1d941",
+        "repro_version": "m6-repro-v1",
+        "reproducible": true,
+        "state_keys_equal": true,
+        "step_equal": true,
+        "tokenizer_equal": true,
+        "weights_equal": true
+      },
+      "passed": true,
+      "requirement": {
+        "required": true
+      }
+    },
+    {
+      "name": "zero_cash_compute",
+      "observed": {
+        "curriculum": 0.0,
+        "training": 0.0
+      },
+      "passed": true,
+      "requirement": {
+        "required": true
+      }
+    }
+  ],
+  "inputs": {
+    "baseline_domain_sha256": "b9357f7d2eeb1ecc113aca752651468328e2d6a188c4a5145347d3939f76257d",
+    "baseline_m3_sha256": "5c89672165d8a9b87d5ca8d465db0236a2b08017dd20945a8f74d13f096924a0",
+    "candidate_domain_sha256": "0692c4b80302a46069f408a1a8570fd4735ee08e035473825c5f0c0b94ebc0ff",
+    "candidate_m3_sha256": "945ecf019cd8eb7495867b6b914beb481629a0bbbaf62c56c91b8030a7f00a53",
+    "curriculum_lock_sha256": "2965b1a9a44ce1c4109192fc591e3b074da16d749bcb3e6e3d4a6756b0b51355",
+    "ladder_result_sha256": "e9ef09117fe64cbf31b39ece80fc81aa3577f937acf34845abc58a14d7f35790",
+    "reproduction_sha256": "d840d1171617099a43b6eb1b4f7c2a951124375ab58941274a44b0050bfd1977",
+    "training_run_sha256": "112a72f89f03fa899d821144942ba05e04b73adcea2c02aeda87ffb157b94958"
+  },
+  "primary_capability": {
+    "absolute_gain": 0.0,
+    "baseline": 0.0,
+    "candidate": 0.0,
+    "metric": "code_exact_accuracy"
+  },
+  "promoted": false,
+  "result_provenance": {
+    "source_commit": "701083e799efe454b9a7d2f61ea7450d740fc3f7",
+    "workflow_run_id": "31836252107"
+  }
+}

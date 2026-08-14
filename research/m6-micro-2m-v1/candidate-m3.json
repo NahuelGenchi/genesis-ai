@@ -1,0 +1,47 @@
+{
+  "checkpoint_sha256": "f5664ce04080b656dc0b826775afe5ff8511db37a37bd0c97ca89c31d5b99469",
+  "contamination": {
+    "blocking": false,
+    "exact_overlap_count": 0,
+    "examples": [],
+    "method": "sha256-nfkc-collapsed-whitespace",
+    "train_documents": 975,
+    "validation_documents": 107
+  },
+  "data_manifest_sha256": "8126c6a8008ea39fa9db138078c5b0f15becf510eebf6160053807d665149a76",
+  "evaluation": {
+    "batches": 20,
+    "checkpoint_step": 1955,
+    "data_manifest_sha256": "8126c6a8008ea39fa9db138078c5b0f15becf510eebf6160053807d665149a76",
+    "documents": 107,
+    "loss": 3.2608576655387878,
+    "parameter_count": 1895808,
+    "perplexity": 26.071888516458316,
+    "split": "validation",
+    "tokens": 29360
+  },
+  "generations": [
+    {
+      "prompt": "The ",
+      "sha256": "a63271e670ba91e08138dd43f0461721575e1c7c3c237174846e8b212efe652c",
+      "text": "The and her\ncaling the with ingl not g and fice of the in "
+    },
+    {
+      "prompt": "Don ",
+      "sha256": "50f98f3fe916b76c6866c5dbdf5aefc1701c830a70d7505c2246a40b5de302ed",
+      "text": "Don mit inial to a gingor not ger a was recin\nthat f"
+    },
+    {
+      "prompt": "Il ",
+      "sha256": "57268d7ccd28bb1cdba81819166a84acc0f2a559dc6c3d8301fad27112724918",
+      "text": "Il éititinièle en\nCaine la la fé et la les fes le "
+    }
+  ],
+  "primary_metric": {
+    "lower_is_better": true,
+    "name": "validation_loss",
+    "value": 3.2608576655387878
+  },
+  "suite_sha256": "e63ccb9a8ea41c030a6bbbbeb41332c5a53c983cc1bf9d7ea466a9862dfc5bb7",
+  "suite_version": "m3-v1"
+}
