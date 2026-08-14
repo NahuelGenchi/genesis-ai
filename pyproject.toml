@@ -34,6 +34,10 @@ genesis-scale-model-card = "genesis_ai.scale_model_card:main"
 genesis-aligned-train = "genesis_ai.aligned_training:main"
 genesis-aligned-gate = "genesis_ai.aligned_gate:main"
 genesis-aligned-model-card = "genesis_ai.aligned_model_card:main"
+genesis-terminated-eval = "genesis_ai.terminated_eval:main"
+genesis-terminated-train = "genesis_ai.terminated_training:main"
+genesis-terminated-gate = "genesis_ai.terminated_gate:main"
+genesis-terminated-model-card = "genesis_ai.terminated_model_card:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
