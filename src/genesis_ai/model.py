@@ -57,19 +57,6 @@ class CausalSelfAttention(nn.Module):
         return self.out(y)
 
 
-class DenseFFN(nn.Module):
-    def __init__(self, config: ModelConfig) -> None:
-        super().__init__()
-        self.net = nn.Sequential(
-            nn.Linear(config.d_model, config.d_ff, bias=False),
-            nn.GELU(),
-            nn.Linear(config.d_ff, config.d_model, bias=False),
-        )
-
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
-        return self.net(x)
-
-
 class SparseMoE(nn.Module):
     def __init__(self, config: ModelConfig) -> None:
         super().__init__()
@@ -95,10 +82,7 @@ class SparseMoE(nn.Module):
     def routing_metrics(self) -> dict[str, object]:
         counts = self.routing_counts.detach().cpu()
         total = int(counts.sum())
-        if total == 0:
-            fractions = [0.0 for _ in range(self.n_experts)]
-        else:
-            fractions = [float(value) / total for value in counts.tolist()]
+        fractions = [float(value) / total for value in counts.tolist()] if total else [0.0] * self.n_experts
         return {
             "experts": self.n_experts,
             "top_k": self.top_k,
@@ -143,7 +127,16 @@ class Block(nn.Module):
         self.attn_norm = nn.LayerNorm(config.d_model)
         self.attn = CausalSelfAttention(config)
         self.mlp_norm = nn.LayerNorm(config.d_model)
-        self.mlp: nn.Module = SparseMoE(config) if config.ffn_type == "moe" else DenseFFN(config)
+        if config.ffn_type == "moe":
+            self.mlp: nn.Module = SparseMoE(config)
+        else:
+            # Keep the original Sequential layout so accepted dense checkpoints
+            # retain their legacy `blocks.N.mlp.0/2.weight` state-dict keys.
+            self.mlp = nn.Sequential(
+                nn.Linear(config.d_model, config.d_ff, bias=False),
+                nn.GELU(),
+                nn.Linear(config.d_ff, config.d_model, bias=False),
+            )
         self.dropout = nn.Dropout(config.dropout)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:

@@ -2,14 +2,6 @@ name: M4 sparse MoE experiment
 
 on:
   workflow_dispatch:
-  push:
-    branches: [main]
-    paths:
-      - experiments/m4-moe-v1.json
-      - src/genesis_ai/config.py
-      - src/genesis_ai/model.py
-      - src/genesis_ai/research.py
-      - .github/workflows/m4-moe-experiment.yml
 
 permissions:
   contents: write
