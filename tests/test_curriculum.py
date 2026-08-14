@@ -5,6 +5,7 @@ from pathlib import Path
 
 from genesis_ai.curriculum import build_curriculum, load_spec
 from genesis_ai.ingest import sha256_file
+from genesis_ai.tokenizer import ByteBPETokenizer
 
 
 class CurriculumTest(unittest.TestCase):
@@ -75,7 +76,11 @@ class CurriculumTest(unittest.TestCase):
             )
             self.assertEqual(first, second)
             self.assertEqual(first["selected_domain"], "code")
-            self.assertEqual(first["training"]["procedural"]["examples"], 32)
+            procedural = first["training"]["procedural"]
+            self.assertEqual(procedural["examples"], 32)
+            self.assertGreater(procedural["prefix_truncated_examples"], 0)
+            self.assertEqual(procedural["truncation_policy"], "left_prefix_only_preserve_all_response_tokens")
+            self.assertLessEqual(procedural["max_training_window_tokens"], 129)
             self.assertEqual(first["evaluation_separation"]["exact_prompt_overlap_count"], 0)
             self.assertEqual(first["training"]["procedural_batch_fraction"], 0.8)
             self.assertEqual(first["training"]["public_text_batch_fraction"], 0.2)
@@ -83,9 +88,11 @@ class CurriculumTest(unittest.TestCase):
             self.assertEqual(first_records.read_bytes(), second_records.read_bytes())
 
             records = [json.loads(line) for line in first_records.read_text(encoding="utf-8").splitlines()]
+            tokenizer = ByteBPETokenizer.load(Path("tokenizers/genesis-v0.json"))
             self.assertEqual(len(records), 32)
             self.assertTrue(all(record["provenance"]["kind"] == "procedural_oracle" for record in records))
             self.assertTrue(all("verifier" not in record for record in records))
+            self.assertTrue(all(len(tokenizer.encode(record["response"])) <= 128 for record in records))
 
     def test_seed_collision_and_bad_mix_fail_closed(self):
         with tempfile.TemporaryDirectory() as directory:
