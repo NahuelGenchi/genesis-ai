@@ -5,6 +5,7 @@ on:
   push:
     branches: [main]
     paths:
+      - checkpoints/genesis-micro-2m-v1.pt
       - src/genesis_ai/capability_index.py
       - src/genesis_ai/multidomain_curriculum.py
       - src/genesis_ai/multidomain_training.py
