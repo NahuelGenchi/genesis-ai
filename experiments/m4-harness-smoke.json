@@ -1,0 +1,33 @@
+{
+  "format_version": "1.0",
+  "name": "m4-harness-smoke",
+  "seed": 4242,
+  "training_flop_budget": 250000000,
+  "target_tokens_per_step": 128,
+  "learning_rate": 0.001,
+  "validation_batches": 2,
+  "candidates": [
+    {
+      "name": "narrow",
+      "config": {
+        "context_length": 32,
+        "d_model": 32,
+        "n_heads": 4,
+        "n_layers": 1,
+        "d_ff": 64,
+        "dropout": 0.0
+      }
+    },
+    {
+      "name": "wide",
+      "config": {
+        "context_length": 32,
+        "d_model": 40,
+        "n_heads": 4,
+        "n_layers": 1,
+        "d_ff": 80,
+        "dropout": 0.0
+      }
+    }
+  ]
+}
