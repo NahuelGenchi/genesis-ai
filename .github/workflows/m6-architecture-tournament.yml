@@ -1,0 +1,86 @@
+name: M6 architecture tournament v1
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - src/genesis_ai/architecture_tournament.py
+      - tests/test_architecture_tournament.py
+      - experiments/m6-architecture-tournament-v1.json
+      - .github/workflows/m6-architecture-tournament.yml
+
+permissions:
+  contents: write
+
+concurrency:
+  group: m6-architecture-tournament-v1
+  cancel-in-progress: false
+
+jobs:
+  tournament:
+    runs-on: [self-hosted, linux, x64]
+    timeout-minutes: 20
+    env:
+      WORK: runs/m6-architecture-tournament-v1
+      RESULT: research/m6-architecture-tournament-v1.json
+      OMP_NUM_THREADS: "1"
+      MKL_NUM_THREADS: "1"
+      OPENBLAS_NUM_THREADS: "1"
+      NUMEXPR_NUM_THREADS: "1"
+      VECLIB_MAXIMUM_THREADS: "1"
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Prepare persistent Python environment
+        run: |
+          ENV_DIR="$HOME/.cache/genesis-ai-ci/venv"
+          if [ ! -x "$ENV_DIR/bin/python" ]; then python3 -m venv "$ENV_DIR"; fi
+          if ! "$ENV_DIR/bin/python" -c 'import torch' >/dev/null 2>&1; then
+            "$ENV_DIR/bin/python" -m pip install --upgrade pip
+            "$ENV_DIR/bin/python" -m pip install --index-url https://download.pytorch.org/whl/cpu torch
+          fi
+
+      - name: Rebuild frozen public corpus
+        run: |
+          PY="$HOME/.cache/genesis-ai-ci/venv/bin/python"
+          rm -rf "$WORK"
+          mkdir -p "$WORK" "$(dirname "$RESULT")"
+          cp data/bootstrap-tokenizer-lock.json "$WORK/bootstrap-tokenizer-lock.json"
+          PYTHONPATH=src "$PY" -m genesis_ai.bootstrap_corpus \
+            --catalog data/bootstrap-tokenizer-sources.json \
+            --workspace "$WORK/public-corpus" \
+            --output "$WORK/rebuilt-tokenizer.json" \
+            --lock "$WORK/bootstrap-tokenizer-lock.json" \
+            --vocab-size 512
+          cmp data/bootstrap-tokenizer-lock.json "$WORK/bootstrap-tokenizer-lock.json"
+          cmp tokenizers/genesis-v0.json "$WORK/rebuilt-tokenizer.json"
+
+      - name: Run fixed-FLOP architecture tournament
+        run: |
+          PY="$HOME/.cache/genesis-ai-ci/venv/bin/python"
+          PYTHONPATH=src "$PY" -m genesis_ai.architecture_tournament \
+            --definition experiments/m6-architecture-tournament-v1.json \
+            --public-data "$WORK/public-corpus/filtered" \
+            --tokenizer tokenizers/genesis-v0.json \
+            --output "$RESULT" \
+            --device cpu
+          PYTHONPATH=src "$PY" -m genesis_ai.result_provenance \
+            "$RESULT" \
+            --source-commit "$GITHUB_SHA" \
+            --workflow-run-id "$GITHUB_RUN_ID"
+
+      - name: Validate repository
+        run: PYTHON_BIN="$HOME/.cache/genesis-ai-ci/venv/bin/python" ./scripts/test_local.sh
+
+      - name: Commit immutable tournament result
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add "$RESULT"
+          if ! git diff --cached --quiet; then
+            git commit -m "Research: record architecture tournament (#148)"
+            git fetch origin main
+            git rebase origin/main
+            git push origin HEAD:main
+          fi
