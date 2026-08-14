@@ -41,6 +41,8 @@ def decide_scale_promotion(
     candidate_m3_path: str | Path,
     ladder_result_path: str | Path,
     curriculum_lock_path: str | Path,
+    expected_training_policy: str = TRAINING_POLICY_VERSION,
+    required_alignment_policy: str | None = None,
 ) -> dict[str, Any]:
     candidate_checkpoint = Path(candidate_checkpoint)
     training_run_path = Path(training_run_path)
@@ -51,6 +53,8 @@ def decide_scale_promotion(
     candidate_m3_path = Path(candidate_m3_path)
     ladder_result_path = Path(ladder_result_path)
     curriculum_lock_path = Path(curriculum_lock_path)
+    if not expected_training_policy:
+        raise ValueError("expected_training_policy must be non-empty")
 
     training = _load_json(training_run_path)
     reproduction = _load_json(reproduction_path)
@@ -62,7 +66,7 @@ def decide_scale_promotion(
     curriculum = _load_json(curriculum_lock_path)
 
     checkpoint_hash = sha256_file(candidate_checkpoint)
-    if training.get("training_policy") != TRAINING_POLICY_VERSION:
+    if training.get("training_policy") != expected_training_policy:
         raise ValueError("unsupported M6 training policy")
     if training.get("inference_checkpoint_sha256") != checkpoint_hash:
         raise ValueError("training record does not match candidate checkpoint")
@@ -139,11 +143,25 @@ def decide_scale_promotion(
         _gate("reproducibility", reproducible if promotion.get("require_reproducible_checkpoint") is True else True, reproduction, {"required": bool(promotion.get("require_reproducible_checkpoint"))}),
         _gate("zero_cash_compute", zero_cash if promotion.get("require_zero_cash_compute") is True else True, {"training": training.get("cash_compute_cost_usd"), "curriculum": curriculum.get("cash_compute_cost_usd")}, {"required": bool(promotion.get("require_zero_cash_compute"))}),
     ]
+    if required_alignment_policy is not None:
+        alignment = training.get("alignment")
+        observed_alignment = alignment.get("policy") if isinstance(alignment, dict) else None
+        target_position = alignment.get("target_model_position") if isinstance(alignment, dict) else None
+        gates.append(
+            _gate(
+                "procedural_generation_alignment",
+                observed_alignment == required_alignment_policy and target_position == 127,
+                {"policy": observed_alignment, "target_model_position": target_position},
+                {"policy": required_alignment_policy, "target_model_position": 127},
+            )
+        )
     promoted = all(gate["passed"] for gate in gates)
     result: dict[str, Any] = {
         "format_version": "1.0",
         "gate_version": GATE_VERSION,
         "candidate_checkpoint_sha256": checkpoint_hash,
+        "expected_training_policy": expected_training_policy,
+        "required_alignment_policy": required_alignment_policy,
         "inputs": {
             "training_run_sha256": sha256_file(training_run_path),
             "reproduction_sha256": sha256_file(reproduction_path),
