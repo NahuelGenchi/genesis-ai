@@ -1,0 +1,38 @@
+name: Cleanup completed M4 branches
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/cleanup-m4-branches.yml
+
+permissions:
+  contents: write
+
+jobs:
+  cleanup:
+    runs-on: [self-hosted, linux, x64]
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Delete completed M4 branches
+        run: |
+          for branch in \
+            m4/context-rotary \
+            m4/experiment-harness \
+            m4/finalize-low-bit \
+            m4/finalize-moe \
+            m4/freeze-baseline \
+            m4/freeze-context-experiment \
+            m4/low-bit-inference \
+            m4/low-bit-inference-v2 \
+            m4/reconcile-context-docs \
+            m4/recover-context-result \
+            m4/restore-frozen-baseline \
+            m4/sparse-moe \
+            m4/cleanup-branches
+          do
+            if git ls-remote --exit-code --heads origin "$branch" >/dev/null 2>&1; then
+              git push origin --delete "$branch"
+            fi
+          done
