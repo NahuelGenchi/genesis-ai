@@ -1,0 +1,149 @@
+name: M6 structured diagnostic v1
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - src/genesis_ai/structured_diagnostic.py
+      - tests/test_structured_diagnostic.py
+      - .github/workflows/m6-structured-diagnostic.yml
+
+permissions:
+  contents: write
+
+concurrency:
+  group: m6-structured-diagnostic-v1
+  cancel-in-progress: false
+
+jobs:
+  diagnose:
+    runs-on: [self-hosted, linux, x64]
+    timeout-minutes: 40
+    env:
+      WORK: runs/m6-structured-diagnostic-v1
+      RESULT_DIR: research/m6-structured-diagnostic-v1
+      CANDIDATE: runs/m6-structured-diagnostic-v1/candidate.pt
+      EXPECTED_SHA: 7f95f31d2fa8a1a4e20c2d4fc673df5ffe224bf8e6efcf07a4208cc893532407
+      OMP_NUM_THREADS: "1"
+      MKL_NUM_THREADS: "1"
+      OPENBLAS_NUM_THREADS: "1"
+      NUMEXPR_NUM_THREADS: "1"
+      VECLIB_MAXIMUM_THREADS: "1"
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Prepare persistent Python environment
+        run: |
+          ENV_DIR="$HOME/.cache/genesis-ai-ci/venv"
+          if [ ! -x "$ENV_DIR/bin/python" ]; then python3 -m venv "$ENV_DIR"; fi
+          if ! "$ENV_DIR/bin/python" -c 'import torch' >/dev/null 2>&1; then
+            "$ENV_DIR/bin/python" -m pip install --upgrade pip
+            "$ENV_DIR/bin/python" -m pip install --index-url https://download.pytorch.org/whl/cpu torch
+          fi
+
+      - name: Rebuild frozen public inputs
+        run: |
+          PY="$HOME/.cache/genesis-ai-ci/venv/bin/python"
+          rm -rf "$WORK" "$RESULT_DIR"
+          mkdir -p "$WORK" "$RESULT_DIR"
+          cp data/bootstrap-tokenizer-lock.json "$WORK/bootstrap-tokenizer-lock.json"
+          PYTHONPATH=src "$PY" -m genesis_ai.bootstrap_corpus \
+            --catalog data/bootstrap-tokenizer-sources.json \
+            --workspace "$WORK/public-corpus" \
+            --output "$WORK/rebuilt-tokenizer.json" \
+            --lock "$WORK/bootstrap-tokenizer-lock.json" \
+            --vocab-size 512
+          cmp data/bootstrap-tokenizer-lock.json "$WORK/bootstrap-tokenizer-lock.json"
+          cmp tokenizers/genesis-v0.json "$WORK/rebuilt-tokenizer.json"
+
+      - name: Rebuild exact v2 curriculum
+        run: |
+          PY="$HOME/.cache/genesis-ai-ci/venv/bin/python"
+          PYTHONPATH=src "$PY" -m genesis_ai.multidomain_curriculum_v2 \
+            --suite evals/m6-domain-selection-v2.json \
+            --tokenizer tokenizers/genesis-v0.json \
+            --public-data "$WORK/public-corpus/filtered" \
+            --records "$WORK/procedural.jsonl" \
+            --output "$WORK/curriculum.json"
+          "$PY" - <<'PY'
+          import json
+          from pathlib import Path
+          rebuilt = json.loads(Path('runs/m6-structured-diagnostic-v1/curriculum.json').read_text())
+          frozen = json.loads(Path('research/m6-multidomain-micro-2m-v2/curriculum.json').read_text())
+          for key in ('curriculum_version', 'training_seed', 'difficulty', 'context_length', 'target_training_tokens', 'procedural_fraction', 'public_fraction', 'procedural', 'evaluation', 'public_text', 'tokenizer_sha256', 'cash_compute_cost_usd'):
+              assert rebuilt[key] == frozen[key], (key, rebuilt[key], frozen[key])
+          PY
+
+      - name: Reconstruct exact rejected v2 candidate
+        run: |
+          PY="$HOME/.cache/genesis-ai-ci/venv/bin/python"
+          PYTHONPATH=src "$PY" -m genesis_ai.multidomain_training_v2 \
+            --parent checkpoints/genesis-micro-2m-v1.pt \
+            --curriculum-lock "$WORK/curriculum.json" \
+            --records "$WORK/procedural.jsonl" \
+            --public-data "$WORK/public-corpus/filtered" \
+            --tokenizer tokenizers/genesis-v0.json \
+            --checkpoint "$WORK/candidate-training.pt" \
+            --export "$CANDIDATE" \
+            --run "$WORK/training.json" \
+            --device cpu
+
+      - name: Verify exact v2 training contract and candidate identity
+        run: |
+          PY="$HOME/.cache/genesis-ai-ci/venv/bin/python"
+          "$PY" - <<'PY'
+          import hashlib
+          import json
+          import os
+          from pathlib import Path
+
+          rebuilt = json.loads(Path('runs/m6-structured-diagnostic-v1/training.json').read_text())
+          frozen = json.loads(Path('research/m6-multidomain-micro-2m-v2/training.json').read_text())
+          required_equal = (
+              'training_policy', 'seed', 'parent_checkpoint_sha256', 'parent_step', 'final_step',
+              'parameter_count', 'target_training_tokens', 'processed_tokens', 'steps', 'batch_size',
+              'procedural_steps', 'public_steps', 'procedural_updates', 'schedule_sha256',
+              'schedule_unique_updates', 'schedule_accounting', 'domain_examples',
+              'curriculum_lock_sha256', 'records_sha256', 'public_manifest_sha256',
+              'tokenizer_sha256', 'cash_compute_cost_usd', 'determinism'
+          )
+          for key in required_equal:
+              assert rebuilt[key] == frozen[key], (key, rebuilt[key], frozen[key])
+          for key in ('terminated_probe_loss_before', 'terminated_probe_loss_after', 'mean_procedural_training_loss', 'mean_public_training_loss'):
+              assert rebuilt[key] == frozen[key], (key, rebuilt[key], frozen[key])
+
+          candidate = Path('runs/m6-structured-diagnostic-v1/candidate.pt')
+          digest = hashlib.sha256(candidate.read_bytes()).hexdigest()
+          expected = os.environ['EXPECTED_SHA']
+          assert digest == expected, f'reconstructed candidate SHA differs: expected {expected}, got {digest}'
+          assert rebuilt['inference_checkpoint_sha256'] == expected, rebuilt['inference_checkpoint_sha256']
+          PY
+
+      - name: Diagnose frozen structured holdout
+        run: |
+          PY="$HOME/.cache/genesis-ai-ci/venv/bin/python"
+          PYTHONPATH=src "$PY" -m genesis_ai.structured_diagnostic \
+            --checkpoint "$CANDIDATE" \
+            --suite evals/m6-domain-selection-v2.json \
+            --output "$RESULT_DIR/result.json" \
+            --device cpu
+          PYTHONPATH=src "$PY" -m genesis_ai.result_provenance \
+            "$RESULT_DIR/result.json" \
+            --source-commit "$GITHUB_SHA" \
+            --workflow-run-id "$GITHUB_RUN_ID"
+
+      - name: Validate repository
+        run: PYTHON_BIN="$HOME/.cache/genesis-ai-ci/venv/bin/python" ./scripts/test_local.sh
+
+      - name: Commit immutable diagnostic result
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add "$RESULT_DIR/result.json"
+          if ! git diff --cached --quiet; then
+            git commit -m "M6: record structured diagnostic (#153)"
+            git fetch origin main
+            git rebase origin/main
+            git push origin HEAD:main
+          fi
