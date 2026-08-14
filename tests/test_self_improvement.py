@@ -40,7 +40,7 @@ class VerifierTest(unittest.TestCase):
                 "tests": [
                     {"variables": {"x": 1, "y": 2}, "expected": 5},
                     {"variables": {"x": 3, "y": 4}, "expected": 11},
-                    {"variables": {"x": -2, "y": 5}, "expected": 1},
+                    {"variables": {"x": -2, "y": 5}, "expected": 2},
                 ],
             }
         }
