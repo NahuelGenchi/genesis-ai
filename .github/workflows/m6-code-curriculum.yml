@@ -1,108 +1,50 @@
-name: M6 code curriculum lock
+name: M6 code curriculum record verifier
 
 on:
   workflow_dispatch:
-  push:
-    branches: [main]
-    paths:
-      - experiments/m6-code-curriculum-v1.json
-      - src/genesis_ai/curriculum.py
-      - tests/test_curriculum.py
-      - .github/workflows/m6-code-curriculum.yml
 
 permissions:
-  contents: write
-
-concurrency:
-  group: m6-code-curriculum-v1
-  cancel-in-progress: false
+  contents: read
 
 jobs:
-  build:
+  verify:
     runs-on: [self-hosted, linux, x64]
-    timeout-minutes: 20
-    env:
-      WORK: runs/m6-code-curriculum-v1
-      RESULT: research/m6-code-curriculum-v1.json
+    timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
 
-      - name: Prepare persistent Python environment
+      - name: Verify frozen v1 record
         run: |
-          ENV_DIR="$HOME/.cache/genesis-ai-ci/venv"
-          if [ ! -x "$ENV_DIR/bin/python" ]; then python3 -m venv "$ENV_DIR"; fi
-          if ! "$ENV_DIR/bin/python" -c 'import torch' >/dev/null 2>&1; then
-            "$ENV_DIR/bin/python" -m pip install --upgrade pip
-            "$ENV_DIR/bin/python" -m pip install --index-url https://download.pytorch.org/whl/cpu torch
-          fi
-
-      - name: Rebuild approved public-domain corpus
-        run: |
-          PY="$HOME/.cache/genesis-ai-ci/venv/bin/python"
-          rm -rf "$WORK"
-          mkdir -p "$WORK"
-          cp data/bootstrap-tokenizer-lock.json "$WORK/bootstrap-tokenizer-lock.json"
-          PYTHONPATH=src "$PY" -m genesis_ai.bootstrap_corpus \
-            --catalog data/bootstrap-tokenizer-sources.json \
-            --workspace "$WORK/public-corpus" \
-            --output "$WORK/rebuilt-tokenizer.json" \
-            --lock "$WORK/bootstrap-tokenizer-lock.json" \
-            --vocab-size 512
-          cmp data/bootstrap-tokenizer-lock.json "$WORK/bootstrap-tokenizer-lock.json"
-          cmp tokenizers/genesis-v0.json "$WORK/rebuilt-tokenizer.json"
-
-      - name: Build deterministic curriculum lock
-        run: |
-          PY="$HOME/.cache/genesis-ai-ci/venv/bin/python"
-          PYTHONPATH=src "$PY" -m genesis_ai.curriculum \
-            --spec experiments/m6-code-curriculum-v1.json \
-            --selection research/m6-domain-selection-v1.json \
-            --evaluation-suite evals/m6-domain-selection-v1.json \
-            --tokenizer tokenizers/genesis-v0.json \
-            --public-data "$WORK/public-corpus/filtered" \
-            --public-source-lock data/bootstrap-tokenizer-lock.json \
-            --public-source-catalog data/bootstrap-tokenizer-sources.json \
-            --records "$WORK/procedural.jsonl" \
-            --output "$RESULT"
-          PYTHONPATH=src "$PY" -m genesis_ai.result_provenance \
-            "$RESULT" \
-            --source-commit "$GITHUB_SHA" \
-            --workflow-run-id "$GITHUB_RUN_ID"
-
-      - name: Validate curriculum contract
-        run: |
-          PY="$HOME/.cache/genesis-ai-ci/venv/bin/python"
-          "$PY" - <<'PY'
+          python3 - <<'PY'
           import json
           from pathlib import Path
           result = json.loads(Path('research/m6-code-curriculum-v1.json').read_text())
           procedural = result['training']['procedural']
           assert result['curriculum_version'] == 'm6-code-curriculum-v1', result
           assert result['selected_domain'] == 'code', result
+          assert result['spec_sha256'] == 'c45572beca5ebce16e60019db7ccaeb2d1f9c5422bfea51a2fba8429d3d856f5', result
+          assert result['tokenizer_sha256'] == '6f66eba7d552fd22e4c35ba23c1998bbc549ab26ad89a1e0d245524bc802d398', result
+          assert result['selection']['suite_sha256'] == '3ff62c0241003198c786afb29c4d64394566ce82dba7eef7681fc9ebe25655d9', result
           assert result['selection']['baseline_exact_accuracy'] == 0.0, result
+          assert result['evaluation_separation']['evaluation_task_set_sha256'] == 'edea452777c7328fd13d550ced322bd5815eac664be5f3924047f15122cc17c8', result
+          assert result['evaluation_separation']['exact_prompt_overlap_count'] == 0, result
           assert procedural['examples'] == 4096, result
-          assert procedural['prefix_truncated_examples'] > 0, result
+          assert procedural['generation_attempts'] == 5195, result
+          assert procedural['prefix_truncated_examples'] == 4096, result
+          assert procedural['max_prompt_response_tokens'] == 153, result
+          assert procedural['max_training_window_tokens'] == 129, result
+          assert procedural['record_set_sha256'] == '6c0d72aa4cf4be930f6ebc0dd508589bb90a36cd48985c04484c38005e76217f', result
+          assert procedural['records_file_sha256'] == '6650d775b0285e4027dd2d7e7a546f6569d35ccc40b60067dacf7a7832a28770', result
           assert procedural['truncation_policy'] == 'left_prefix_only_preserve_all_response_tokens', result
-          assert procedural['max_training_window_tokens'] <= 129, result
+          assert result['public_text']['document_count'] == 1082, result
+          assert result['public_text']['token_count'] == 274653, result
+          assert result['public_text']['content_set_sha256'] == 'cd7942198e38f40cb00f8a2191b4cc47afc4518aa16097c5623fbdac0b82b1c5', result
           assert result['training']['procedural_batch_fraction'] == 0.8, result
           assert result['training']['public_text_batch_fraction'] == 0.2, result
           assert result['training']['target_training_tokens'] == 2_000_000, result
-          assert result['evaluation_separation']['exact_prompt_overlap_count'] == 0, result
           assert result['cash_compute_cost_usd'] == 0.0, result
-          assert Path('runs/m6-code-curriculum-v1/procedural.jsonl').is_file()
+          assert result['result_provenance'] == {
+              'source_commit': 'bfe89dc004c50d21c40c244392f49d4dad16779d',
+              'workflow_run_id': '31834675482',
+          }, result
           PY
-
-      - name: Validate repository
-        run: PYTHON_BIN="$HOME/.cache/genesis-ai-ci/venv/bin/python" ./scripts/test_local.sh
-
-      - name: Commit compact curriculum lock safely
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add "$RESULT"
-          if ! git diff --cached --quiet; then
-            git commit -m "M6: record deterministic code curriculum (#96)"
-            git fetch origin main
-            git rebase origin/main
-            git push origin HEAD:main
-          fi

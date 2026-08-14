@@ -18,8 +18,24 @@ Every procedural answer is derived by the deterministic project oracle and must 
 
 No proprietary model, API, distillation output, or AI-generated answer is used.
 
+## Frozen measured result
+The one-shot runner completed successfully in workflow run `31834675482`.
+
+Measured lock:
+- 4,096 unique procedural examples from 5,195 generation attempts;
+- 0 exact prompt overlaps with the frozen 60-task code holdout;
+- 610,542 raw prompt+response tokens;
+- 61,559 response tokens;
+- maximum raw prompt+response length: 153 tokens;
+- **4,096 / 4,096** examples require left-prefix truncation;
+- maximum effective training window: 129 tokens (`x` + next-token targets);
+- public-language corpus: 1,082 documents / 274,653 tokens;
+- required cash compute: $0.
+
+The automatic builder is frozen after this accepted result. The remaining workflow is manual-only and verifies the committed v1 identities; it does not regenerate the curriculum.
+
 ## 128-token window policy
-Some canonical code prompts plus their answer exceed the model's 128-token context because of the fixed instruction prefix.
+The canonical code prompts plus their answer exceed the model's 128-token context because of the fixed instruction prefix.
 
 #97 must therefore construct each procedural training sequence exactly as follows:
 - concatenate `prompt + "\nAnswer:" + response`;
@@ -28,7 +44,7 @@ Some canonical code prompts plus their answer exceed the model's 128-token conte
 - never truncate or mask away any response token;
 - use response-only loss for procedural examples.
 
-The curriculum lock records how many examples require prefix truncation and the maximum effective training-window size. A response that cannot itself fit the context fails closed.
+A response that cannot itself fit the context fails closed.
 
 ## Evaluation isolation
 The frozen #95 code holdout is reconstructed from `evals/m6-domain-selection-v1.json` before curriculum generation.
@@ -56,4 +72,4 @@ Generated procedural records are ephemeral under `runs/` and contain only:
 
 Hidden verifier tests/expected values are not copied into training records.
 
-Only the compact hash-bound lock `research/m6-code-curriculum-v1.json` is committed after the one-shot build succeeds.
+Only the compact hash-bound lock `research/m6-code-curriculum-v1.json` is committed.
