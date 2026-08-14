@@ -1,0 +1,19 @@
+{
+  "format_version": "1.0",
+  "suite_version": "m6-domain-selection-v2",
+  "base_seed": 36001,
+  "tasks_per_domain": 60,
+  "difficulty": 1,
+  "domains": ["math", "structured", "code"],
+  "generation": {
+    "max_new_tokens": 32,
+    "temperature": 1.0,
+    "top_k": 1,
+    "seed": 36101
+  },
+  "termination": {
+    "delimiter": "\n",
+    "required": true
+  },
+  "selection_rule": "highest_exact_accuracy_then_lowest_terminated_oracle_loss_then_domain_name"
+}
