@@ -1,4 +1,4 @@
-# M6 code answer termination benchmark
+# M6 code answer termination investigation
 
 Issue: #111.
 
@@ -9,34 +9,41 @@ The rejected #97 micro-2m candidate produced:
 - reproducible model tensors;
 - improved M3 validation loss.
 
-The v1 domain evaluator always generates 32 new tokens and has no EOS/answer-stop contract. The procedural curriculum likewise teaches the answer expression but no terminator.
+Because the v1 evaluator always generated 32 new tokens and the curriculum taught no EOS/answer-stop marker, answer termination was the leading hypothesis.
 
-This makes answer termination the leading hypothesis, but the benchmark will not change until generated-response evidence proves it.
+The benchmark was deliberately left unchanged until generated-response evidence could test that hypothesis.
 
 ## Diagnostic v1
-A one-shot self-hosted workflow:
-1. rebuilds the exact frozen #96 curriculum/public corpus;
-2. retrains one ephemeral micro-2m model under the reproducible #97 v2 policy;
-3. verifies the training trajectory matches the frozen #97 measurements;
-4. runs the unchanged `m6-domain-selection-v1` code holdout;
-5. records whether each generated token sequence begins with the exact oracle-answer token sequence;
-6. separately records strict verifier success and whether correct prefixes are followed by extra generated tokens;
-7. commits only compact diagnostic evidence; model weights remain ephemeral.
+Workflow run `31837683797`:
+1. rebuilt the exact frozen #96 curriculum/public corpus;
+2. retrained one ephemeral micro-2m model under the reproducible #97 v2 policy;
+3. verified the training trajectory matched the frozen #97 measurements;
+4. ran the unchanged `m6-domain-selection-v1` code holdout;
+5. compared every free-running generation against the exact oracle token sequence and decoded oracle text;
+6. committed aggregate evidence plus eight audit samples;
+7. discarded the model weights.
 
-## Evidence required before changing evaluation
-Termination is considered proven only if the diagnostic shows that a substantial portion of strict failures:
-- begin with the exact oracle token sequence; and
-- contain additional generated tokens after that correct sequence.
+## Measured result
+Across all 60 frozen code tasks:
+- strict exact answers: **0/60**;
+- generations beginning with the exact oracle **token** sequence: **0/60**;
+- generations beginning with the decoded oracle **text**: **0/60**;
+- correct oracle prefix followed by extra tokens: **0/60**;
+- newline immediately after a correct oracle prefix: **0/60**.
 
-Decoded-string prefix evidence is recorded in addition to token-prefix evidence. Sample outputs are project-owned Genesis generations used only for audit, never as training targets.
+Example:
+- oracle: `5*x + 1*y + -8`
+- generated: `5555*x1*1*y 8*x8*x 8*x55555555y1`
+- verifier result: `invalid_syntax`
 
-## Benchmark-change rule
-`m6-domain-selection-v1` and its frozen result remain immutable.
+The evidence therefore **rejects the answer-termination hypothesis**. The model is already wrong before an answer terminator could matter.
 
-If termination is proven, a new versioned suite will be introduced. It must:
-- preserve the exact holdout task content/seeds;
-- define a deterministic answer terminator independent of verifier feedback;
-- terminate generation only on that explicit representation;
-- strip only the defined terminator before exact verification;
-- be baseline-evaluated and frozen **before** any retraining result can be accepted;
-- introduce no proprietary or model-generated training targets.
+## Decision
+No termination-aware replacement benchmark will be introduced for this failure.
+
+`m6-domain-selection-v1` and its frozen baseline remain valid and immutable. Changing the evaluator after this result would incorrectly make the benchmark easier for a candidate that did not generate the target answer.
+
+The actual defect is the gap between near-zero teacher-forced target loss and failed free-running generation. That work continues under #115, which will measure first-response-token accuracy and longest-correct-prefix behavior before changing training.
+
+## Frozen record
+`research/m6-termination-diagnostic-v1.json` is the accepted negative-result record. The automatic diagnostic has been replaced by a manual-only verifier so the evidence cannot silently rerun or change.
