@@ -31,6 +31,9 @@ genesis-scale-train = "genesis_ai.scale_training:main"
 genesis-scale-repro = "genesis_ai.scale_repro:main"
 genesis-scale-gate = "genesis_ai.scale_gate:main"
 genesis-scale-model-card = "genesis_ai.scale_model_card:main"
+genesis-aligned-train = "genesis_ai.aligned_training:main"
+genesis-aligned-gate = "genesis_ai.aligned_gate:main"
+genesis-aligned-model-card = "genesis_ai.aligned_model_card:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
