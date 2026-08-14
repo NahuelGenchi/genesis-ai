@@ -1,0 +1,32 @@
+name: Cleanup completed M5 branches
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/cleanup-m5-branches.yml
+
+permissions:
+  contents: write
+
+jobs:
+  cleanup:
+    runs-on: [self-hosted, linux, x64]
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Delete completed M5 branches
+        run: |
+          for branch in \
+            m5/candidate-training \
+            m5/challenger-verifiers \
+            m5/experience-pipeline \
+            m5/finalize-first-cycle \
+            m5/first-cycle \
+            m5/promotion-gate \
+            m5/cleanup-branches
+          do
+            if git ls-remote --exit-code --heads origin "$branch" >/dev/null 2>&1; then
+              git push origin --delete "$branch"
+            fi
+          done
