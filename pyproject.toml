@@ -15,6 +15,7 @@ genesis-generate = "genesis_ai.generate:main"
 genesis-eval = "genesis_ai.evaluate:main"
 genesis-ingest = "genesis_ai.ingest:main"
 genesis-filter = "genesis_ai.filtering:main"
+genesis-tokenizer-train = "genesis_ai.tokenizer:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
