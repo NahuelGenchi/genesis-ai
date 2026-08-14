@@ -1,0 +1,79 @@
+{
+  "architecture": {
+    "context_length": 128,
+    "d_ff": 384,
+    "d_model": 96,
+    "dropout": 0.0,
+    "n_heads": 4,
+    "n_layers": 3,
+    "vocab_size": 512
+  },
+  "checkpoint": {
+    "sha256": "4db01f8239cfc28933bc3152b7b698ffe089491ce1acf5b66de8adc53b9f8ed9",
+    "size_bytes": 1594143
+  },
+  "evaluation": {
+    "batches": 20,
+    "checkpoint_step": 160,
+    "data_manifest_sha256": "8126c6a8008ea39fa9db138078c5b0f15becf510eebf6160053807d665149a76",
+    "documents": 107,
+    "loss": 3.686832940578461,
+    "parameter_count": 394560,
+    "perplexity": 39.918223165821594,
+    "split": "validation",
+    "tokens": 29360
+  },
+  "format_version": "1.0",
+  "generation_sample": "The hs o cons vas\n\ncert de h que to de sey bo to saial od pral vindécfo,t, de que f, en enma elcpla cauror\nque sa",
+  "limitations": [
+    "Pipeline-validation model; not a useful general assistant.",
+    "Training corpus is tiny and literature-only.",
+    "Training languages are limited to English, Spanish, and French source samples.",
+    "No instruction tuning, preference tuning, tool training, safety tuning, or factuality training.",
+    "Validation is document-disjoint but comes from the same small source pool.",
+    "Generated text may be incoherent or malformed."
+  ],
+  "model": "genesis-tiny-v0",
+  "parameter_count": 394560,
+  "sources": [
+    {
+      "ebook_id": 2000,
+      "id": "gutenberg-don-quijote-2000",
+      "language": "es",
+      "sample_sha256": "2cbc9e527f6f3e975f016cd4bab0cf8524b5406ea3327b5e0d79579df8477062"
+    },
+    {
+      "ebook_id": 17489,
+      "id": "gutenberg-les-miserables-17489",
+      "language": "fr",
+      "sample_sha256": "b6b64be2f61cbd2f380c937ac2244c2665e0060e5bc5c67f8d31f6cda4be6f8a"
+    },
+    {
+      "ebook_id": 1342,
+      "id": "gutenberg-pride-prejudice-1342",
+      "language": "en",
+      "sample_sha256": "c7246fa08df958e075cf6343b68103cea963fd99deecf6977e016ae0824ecf83"
+    }
+  ],
+  "tokenizer": {
+    "bytes_per_token": 1.621624,
+    "name": "genesis-v0",
+    "sha256": "6f66eba7d552fd22e4c35ba23c1998bbc549ab26ad89a1e0d245524bc802d398",
+    "source_count": 3,
+    "vocab_size": 512
+  },
+  "training": {
+    "batch_size": 8,
+    "data_manifest_sha256": "8126c6a8008ea39fa9db138078c5b0f15becf510eebf6160053807d665149a76",
+    "elapsed_seconds": 1.386398927999835,
+    "last_training_loss": 3.9865145683288574,
+    "learning_rate": 0.001,
+    "probe_loss_after": 3.982328414916992,
+    "probe_loss_before": 6.278069019317627,
+    "probe_loss_decreased": true,
+    "resumed_from_step": 80,
+    "steps": 160,
+    "train_documents": 975,
+    "train_tokens": 247453
+  }
+}
