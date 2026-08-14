@@ -1,0 +1,59 @@
+{
+  "cash_compute_cost_usd": 0.0,
+  "curriculum_version": "m6-code-curriculum-v1",
+  "evaluation_separation": {
+    "evaluation_base_seed": 36001,
+    "evaluation_domain_seed": 36003,
+    "evaluation_prompt_set_sha256": "9c960a4c5017a9ab5aaf7a7c692592d844f98a099b050e126a9efea644b48f89",
+    "evaluation_task_count": 60,
+    "evaluation_task_set_sha256": "edea452777c7328fd13d550ced322bd5815eac664be5f3924047f15122cc17c8",
+    "exact_prompt_overlap_count": 0
+  },
+  "format_version": "1.0",
+  "public_text": {
+    "content_set_sha256": "cd7942198e38f40cb00f8a2191b4cc47afc4518aa16097c5623fbdac0b82b1c5",
+    "document_count": 1082,
+    "manifest_sha256": "8126c6a8008ea39fa9db138078c5b0f15becf510eebf6160053807d665149a76",
+    "source_catalog_sha256": "4051b2a98369cae5a00c59719c0af6a6cb2c4da63e766e2f692b12f7927d02e0",
+    "source_lock_sha256": "f0e9bebe3acf2eb8d61a3692b9e6a86f84f716b27bde06c21ba304097ac81571",
+    "token_count": 274653,
+    "utf8_bytes": 445384
+  },
+  "result_provenance": {
+    "source_commit": "bfe89dc004c50d21c40c244392f49d4dad16779d",
+    "workflow_run_id": "31834675482"
+  },
+  "selected_domain": "code",
+  "selection": {
+    "baseline_exact_accuracy": 0.0,
+    "baseline_oracle_target_loss": 6.620002301319949,
+    "result_sha256": "b9357f7d2eeb1ecc113aca752651468328e2d6a188c4a5145347d3939f76257d",
+    "suite_sha256": "3ff62c0241003198c786afb29c4d64394566ce82dba7eef7681fc9ebe25655d9",
+    "suite_version": "m6-domain-selection-v1"
+  },
+  "spec_sha256": "c45572beca5ebce16e60019db7ccaeb2d1f9c5422bfea51a2fba8429d3d856f5",
+  "tokenizer_sha256": "6f66eba7d552fd22e4c35ba23c1998bbc549ab26ad89a1e0d245524bc802d398",
+  "training": {
+    "context_length": 128,
+    "difficulty": 1,
+    "procedural": {
+      "examples": 4096,
+      "generation_attempts": 5195,
+      "max_prompt_response_tokens": 153,
+      "max_training_window_tokens": 129,
+      "prefix_truncated_examples": 4096,
+      "prompt_response_tokens": 610542,
+      "prompt_set_sha256": "0fe2b4f14f21193f8273281d5fa950e5b49e4f582a5a5695cfa4d8c035e24cde",
+      "record_set_sha256": "6c0d72aa4cf4be930f6ebc0dd508589bb90a36cd48985c04484c38005e76217f",
+      "records_file_sha256": "6650d775b0285e4027dd2d7e7a546f6569d35ccc40b60067dacf7a7832a28770",
+      "records_file_size_bytes": 2095224,
+      "response_set_sha256": "d4b4f856f01cccd2ca853f79f10ffe5dccf035ecaf00f9eb1b4da0aed3b4346c",
+      "response_tokens": 61559,
+      "truncation_policy": "left_prefix_only_preserve_all_response_tokens"
+    },
+    "procedural_batch_fraction": 0.8,
+    "public_text_batch_fraction": 0.2,
+    "seed": 46001,
+    "target_training_tokens": 2000000
+  }
+}
