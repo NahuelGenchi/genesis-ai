@@ -48,16 +48,16 @@ The first full v1 attempt (`31835552262`) trained both models successfully but f
 Both runs began with the same step-1 loss (`6.245032`) and then numerically diverged under the runner's multi-threaded CPU execution. v2 removes that source of reduction/update-order variation rather than weakening the equality requirement.
 
 ## Reproducibility
-The one-shot run trains the model **twice independently** with the same frozen inputs and seed.
+The accepted v2 experiment (`31836252107`) trained the model twice independently under the frozen one-thread contract.
 
-Promotion requires semantic equality of:
-- all model tensors;
-- architecture config;
-- tokenizer;
-- checkpoint step;
-- stable checkpoint metadata.
+Semantic reproduction passed:
+- weights equal;
+- config equal;
+- tokenizer equal;
+- checkpoint step equal;
+- stable metadata equal.
 
-Byte-identical checkpoint files are recorded but are not required because serialization details are not model semantics.
+Serialized checkpoint bytes differed, which is explicitly non-semantic and does not weaken the tensor-equality requirement.
 
 ## Scale-promotion gate
 The candidate is promoted only if every gate passes:
@@ -72,12 +72,29 @@ The candidate is promoted only if every gate passes:
 
 Candidate creation is not promotion.
 
+## Measured v1 experiment result
+The v2-trained candidate **was rejected** by the frozen scale-promotion gate.
+
+Capability:
+- frozen code exact accuracy: **0/60 → 0/60**;
+- exact-accuracy gain: **+0.00 percentage points**;
+- code oracle-target loss: `6.6200023013 → 0.0006654457`;
+- procedural probe loss: `6.2664729804 → 0.0006633719`.
+
+General-language evaluation:
+- M3 validation loss: `3.6868329406 → 3.2608576655`;
+- relative change: **-11.55%** (improvement);
+- exact contamination overlap: **0**.
+
+All gates passed except `code_exact_accuracy`. The candidate therefore did **not** replace the promoted baseline.
+
+The near-zero code oracle-target loss paired with 0/60 strict generation is diagnostic evidence, not a promotion metric. Issue #111 investigates the answer-termination/evaluation interface without altering this historical result.
+
 ## Publication
-The compact gate result is committed whether the candidate passes or fails.
+Because the gate rejected the candidate:
+- `checkpoints/genesis-micro-2m-v1.pt` was **not** published;
+- no micro-2m model card or metrics package was published;
+- the candidate weights remained ephemeral;
+- the complete compact experiment measurements were committed under `research/m6-micro-2m-v1/`.
 
-Only if all gates pass may the workflow commit:
-- `checkpoints/genesis-micro-2m-v1.pt`;
-- `models/genesis-micro-2m-v1/MODEL_CARD.md`;
-- `models/genesis-micro-2m-v1/metrics.json`.
-
-A rejected candidate stays ephemeral and does not replace the current promoted model.
+The automatic training workflow is now frozen to a manual-only verifier of this historical rejected experiment so later evaluator/trainer changes cannot silently overwrite it.
