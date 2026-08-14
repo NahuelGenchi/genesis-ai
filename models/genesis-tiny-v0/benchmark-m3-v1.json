@@ -6,8 +6,8 @@
   "decode": {
     "estimated_cost_per_million_tokens": 0.0,
     "generated_tokens": 128,
-    "seconds": 0.11866549499973189,
-    "tokens_per_second": 1078.662335671285
+    "seconds": 0.11798201000055997,
+    "tokens_per_second": 1084.9111656886714
   },
   "device": "cpu",
   "estimated_active_flops_per_token": 2367360,
@@ -21,14 +21,14 @@
   },
   "hourly_compute_cost_assumption": 0.0,
   "parameter_count": 394560,
-  "peak_process_rss_mb": 356.17578125,
+  "peak_process_rss_mb": 356.68359375,
   "training": {
     "batch_size": 8,
     "context_length": 128,
     "estimated_cost_per_million_tokens": 0.0,
     "measured_steps": 50,
-    "seconds": 0.5807270030018117,
+    "seconds": 0.5838008919999993,
     "tokens": 51200,
-    "tokens_per_second": 88165.35090557908
+    "tokens_per_second": 87701.13355702112
   }
 }
