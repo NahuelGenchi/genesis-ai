@@ -1,0 +1,271 @@
+{
+  "budget_spread_fraction": 0.003333685248,
+  "data_manifest_sha256": "8126c6a8008ea39fa9db138078c5b0f15becf510eebf6160053807d665149a76",
+  "definition_sha256": "2a35a0e18e5e2f1ba18d39ddc056b76d311f8dad6a19a7c668a85f3fc848aead",
+  "experiment": "m4-moe-v1",
+  "flop_estimator": "active-training-v2",
+  "format_version": "1.0",
+  "requested_training_flop_budget": 500000000000,
+  "result_provenance": {
+    "source_commit": "544c3c477828b3d72dd288b535446cc7b9613fb4",
+    "workflow_run_id": "31773547158"
+  },
+  "results": [
+    {
+      "active_parameter_count": 394560,
+      "batch_size": 8,
+      "config": {
+        "context_length": 128,
+        "d_ff": 384,
+        "d_model": 96,
+        "dropout": 0.0,
+        "ffn_type": "dense",
+        "moe_aux_loss_weight": 0.01,
+        "moe_experts": 4,
+        "moe_top_k": 2,
+        "n_heads": 4,
+        "n_layers": 3,
+        "position_encoding": "learned",
+        "vocab_size": 512
+      },
+      "estimated_training_flops": 497748934656,
+      "final_validation_loss": 3.6519001126289368,
+      "flop_estimator": "active-training-v2",
+      "initial_validation_loss": 6.254526138305664,
+      "last_training_loss": 3.8443264961242676,
+      "learning_rate": 0.001,
+      "loss_improvement": 2.6026260256767273,
+      "name": "dense-384",
+      "parameter_count": 394560,
+      "seed": 8112,
+      "steps": 173,
+      "tokens_per_step": 1024,
+      "tokens_seen": 177152,
+      "training_flops_per_token": 2809728,
+      "training_seconds": 1.6072618710022653,
+      "training_tokens_per_second": 110219.74900053504,
+      "validation_batches": 20
+    },
+    {
+      "active_parameter_count": 395712,
+      "batch_size": 8,
+      "config": {
+        "context_length": 128,
+        "d_ff": 192,
+        "d_model": 96,
+        "dropout": 0.0,
+        "ffn_type": "moe",
+        "moe_aux_loss_weight": 0.01,
+        "moe_experts": 4,
+        "moe_top_k": 2,
+        "n_heads": 4,
+        "n_layers": 3,
+        "position_encoding": "learned",
+        "vocab_size": 512
+      },
+      "estimated_training_flops": 498973409280,
+      "final_validation_loss": 3.60817711353302,
+      "flop_estimator": "active-training-v2",
+      "initial_validation_loss": 6.206805777549744,
+      "last_training_loss": 3.818040132522583,
+      "learning_rate": 0.001,
+      "loss_improvement": 2.598628664016724,
+      "name": "moe4-top2-192",
+      "parameter_count": 616896,
+      "routing": [
+        {
+          "assignments": 354304,
+          "counts": [
+            85611,
+            88778,
+            108526,
+            71389
+          ],
+          "experts": 4,
+          "fractions": [
+            0.24163148031069365,
+            0.2505701318641618,
+            0.3063075776734104,
+            0.20149081015173412
+          ],
+          "max_fraction": 0.3063075776734104,
+          "min_fraction": 0.20149081015173412,
+          "top_k": 2,
+          "utilization": 1.0
+        },
+        {
+          "assignments": 354304,
+          "counts": [
+            90379,
+            113170,
+            85210,
+            65545
+          ],
+          "experts": 4,
+          "fractions": [
+            0.2550888502528902,
+            0.31941496567919075,
+            0.24049968388728324,
+            0.18499650018063585
+          ],
+          "max_fraction": 0.31941496567919075,
+          "min_fraction": 0.18499650018063585,
+          "top_k": 2,
+          "utilization": 1.0
+        },
+        {
+          "assignments": 354304,
+          "counts": [
+            86679,
+            88114,
+            92283,
+            87228
+          ],
+          "experts": 4,
+          "fractions": [
+            0.2446458408598266,
+            0.2486960350433526,
+            0.26046276643786126,
+            0.24619535765895953
+          ],
+          "max_fraction": 0.26046276643786126,
+          "min_fraction": 0.2446458408598266,
+          "top_k": 2,
+          "utilization": 1.0
+        }
+      ],
+      "seed": 8112,
+      "steps": 173,
+      "tokens_per_step": 1024,
+      "tokens_seen": 177152,
+      "training_flops_per_token": 2816640,
+      "training_seconds": 2.588761651000823,
+      "training_tokens_per_second": 68431.17439240207,
+      "validation_batches": 20
+    },
+    {
+      "active_parameter_count": 396864,
+      "batch_size": 8,
+      "config": {
+        "context_length": 128,
+        "d_ff": 192,
+        "d_model": 96,
+        "dropout": 0.0,
+        "ffn_type": "moe",
+        "moe_aux_loss_weight": 0.01,
+        "moe_experts": 8,
+        "moe_top_k": 2,
+        "n_heads": 4,
+        "n_layers": 3,
+        "position_encoding": "learned",
+        "vocab_size": 512
+      },
+      "estimated_training_flops": 497306566656,
+      "final_validation_loss": 3.564034175872803,
+      "flop_estimator": "active-training-v2",
+      "initial_validation_loss": 6.206098818778992,
+      "last_training_loss": 3.798703908920288,
+      "learning_rate": 0.001,
+      "loss_improvement": 2.642064642906189,
+      "name": "moe8-top2-192",
+      "parameter_count": 1060416,
+      "routing": [
+        {
+          "assignments": 352256,
+          "counts": [
+            45471,
+            27975,
+            73988,
+            51328,
+            35285,
+            34587,
+            23371,
+            60251
+          ],
+          "experts": 8,
+          "fractions": [
+            0.12908509720203487,
+            0.0794166742369186,
+            0.21004042514534885,
+            0.1457122093023256,
+            0.1001686273619186,
+            0.09818711391715117,
+            0.06634663426598837,
+            0.17104321856831395
+          ],
+          "max_fraction": 0.21004042514534885,
+          "min_fraction": 0.06634663426598837,
+          "top_k": 2,
+          "utilization": 1.0
+        },
+        {
+          "assignments": 352256,
+          "counts": [
+            43248,
+            38331,
+            35440,
+            34253,
+            47531,
+            52861,
+            51320,
+            49272
+          ],
+          "experts": 8,
+          "fractions": [
+            0.12277434593023256,
+            0.1088157476380814,
+            0.10060864825581395,
+            0.0972389398619186,
+            0.1349331168241279,
+            0.1500641578851744,
+            0.14568949854651161,
+            0.13987554505813954
+          ],
+          "max_fraction": 0.1500641578851744,
+          "min_fraction": 0.0972389398619186,
+          "top_k": 2,
+          "utilization": 1.0
+        },
+        {
+          "assignments": 352256,
+          "counts": [
+            37072,
+            42832,
+            39083,
+            42538,
+            53927,
+            44439,
+            52008,
+            40357
+          ],
+          "experts": 8,
+          "fractions": [
+            0.10524164244186046,
+            0.12159338662790697,
+            0.11095055868459303,
+            0.12075876635174419,
+            0.15309036609738372,
+            0.12615540970203487,
+            0.14764262354651161,
+            0.11456724654796512
+          ],
+          "max_fraction": 0.15309036609738372,
+          "min_fraction": 0.10524164244186046,
+          "top_k": 2,
+          "utilization": 1.0
+        }
+      ],
+      "seed": 8112,
+      "steps": 172,
+      "tokens_per_step": 1024,
+      "tokens_seen": 176128,
+      "training_flops_per_token": 2823552,
+      "training_seconds": 5.273298027997953,
+      "training_tokens_per_second": 33399.97077063902,
+      "validation_batches": 20
+    }
+  ],
+  "seed": 8112,
+  "tokenizer_sha256": "6f66eba7d552fd22e4c35ba23c1998bbc549ab26ad89a1e0d245524bc802d398",
+  "winner_by_validation_loss": "moe8-top2-192"
+}
