@@ -5,20 +5,22 @@ Issue: #28.
 ## Question
 Can rotary position encoding improve validation loss per estimated training FLOP, and does doubling context to 256 help at the same budget?
 
-## Candidates
-- `learned-128` — current learned absolute positions.
-- `rotary-128` — same width/depth/context; RoPE on Q/K; no learned position table.
-- `rotary-256` — same rotary architecture with 256-token context.
-
 ## Controls
-- Same approved corpus and `genesis-v0` tokenizer.
-- Same seed: 7331.
-- Same optimizer/LR.
-- Same estimated training-FLOP budget: 500B.
-- Target 1,024 training tokens/step.
-- 20 deterministic validation batches.
+Same approved corpus/tokenizer, seed 7331, optimizer/LR, ~500B estimated training FLOPs, ~1,024 tokens/step, and 20 validation batches.
 
-## Decision rule
-Lowest final validation loss wins this tiny-scale experiment. Wall time and exact estimated FLOPs are recorded but do not override quality under the fixed budget.
+## Results
+| Candidate | Val loss | Params | Est. FLOPs | CPU tok/s |
+|---|---:|---:|---:|---:|
+| learned-128 | 3.59777 | 394,560 | 497.75B | 110,058 |
+| rotary-128 | **3.51775** | 382,272 | 498.70B | 64,671 |
+| rotary-256 | 3.67201 | 382,272 | 497.96B | 59,912 |
 
-This result is a tiny-scale architecture signal, not evidence that the same ranking holds at frontier scale.
+## Decision
+- **Quality winner:** rotary-128; ~2.2% lower validation loss than learned-128 at essentially equal estimated FLOPs and ~3.1% fewer parameters.
+- **Operational default:** keep learned-128 for now. The current rotary implementation is ~41% lower CPU throughput than learned-128.
+- Reject rotary-256 at this scale/budget: worse validation loss and lower CPU throughput.
+
+RoPE remains a promising quality hypothesis, but it must be optimized before promotion. This tiny-scale ranking is not assumed to hold at frontier scale.
+
+## Provenance
+The computation and CI succeeded in workflow run `31772851844` at source commit `6b17ba9c...`. Its original push lost a race with an unrelated workflow; the result was recovered from the immutable job log without rerunning compute.
