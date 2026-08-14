@@ -1,5 +1,5 @@
 [
-  {"title":"M0 — Bootstrap & Rules","description":"Make the project reproducible, tracked, independent, and zero-budget."},
+  {"title":"M0 — Bootstrap & Rules","description":"Bootstrap the repository, tracking, CI, independence, and zero-budget rules."},
   {"title":"M1 — Data & Tokenizer","description":"Create provenance-first data ingestion and the first trained tokenizer."},
   {"title":"M2 — Tiny Baseline Model","description":"Train and evaluate the first from-scratch model end to end."},
   {"title":"M3 — Evaluation Lab","description":"Measure quality, regressions, compute, memory, speed, and cost."},
