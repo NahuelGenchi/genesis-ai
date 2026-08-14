@@ -17,12 +17,13 @@ from .ingest import sha256_file
 from .model import GenesisLM
 from .tokenizer import ByteBPETokenizer
 
-TRAINING_POLICY_VERSION = "m6-micro-2m-training-v1"
+TRAINING_POLICY_VERSION = "m6-micro-2m-training-v2"
 SEED = 97001
 BASE_LR = 1e-3
 MIN_LR = 1e-4
 WARMUP_STEPS = 50
 GRAD_CLIP = 1.0
+CPU_THREADS = 1
 
 
 def _load_json(path: str | Path) -> dict[str, Any]:
@@ -157,9 +158,9 @@ def validate_training_inputs(
         "tokenizer_sha256": sha256_file(tokenizer_path),
     }
     if not math.isclose(policy["procedural_fraction"], 0.8) or not math.isclose(policy["public_fraction"], 0.2):
-        raise ValueError("M6 training v1 requires frozen 80/20 batch mix")
+        raise ValueError("M6 training v2 requires frozen 80/20 batch mix")
     if policy["target_tokens_per_step"] != 1024:
-        raise ValueError("M6 training v1 requires 1024 processed tokens per step")
+        raise ValueError("M6 training v2 requires 1024 processed tokens per step")
     return config, tokenizer, records, policy
 
 
@@ -198,6 +199,9 @@ def train_micro_2m(
     device: str = "cpu",
     seed: int = SEED,
 ) -> dict[str, Any]:
+    if device != "cpu":
+        raise ValueError("M6 training v2 is frozen to CPU for exact reproducibility")
+    torch.set_num_threads(CPU_THREADS)
     config, tokenizer, records, policy = validate_training_inputs(
         ladder_definition_path=ladder_definition_path,
         ladder_result_path=ladder_result_path,
@@ -207,7 +211,7 @@ def train_micro_2m(
         tokenizer_path=tokenizer_path,
     )
     if seed != SEED:
-        raise ValueError(f"M6 training v1 seed is frozen to {SEED}")
+        raise ValueError(f"M6 training v2 seed is frozen to {SEED}")
 
     batch_size = policy["target_tokens_per_step"] // config.context_length
     if batch_size * config.context_length != policy["target_tokens_per_step"]:
@@ -220,12 +224,10 @@ def train_micro_2m(
 
     torch.manual_seed(seed)
     random.seed(seed)
-    if torch.cuda.is_available():
-        torch.cuda.manual_seed_all(seed)
     torch.use_deterministic_algorithms(True)
 
     model = GenesisLM(config).to(device)
-    optimizer = torch.optim.AdamW(model.parameters(), lr=BASE_LR)
+    optimizer = torch.optim.AdamW(model.parameters(), lr=BASE_LR, foreach=False, fused=False)
     procedural_dataset = ExperienceDataset(records, tokenizer, config.context_length)
     public_dataset = TokenDataset(public_data, tokenizer, config.context_length, split="train")
     procedural_generator = torch.Generator(device="cpu").manual_seed(seed + 1)
@@ -291,6 +293,13 @@ def train_micro_2m(
         "minimum_learning_rate": MIN_LR,
         "warmup_steps": WARMUP_STEPS,
         "gradient_clip": GRAD_CLIP,
+        "determinism": {
+            "device": "cpu",
+            "torch_threads": torch.get_num_threads(),
+            "deterministic_algorithms": True,
+            "adamw_foreach": False,
+            "adamw_fused": False,
+        },
         "mean_procedural_training_loss": proc_loss_sum / proc_updates,
         "mean_public_training_loss": public_loss_sum / public_updates,
         "procedural_probe_loss_before": procedural_loss_before,
