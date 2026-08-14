@@ -18,13 +18,20 @@ class ScaleGateTest(unittest.TestCase):
         checkpoint_hash = sha256_file(checkpoint)
 
         training = {
-            "training_policy": "m6-micro-2m-training-v1",
+            "training_policy": "m6-micro-2m-training-v2",
             "inference_checkpoint_sha256": checkpoint_hash,
             "parameter_count": 1_895_808,
             "target_training_tokens": 2_000_000,
             "processed_tokens": 2_001_920,
             "procedural_step_fraction": 0.8,
             "public_step_fraction": 0.2,
+            "determinism": {
+                "device": "cpu",
+                "torch_threads": 1,
+                "deterministic_algorithms": True,
+                "adamw_foreach": False,
+                "adamw_fused": False,
+            },
             "cash_compute_cost_usd": 0.0,
         }
         reproduction = {
