@@ -29,3 +29,11 @@ body:
     attributes:
       label: Notes
       description: Only if needed.
+  - type: textarea
+    id: capability
+    attributes:
+      label: Capability accounting
+      description: Keep as pending while open. Replace with measured values immediately before closure; never use 0% for an undefined zero-baseline relative change.
+      value: "Model improvement since previous closed Issue: pending\nModel improvement since Issue #1: pending\nGCI-v1: pending\nModel weights changed: pending\nCheckpoint promoted: pending"
+    validations:
+      required: true

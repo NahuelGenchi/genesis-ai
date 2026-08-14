@@ -23,3 +23,11 @@ body:
       value: "- [ ] Root cause known\n- [ ] Regression test added\n- [ ] Fix verified"
     validations:
       required: true
+  - type: textarea
+    id: capability
+    attributes:
+      label: Capability accounting
+      description: Finalize immediately before closure; preserve the latest validated project capability even when the bug itself changes no weights.
+      value: "Model improvement since previous closed Issue: pending\nModel improvement since Issue #1: pending\nGCI-v1: pending\nModel weights changed: pending\nCheckpoint promoted: pending"
+    validations:
+      required: true
