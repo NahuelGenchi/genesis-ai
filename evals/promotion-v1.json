@@ -1,0 +1,11 @@
+{
+  "policy_version": "promotion-v1",
+  "required_suite_version": "m3-v1",
+  "min_validation_improvement_fraction": 0.005,
+  "max_decode_throughput_regression_fraction": 0.2,
+  "max_training_throughput_regression_fraction": 0.2,
+  "max_peak_rss_regression_fraction": 0.15,
+  "require_zero_exact_contamination": true,
+  "require_same_parameter_count": true,
+  "require_experience_loss_decreased": true
+}
