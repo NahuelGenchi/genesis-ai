@@ -19,6 +19,7 @@ genesis-tokenizer-train = "genesis_ai.tokenizer:main"
 genesis-eval-lab = "genesis_ai.eval_lab:main"
 genesis-benchmark = "genesis_ai.benchmark:main"
 genesis-research = "genesis_ai.research:main"
+genesis-challenge = "genesis_ai.challenger:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
