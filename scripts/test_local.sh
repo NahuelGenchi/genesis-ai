@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
 cd "$(dirname "$0")/.."
-PYTHONPATH=src python3 scripts/validate_tracking.py
-PYTHONPATH=src python3 -m unittest discover -s tests -v
+PYTHON_BIN="${PYTHON_BIN:-python3}"
+PYTHONPATH=src "$PYTHON_BIN" scripts/validate_tracking.py
+PYTHONPATH=src "$PYTHON_BIN" -m unittest discover -s tests -v
