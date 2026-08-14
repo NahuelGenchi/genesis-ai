@@ -18,6 +18,18 @@ Every procedural answer is derived by the deterministic project oracle and must 
 
 No proprietary model, API, distillation output, or AI-generated answer is used.
 
+## 128-token window policy
+Some canonical code prompts plus their answer exceed the model's 128-token context because of the fixed instruction prefix.
+
+#97 must therefore construct each procedural training sequence exactly as follows:
+- concatenate `prompt + "\nAnswer:" + response`;
+- preserve **all response tokens**;
+- when the sequence exceeds the training window, remove tokens only from the **left edge of the prompt prefix**;
+- never truncate or mask away any response token;
+- use response-only loss for procedural examples.
+
+The curriculum lock records how many examples require prefix truncation and the maximum effective training-window size. A response that cannot itself fit the context fails closed.
+
 ## Evaluation isolation
 The frozen #95 code holdout is reconstructed from `evals/m6-domain-selection-v1.json` before curriculum generation.
 
