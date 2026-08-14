@@ -1,0 +1,80 @@
+name: M4 low-bit inference experiment
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - src/genesis_ai/quantization.py
+      - tests/test_quantization.py
+      - .github/workflows/m4-low-bit-experiment.yml
+
+permissions:
+  contents: write
+
+concurrency:
+  group: m4-low-bit-experiment
+  cancel-in-progress: false
+
+jobs:
+  experiment:
+    runs-on: [self-hosted, linux, x64]
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Prepare persistent Python environment
+        run: |
+          ENV_DIR="$HOME/.cache/genesis-ai-ci/venv"
+          if [ ! -x "$ENV_DIR/bin/python" ]; then python3 -m venv "$ENV_DIR"; fi
+          if ! "$ENV_DIR/bin/python" -c 'import torch' >/dev/null 2>&1; then
+            "$ENV_DIR/bin/python" -m pip install --upgrade pip
+            "$ENV_DIR/bin/python" -m pip install --index-url https://download.pytorch.org/whl/cpu torch
+          fi
+      - name: Rebuild approved corpus
+        run: |
+          PY="$HOME/.cache/genesis-ai-ci/venv/bin/python"
+          rm -rf runs/m4-low-bit
+          PYTHONPATH=src "$PY" -m genesis_ai.bootstrap_corpus \
+            --catalog data/bootstrap-tokenizer-sources.json \
+            --workspace runs/m4-low-bit/corpus \
+            --output runs/m4-low-bit/rebuilt-tokenizer.json \
+            --lock data/bootstrap-tokenizer-lock.json \
+            --vocab-size 512
+          cmp tokenizers/genesis-v0.json runs/m4-low-bit/rebuilt-tokenizer.json
+      - name: Benchmark FP32 vs INT8
+        run: |
+          PY="$HOME/.cache/genesis-ai-ci/venv/bin/python"
+          PYTHONPATH=src "$PY" -m genesis_ai.quantization \
+            --checkpoint checkpoints/genesis-tiny-v0.pt \
+            --data runs/m4-low-bit/corpus/filtered \
+            --validation-batches 20 \
+            --decode-tokens 256 \
+            --decode-repeats 3 \
+            --output research/m4-low-bit-v1.json
+          PYTHONPATH=src "$PY" -m genesis_ai.result_provenance \
+            research/m4-low-bit-v1.json \
+            --source-commit "$GITHUB_SHA" \
+            --workflow-run-id "$GITHUB_RUN_ID"
+      - name: Require real quantization
+        run: |
+          PY="$HOME/.cache/genesis-ai-ci/venv/bin/python"
+          "$PY" - <<'PY'
+          import json
+          from pathlib import Path
+          result = json.loads(Path('research/m4-low-bit-v1.json').read_text())
+          assert result['int8']['quantized_linear_modules'] > 0, result
+          assert result['int8']['serialized_state_dict_bytes'] < result['fp32']['serialized_state_dict_bytes'], result
+          PY
+      - name: Validate repository
+        run: PYTHON_BIN="$HOME/.cache/genesis-ai-ci/venv/bin/python" ./scripts/test_local.sh
+      - name: Commit experiment result safely
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add research/m4-low-bit-v1.json
+          if ! git diff --cached --quiet; then
+            git commit -m "M4: record low-bit inference experiment (#30)"
+            git fetch origin main
+            git rebase origin/main
+            git push origin HEAD:main
+          fi
