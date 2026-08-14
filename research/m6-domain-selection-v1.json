@@ -1,0 +1,51 @@
+{
+  "checkpoint_sha256": "4db01f8239cfc28933bc3152b7b698ffe089491ce1acf5b66de8adc53b9f8ed9",
+  "checkpoint_step": 160,
+  "difficulty": 1,
+  "domains": {
+    "code": {
+      "exact_accuracy": 0.0,
+      "exact_correct": 0,
+      "oracle_set_sha256": "ac951449f47b7395f9d7bad99ced8c88d20a609fcbafb9c09929619377ceacb4",
+      "oracle_target_loss": 6.620002301319949,
+      "oracle_target_tokens": 891,
+      "response_set_sha256": "01ff8a4bb590561fab088cdf4299b2dbeb82b5a9c1c38c38b30f32015db13e39",
+      "task_count": 60,
+      "task_set_sha256": "edea452777c7328fd13d550ced322bd5815eac664be5f3924047f15122cc17c8"
+    },
+    "math": {
+      "exact_accuracy": 0.0,
+      "exact_correct": 0,
+      "oracle_set_sha256": "7152390df9f86d5c74dd6707c59955369ef8ddbba1234ab9d760c246305fad14",
+      "oracle_target_loss": 9.135550579467377,
+      "oracle_target_tokens": 154,
+      "response_set_sha256": "ef24b7276af3c18f055744c79d00b4d0366dbf39ea964ade4916173e95ebc45a",
+      "task_count": 60,
+      "task_set_sha256": "820ba66788eeea7a10fc07f63f3796558aafaa9a53a2790dea3825db2a5e423c"
+    },
+    "structured": {
+      "exact_accuracy": 0.0,
+      "exact_correct": 0,
+      "oracle_set_sha256": "74f8521c42400c2201543d800e9f37767611cc0ce2b3dc9157f1a380d3163e31",
+      "oracle_target_loss": 7.916341355909328,
+      "oracle_target_tokens": 1259,
+      "response_set_sha256": "49bc906a552a8b8855aa735dc2d68a185ba0e70b1ff50b65a4c660574974d277",
+      "task_count": 60,
+      "task_set_sha256": "eaf71820fe558b44d4342b9dd526c41e680e33b30723c33cad35ef6dade1d5c4"
+    }
+  },
+  "format_version": "1.0",
+  "result_provenance": {
+    "source_commit": "067c0fdb627f315cf881624e1c79474e342108b3",
+    "workflow_run_id": "31810825418"
+  },
+  "selected_domain": "code",
+  "selected_reason": {
+    "exact_accuracy": 0.0,
+    "oracle_target_loss": 6.620002301319949
+  },
+  "selection_rule": "highest_exact_accuracy_then_lowest_oracle_target_loss_then_domain_name",
+  "suite_sha256": "3ff62c0241003198c786afb29c4d64394566ce82dba7eef7681fc9ebe25655d9",
+  "suite_version": "m6-domain-selection-v1",
+  "tasks_per_domain": 60
+}
