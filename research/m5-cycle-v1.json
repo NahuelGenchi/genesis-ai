@@ -1,0 +1,41 @@
+{
+  "candidate_trained": false,
+  "challenge": {
+    "challenge_seed": 20260814,
+    "difficulty": {
+      "max": 1,
+      "min": 1
+    },
+    "domains": [
+      "math",
+      "structured",
+      "code"
+    ],
+    "generation_seed": 9107,
+    "min_accepted": 8,
+    "task_count": 60,
+    "tasks_sha256": "c0965fe020e570ccd35cb8daf5fa8fe0ed412db5315b9c557f3b2109a71e2354"
+  },
+  "cycle_version": "m5-v1",
+  "experience": {
+    "acceptance_rate": 0.0,
+    "accepted": 0,
+    "accepted_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "attempted": 60,
+    "audit_sha256": "8faf5839699e775e6efdbfef65611e1e10cd491da9edd291faeb16227d47a38f",
+    "manifest_sha256": "d7a721684fe0659f66b104f552dbe8aa57be5bdb51551e3a08e87fdd6de23e00",
+    "min_score": 1.0,
+    "policy": "verified-experience-v1",
+    "rejected": 60
+  },
+  "format_version": "1.0",
+  "parent_checkpoint_sha256": "4db01f8239cfc28933bc3152b7b698ffe089491ce1acf5b66de8adc53b9f8ed9",
+  "promotion_attempted": false,
+  "provenance": {
+    "source_commit": "413792faf6c82fe75b3dd0faa8c5a216d9e510fa",
+    "workflow_run_id": "31808968420"
+  },
+  "reason": "insufficient_verified_experience",
+  "record_sha256": "7cb8b6c179ce14eab87210eff00e0d1220fec8a4511002a1b27662b27397a2ed",
+  "status": "no_candidate"
+}
