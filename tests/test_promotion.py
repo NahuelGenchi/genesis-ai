@@ -122,6 +122,15 @@ class PromotionGateTest(unittest.TestCase):
             self.assertEqual(first, second)
             self.assertEqual(first["decision"], "promote")
             self.assertTrue(all(gate["passed"] for gate in first["gates"]))
+            self.assertEqual(
+                first["measurement_inputs"],
+                {
+                    "parent_evaluation_sha256": sha256_file(paths["parent_eval"]),
+                    "candidate_evaluation_sha256": sha256_file(paths["candidate_eval"]),
+                    "parent_benchmark_sha256": sha256_file(paths["parent_bench"]),
+                    "candidate_benchmark_sha256": sha256_file(paths["candidate_bench"]),
+                },
+            )
 
     def test_validation_and_throughput_regressions_block_promotion(self):
         with tempfile.TemporaryDirectory() as directory:
