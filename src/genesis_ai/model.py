@@ -7,6 +7,34 @@ from torch.nn import functional as F
 from .config import ModelConfig
 
 
+class RMSNorm(nn.Module):
+    def __init__(self, dimension: int, eps: float = 1e-6) -> None:
+        super().__init__()
+        self.weight = nn.Parameter(torch.ones(dimension))
+        self.eps = eps
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        scale = torch.rsqrt(x.float().pow(2).mean(dim=-1, keepdim=True) + self.eps).to(dtype=x.dtype)
+        return x * scale * self.weight
+
+
+def build_norm(config: ModelConfig) -> nn.Module:
+    if config.norm_type == "rmsnorm":
+        return RMSNorm(config.d_model)
+    return nn.LayerNorm(config.d_model)
+
+
+class SwiGLUFFN(nn.Module):
+    def __init__(self, config: ModelConfig) -> None:
+        super().__init__()
+        self.gate = nn.Linear(config.d_model, config.d_ff, bias=False)
+        self.value = nn.Linear(config.d_model, config.d_ff, bias=False)
+        self.out = nn.Linear(config.d_ff, config.d_model, bias=False)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        return self.out(F.silu(self.gate(x)) * self.value(x))
+
+
 class CausalSelfAttention(nn.Module):
     def __init__(self, config: ModelConfig) -> None:
         super().__init__()
@@ -124,11 +152,13 @@ class SparseMoE(nn.Module):
 class Block(nn.Module):
     def __init__(self, config: ModelConfig) -> None:
         super().__init__()
-        self.attn_norm = nn.LayerNorm(config.d_model)
+        self.attn_norm = build_norm(config)
         self.attn = CausalSelfAttention(config)
-        self.mlp_norm = nn.LayerNorm(config.d_model)
+        self.mlp_norm = build_norm(config)
         if config.ffn_type == "moe":
             self.mlp: nn.Module = SparseMoE(config)
+        elif config.dense_activation == "swiglu":
+            self.mlp = SwiGLUFFN(config)
         else:
             # Keep the original Sequential layout so accepted dense checkpoints
             # retain their legacy `blocks.N.mlp.0/2.weight` state-dict keys.
@@ -157,7 +187,7 @@ class GenesisLM(nn.Module):
             else None
         )
         self.blocks = nn.ModuleList([Block(config) for _ in range(config.n_layers)])
-        self.final_norm = nn.LayerNorm(config.d_model)
+        self.final_norm = build_norm(config)
         self.lm_head = nn.Linear(config.d_model, config.vocab_size, bias=False)
         self.lm_head.weight = self.token_embedding.weight
         self.apply(self._init_weights)
