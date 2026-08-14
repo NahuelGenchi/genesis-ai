@@ -27,7 +27,11 @@ def build_scale_model_card(
     candidate_m3_path: str | Path,
     gate_path: str | Path,
     curriculum_lock_path: str | Path,
+    model_name: str = MODEL_NAME,
+    alignment_result_path: str | Path | None = None,
 ) -> tuple[dict[str, Any], str]:
+    if not model_name or "/" in model_name or "\\" in model_name:
+        raise ValueError("model_name must be a non-empty path-safe name")
     checkpoint_path = Path(checkpoint_path)
     training = _load_json(training_run_path)
     domain = _load_json(domain_result_path)
@@ -36,6 +40,7 @@ def build_scale_model_card(
     candidate_m3 = _load_json(candidate_m3_path)
     gate = _load_json(gate_path)
     curriculum = _load_json(curriculum_lock_path)
+    alignment = _load_json(alignment_result_path) if alignment_result_path is not None else None
     checkpoint_hash = sha256_file(checkpoint_path)
     if gate.get("promoted") is not True or gate.get("decision") != "promote":
         raise ValueError("model card may only be built for a promoted M6 checkpoint")
@@ -43,6 +48,8 @@ def build_scale_model_card(
         raise ValueError("gate does not match checkpoint")
     if training.get("inference_checkpoint_sha256") != checkpoint_hash:
         raise ValueError("training record does not match checkpoint")
+    if alignment is not None and alignment.get("checkpoint_sha256") != checkpoint_hash:
+        raise ValueError("alignment result does not match checkpoint")
 
     baseline_code = baseline_domain["domains"]["code"]
     candidate_code = domain["domains"]["code"]
@@ -50,7 +57,7 @@ def build_scale_model_card(
     candidate_loss = float(candidate_m3["primary_metric"]["value"])
     record: dict[str, Any] = {
         "format_version": "1.0",
-        "model": MODEL_NAME,
+        "model": model_name,
         "checkpoint": {"sha256": checkpoint_hash, "size_bytes": checkpoint_path.stat().st_size},
         "architecture": training["architecture"],
         "parameter_count": training["parameter_count"],
@@ -71,8 +78,7 @@ def build_scale_model_card(
             "baseline_exact_accuracy": baseline_code["exact_accuracy"],
             "candidate_exact_accuracy": candidate_code["exact_accuracy"],
             "absolute_gain": float(candidate_code["exact_accuracy"]) - float(baseline_code["exact_accuracy"]),
-            "baseline_oracle_target_loss": baseline_code["oracle_target_loss"],
-            "candidate_oracle_target_loss": candidate_code["oracle_target_loss"],
+            "legacy_end_anchored_oracle_target_loss": candidate_code["oracle_target_loss"],
         },
         "general_language": {
             "suite": candidate_m3["suite_version"],
@@ -97,8 +103,30 @@ def build_scale_model_card(
             "Success on the frozen 60-task holdout does not imply broad coding ability.",
         ],
     }
+    if alignment is not None:
+        rolling = alignment.get("generation_aligned_rolling")
+        if not isinstance(rolling, dict):
+            raise ValueError("alignment result is missing generation_aligned_rolling")
+        record["generation_alignment"] = {
+            "diagnostic_version": alignment.get("diagnostic_version"),
+            "rolling_loss": rolling.get("mean_loss"),
+            "greedy_token_accuracy": rolling.get("greedy_token_accuracy"),
+            "first_token_greedy_correct_rate": rolling.get("first_token_greedy_correct_rate"),
+            "all_greedy_tokens_correct_rate": rolling.get("all_greedy_tokens_correct_rate"),
+        }
+
     limitations = "\n".join(f"- {item}" for item in record["limitations"])
-    markdown = f"""# {MODEL_NAME}
+    alignment_markdown = ""
+    if "generation_alignment" in record:
+        aligned = record["generation_alignment"]
+        alignment_markdown = f"""
+## Generation-aligned diagnostics
+- Rolling teacher-forced loss: {aligned['rolling_loss']:.6f}
+- Rolling greedy token accuracy: {aligned['greedy_token_accuracy']:.2%}
+- First-answer-token greedy accuracy: {aligned['first_token_greedy_correct_rate']:.2%}
+- Entire oracle sequence greedy-correct under rolling teacher forcing: {aligned['all_greedy_tokens_correct_rate']:.2%}
+"""
+    markdown = f"""# {model_name}
 
 ## Status
 **Promoted M6 useful-domain checkpoint.** This is still a research model, not a general assistant.
@@ -113,6 +141,7 @@ def build_scale_model_card(
 - Position encoding: {record['architecture']['position_encoding']}
 
 ## Training
+- Policy: `{record['training']['policy']}`
 - Processed tokens: {record['training']['processed_tokens']:,}
 - Steps: {record['training']['steps']}
 - Mix: {record['training']['procedural_step_fraction']:.0%} procedural / {record['training']['public_step_fraction']:.0%} public-domain text
@@ -124,9 +153,9 @@ Frozen domain: **restricted integer-expression synthesis**.
 
 - Exact accuracy: {record['capability']['baseline_exact_accuracy']:.2%} → **{record['capability']['candidate_exact_accuracy']:.2%}**
 - Absolute gain: **{record['capability']['absolute_gain']:.2%}**
-- Oracle-target loss: {record['capability']['baseline_oracle_target_loss']:.6f} → {record['capability']['candidate_oracle_target_loss']:.6f}
+- Legacy end-anchored oracle-target loss: {record['capability']['legacy_end_anchored_oracle_target_loss']:.6f}
 - Holdout tasks: {record['capability']['task_count']}
-
+{alignment_markdown}
 ## General-language regression gate
 - M3 validation loss: {record['general_language']['baseline_validation_loss']:.6f} → {record['general_language']['candidate_validation_loss']:.6f}
 - Regression fraction: {record['general_language']['regression_fraction']:.2%}
@@ -149,7 +178,7 @@ Frozen domain: **restricted integer-expression synthesis**.
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Build the promoted Genesis micro-2m model card.")
+    parser = argparse.ArgumentParser(description="Build a promoted Genesis micro-2m model card.")
     parser.add_argument("--checkpoint", type=Path, required=True)
     parser.add_argument("--training-run", type=Path, required=True)
     parser.add_argument("--domain-result", type=Path, required=True)
@@ -158,6 +187,8 @@ def main() -> None:
     parser.add_argument("--candidate-m3", type=Path, required=True)
     parser.add_argument("--gate", type=Path, required=True)
     parser.add_argument("--curriculum-lock", type=Path, required=True)
+    parser.add_argument("--model-name", default=MODEL_NAME)
+    parser.add_argument("--alignment-result", type=Path)
     parser.add_argument("--output-dir", type=Path, required=True)
     args = parser.parse_args()
     record, markdown = build_scale_model_card(
@@ -169,6 +200,8 @@ def main() -> None:
         candidate_m3_path=args.candidate_m3,
         gate_path=args.gate,
         curriculum_lock_path=args.curriculum_lock,
+        model_name=args.model_name,
+        alignment_result_path=args.alignment_result,
     )
     args.output_dir.mkdir(parents=True, exist_ok=True)
     (args.output_dir / "metrics.json").write_text(json.dumps(record, indent=2, sort_keys=True) + "\n", encoding="utf-8", newline="\n")
