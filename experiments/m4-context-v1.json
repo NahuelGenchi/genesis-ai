@@ -1,0 +1,47 @@
+{
+  "format_version": "1.0",
+  "name": "m4-context-v1",
+  "seed": 7331,
+  "training_flop_budget": 500000000000,
+  "target_tokens_per_step": 1024,
+  "learning_rate": 0.001,
+  "validation_batches": 20,
+  "candidates": [
+    {
+      "name": "learned-128",
+      "config": {
+        "context_length": 128,
+        "d_model": 96,
+        "n_heads": 4,
+        "n_layers": 3,
+        "d_ff": 384,
+        "dropout": 0.0,
+        "position_encoding": "learned"
+      }
+    },
+    {
+      "name": "rotary-128",
+      "config": {
+        "context_length": 128,
+        "d_model": 96,
+        "n_heads": 4,
+        "n_layers": 3,
+        "d_ff": 384,
+        "dropout": 0.0,
+        "position_encoding": "rotary"
+      }
+    },
+    {
+      "name": "rotary-256",
+      "config": {
+        "context_length": 256,
+        "d_model": 96,
+        "n_heads": 4,
+        "n_layers": 3,
+        "d_ff": 384,
+        "dropout": 0.0,
+        "position_encoding": "rotary"
+      }
+    }
+  ]
+}

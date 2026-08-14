@@ -10,6 +10,7 @@ class ModelConfig:
     n_layers: int = 4
     d_ff: int = 768
     dropout: float = 0.0
+    position_encoding: str = "learned"
 
     def validate(self) -> None:
         if self.vocab_size <= 0:
@@ -22,6 +23,10 @@ class ModelConfig:
             raise ValueError("n_layers and d_ff must be positive")
         if not 0.0 <= self.dropout < 1.0:
             raise ValueError("dropout must be in [0, 1)")
+        if self.position_encoding not in {"learned", "rotary"}:
+            raise ValueError("position_encoding must be learned or rotary")
+        if self.position_encoding == "rotary" and (self.d_model // self.n_heads) % 2 != 0:
+            raise ValueError("rotary position encoding requires an even head dimension")
 
     def to_dict(self) -> dict:
         return asdict(self)

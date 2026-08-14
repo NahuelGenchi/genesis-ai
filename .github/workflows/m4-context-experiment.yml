@@ -1,0 +1,65 @@
+name: M4 context experiment
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - experiments/m4-context-v1.json
+      - src/genesis_ai/config.py
+      - src/genesis_ai/model.py
+      - src/genesis_ai/research.py
+      - .github/workflows/m4-context-experiment.yml
+
+permissions:
+  contents: write
+
+concurrency:
+  group: m4-context-experiment
+  cancel-in-progress: false
+
+jobs:
+  experiment:
+    runs-on: [self-hosted, linux, x64]
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Prepare persistent Python environment
+        run: |
+          ENV_DIR="$HOME/.cache/genesis-ai-ci/venv"
+          if [ ! -x "$ENV_DIR/bin/python" ]; then python3 -m venv "$ENV_DIR"; fi
+          if ! "$ENV_DIR/bin/python" -c 'import torch' >/dev/null 2>&1; then
+            "$ENV_DIR/bin/python" -m pip install --upgrade pip
+            "$ENV_DIR/bin/python" -m pip install --index-url https://download.pytorch.org/whl/cpu torch
+          fi
+      - name: Rebuild approved corpus
+        run: |
+          PY="$HOME/.cache/genesis-ai-ci/venv/bin/python"
+          rm -rf runs/m4-context
+          PYTHONPATH=src "$PY" -m genesis_ai.bootstrap_corpus \
+            --catalog data/bootstrap-tokenizer-sources.json \
+            --workspace runs/m4-context/corpus \
+            --output runs/m4-context/rebuilt-tokenizer.json \
+            --lock data/bootstrap-tokenizer-lock.json \
+            --vocab-size 512
+          cmp tokenizers/genesis-v0.json runs/m4-context/rebuilt-tokenizer.json
+      - name: Run fixed-compute experiment
+        run: |
+          PY="$HOME/.cache/genesis-ai-ci/venv/bin/python"
+          PYTHONPATH=src "$PY" -m genesis_ai.research \
+            --definition experiments/m4-context-v1.json \
+            --data runs/m4-context/corpus/filtered \
+            --tokenizer tokenizers/genesis-v0.json \
+            --output research/m4-context-v1.json \
+            --device cpu
+      - name: Validate repository
+        run: PYTHON_BIN="$HOME/.cache/genesis-ai-ci/venv/bin/python" ./scripts/test_local.sh
+      - name: Commit experiment result
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add research/m4-context-v1.json
+          if ! git diff --cached --quiet; then
+            git commit -m "M4: record context experiment (#28)"
+            git push origin HEAD:main
+          fi
