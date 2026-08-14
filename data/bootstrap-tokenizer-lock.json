@@ -1,0 +1,43 @@
+{
+  "catalog_sha256": "4051b2a98369cae5a00c59719c0af6a6cb2c4da63e766e2f692b12f7927d02e0",
+  "format_version": "1.0",
+  "sample_bytes_per_source": 180000,
+  "sources": [
+    {
+      "ebook_id": 2000,
+      "id": "gutenberg-don-quijote-2000",
+      "language": "es",
+      "rights_page": "https://www.gutenberg.org/ebooks/2000",
+      "sample_sha256": "2cbc9e527f6f3e975f016cd4bab0cf8524b5406ea3327b5e0d79579df8477062",
+      "sample_size_bytes": 158274,
+      "sample_stride": 13,
+      "text_url": "https://www.gutenberg.org/cache/epub/2000/pg2000.txt",
+      "upstream_sha256": "534f41d59f7142163fa0964076ac6351845c006ea6433778be637fac6d5b04d7",
+      "upstream_size_bytes": 2225803
+    },
+    {
+      "ebook_id": 17489,
+      "id": "gutenberg-les-miserables-17489",
+      "language": "fr",
+      "rights_page": "https://www.gutenberg.org/ebooks/17489",
+      "sample_sha256": "b6b64be2f61cbd2f380c937ac2244c2665e0060e5bc5c67f8d31f6cda4be6f8a",
+      "sample_size_bytes": 168561,
+      "sample_stride": 4,
+      "text_url": "https://www.gutenberg.org/cache/epub/17489/pg17489.txt",
+      "upstream_sha256": "a5de514ba7b9f2e1790e7e259c4e8b7a35ae1d29e4bf9a5f8767039c58b80503",
+      "upstream_size_bytes": 710496
+    },
+    {
+      "ebook_id": 1342,
+      "id": "gutenberg-pride-prejudice-1342",
+      "language": "en",
+      "rights_page": "https://www.gutenberg.org/ebooks/1342",
+      "sample_sha256": "c7246fa08df958e075cf6343b68103cea963fd99deecf6977e016ae0824ecf83",
+      "sample_size_bytes": 144664,
+      "sample_stride": 5,
+      "text_url": "https://www.gutenberg.org/cache/epub/1342/pg1342.txt",
+      "upstream_sha256": "74f2665d6e6925fc2c17dec644bec9e87df478a0f1836822125e8acbb3777806",
+      "upstream_size_bytes": 772386
+    }
+  ]
+}
