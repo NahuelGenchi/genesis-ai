@@ -12,9 +12,30 @@ class CausalSelfAttention(nn.Module):
         super().__init__()
         self.n_heads = config.n_heads
         self.head_dim = config.d_model // config.n_heads
+        self.position_encoding = config.position_encoding
         self.qkv = nn.Linear(config.d_model, 3 * config.d_model, bias=False)
         self.out = nn.Linear(config.d_model, config.d_model, bias=False)
         self.dropout = config.dropout
+        if self.position_encoding == "rotary":
+            inv_freq = 1.0 / (10000 ** (torch.arange(0, self.head_dim, 2, dtype=torch.float32) / self.head_dim))
+            self.register_buffer("rotary_inv_freq", inv_freq, persistent=False)
+        else:
+            self.register_buffer("rotary_inv_freq", torch.empty(0), persistent=False)
+
+    def _apply_rotary(self, q: torch.Tensor, k: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
+        time = q.size(-2)
+        positions = torch.arange(time, device=q.device, dtype=self.rotary_inv_freq.dtype)
+        angles = torch.outer(positions, self.rotary_inv_freq)
+        cos = angles.cos().to(dtype=q.dtype)[None, None, :, :]
+        sin = angles.sin().to(dtype=q.dtype)[None, None, :, :]
+
+        def rotate(x: torch.Tensor) -> torch.Tensor:
+            even = x[..., 0::2]
+            odd = x[..., 1::2]
+            rotated = torch.stack((even * cos - odd * sin, even * sin + odd * cos), dim=-1)
+            return rotated.flatten(-2)
+
+        return rotate(q), rotate(k)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         batch, time, channels = x.shape
@@ -23,6 +44,8 @@ class CausalSelfAttention(nn.Module):
         q = q.view(batch, time, self.n_heads, self.head_dim).transpose(1, 2)
         k = k.view(batch, time, self.n_heads, self.head_dim).transpose(1, 2)
         v = v.view(batch, time, self.n_heads, self.head_dim).transpose(1, 2)
+        if self.position_encoding == "rotary":
+            q, k = self._apply_rotary(q, k)
         y = F.scaled_dot_product_attention(
             q,
             k,
@@ -59,7 +82,11 @@ class GenesisLM(nn.Module):
         config.validate()
         self.config = config
         self.token_embedding = nn.Embedding(config.vocab_size, config.d_model)
-        self.position_embedding = nn.Embedding(config.context_length, config.d_model)
+        self.position_embedding = (
+            nn.Embedding(config.context_length, config.d_model)
+            if config.position_encoding == "learned"
+            else None
+        )
         self.blocks = nn.ModuleList([Block(config) for _ in range(config.n_layers)])
         self.final_norm = nn.LayerNorm(config.d_model)
         self.lm_head = nn.Linear(config.d_model, config.vocab_size, bias=False)
@@ -79,8 +106,10 @@ class GenesisLM(nn.Module):
         _, time = tokens.shape
         if time > self.config.context_length:
             raise ValueError("sequence exceeds context_length")
-        positions = torch.arange(time, device=tokens.device)
-        x = self.token_embedding(tokens) + self.position_embedding(positions)[None, :, :]
+        x = self.token_embedding(tokens)
+        if self.position_embedding is not None:
+            positions = torch.arange(time, device=tokens.device)
+            x = x + self.position_embedding(positions)[None, :, :]
         for block in self.blocks:
             x = block(x)
         logits = self.lm_head(self.final_norm(x))
