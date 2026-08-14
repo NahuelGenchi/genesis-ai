@@ -1,153 +1,52 @@
-name: M6 aligned termination diagnostic
+name: M6 aligned termination diagnostic v1 record verifier
 
 on:
   workflow_dispatch:
-  push:
-    branches: [main]
-    paths:
-      - .github/workflows/m6-aligned-termination-diagnostic.yml
 
 permissions:
-  contents: write
-
-concurrency:
-  group: m6-aligned-termination-diagnostic-v1
-  cancel-in-progress: false
+  contents: read
 
 jobs:
-  diagnose:
+  verify:
     runs-on: [self-hosted, linux, x64]
-    timeout-minutes: 15
-    env:
-      WORK: runs/m6-aligned-termination-diagnostic-v1
-      RESULT: research/m6-aligned-termination-diagnostic-v1.json
-      OMP_NUM_THREADS: "1"
-      MKL_NUM_THREADS: "1"
-      OPENBLAS_NUM_THREADS: "1"
-      NUMEXPR_NUM_THREADS: "1"
-      VECLIB_MAXIMUM_THREADS: "1"
+    timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
 
-      - name: Prepare persistent Python environment
+      - name: Verify frozen termination evidence
         run: |
-          ENV_DIR="$HOME/.cache/genesis-ai-ci/venv"
-          if [ ! -x "$ENV_DIR/bin/python" ]; then python3 -m venv "$ENV_DIR"; fi
-          if ! "$ENV_DIR/bin/python" -c 'import torch' >/dev/null 2>&1; then
-            "$ENV_DIR/bin/python" -m pip install --upgrade pip
-            "$ENV_DIR/bin/python" -m pip install --index-url https://download.pytorch.org/whl/cpu torch
-          fi
-
-      - name: Rebuild frozen training inputs
-        run: |
-          PY="$HOME/.cache/genesis-ai-ci/venv/bin/python"
-          rm -rf "$WORK"
-          mkdir -p "$WORK"
-          cp data/bootstrap-tokenizer-lock.json "$WORK/bootstrap-tokenizer-lock.json"
-          PYTHONPATH=src "$PY" -m genesis_ai.bootstrap_corpus \
-            --catalog data/bootstrap-tokenizer-sources.json \
-            --workspace "$WORK/public-corpus" \
-            --output "$WORK/rebuilt-tokenizer.json" \
-            --lock "$WORK/bootstrap-tokenizer-lock.json" \
-            --vocab-size 512
-          cmp data/bootstrap-tokenizer-lock.json "$WORK/bootstrap-tokenizer-lock.json"
-          cmp tokenizers/genesis-v0.json "$WORK/rebuilt-tokenizer.json"
-          PYTHONPATH=src "$PY" -m genesis_ai.curriculum \
-            --spec experiments/m6-code-curriculum-v1.json \
-            --selection research/m6-domain-selection-v1.json \
-            --evaluation-suite evals/m6-domain-selection-v1.json \
-            --tokenizer tokenizers/genesis-v0.json \
-            --public-data "$WORK/public-corpus/filtered" \
-            --public-source-lock data/bootstrap-tokenizer-lock.json \
-            --public-source-catalog data/bootstrap-tokenizer-sources.json \
-            --records "$WORK/procedural.jsonl" \
-            --output "$WORK/curriculum-lock.json"
-          "$PY" - <<'PY'
+          python3 - <<'PY'
           import json
           from pathlib import Path
-          generated = json.loads(Path('runs/m6-aligned-termination-diagnostic-v1/curriculum-lock.json').read_text())
-          frozen = json.loads(Path('research/m6-code-curriculum-v1.json').read_text())
-          frozen.pop('result_provenance', None)
-          assert generated == frozen, 'rebuilt curriculum differs from #96'
-          PY
 
-      - name: Reconstruct aligned candidate ephemerally
-        run: |
-          PY="$HOME/.cache/genesis-ai-ci/venv/bin/python"
-          PYTHONPATH=src "$PY" -m genesis_ai.aligned_training \
-            --ladder-definition experiments/m6-scaling-ladder-v1.json \
-            --ladder-result research/m6-scaling-ladder-v1.json \
-            --curriculum-lock research/m6-code-curriculum-v1.json \
-            --records "$WORK/procedural.jsonl" \
-            --public-data "$WORK/public-corpus/filtered" \
-            --tokenizer tokenizers/genesis-v0.json \
-            --checkpoint "$WORK/candidate-training.pt" \
-            --export "$WORK/candidate.pt" \
-            --run "$WORK/training.json" \
-            --device cpu
+          path = Path('research/m6-aligned-termination-diagnostic-v1.json')
+          result = json.loads(path.read_text())
 
-      - name: Verify aligned training trajectory
-        run: |
-          PY="$HOME/.cache/genesis-ai-ci/venv/bin/python"
-          "$PY" - <<'PY'
-          import json
-          from pathlib import Path
-          current = json.loads(Path('runs/m6-aligned-termination-diagnostic-v1/training.json').read_text())
-          frozen = json.loads(Path('research/m6-aligned-micro-2m-v1/training.json').read_text())
-          keys = (
-              'training_policy', 'dataset_version', 'seed', 'architecture', 'parameter_count',
-              'steps', 'processed_tokens', 'target_training_tokens', 'procedural_step_fraction',
-              'public_step_fraction', 'determinism', 'alignment', 'mean_procedural_training_loss',
-              'mean_public_training_loss', 'aligned_probe_loss_before', 'aligned_probe_loss_after',
-              'public_probe_loss_before', 'public_probe_loss_after', 'procedural_supervised_response_tokens',
-              'procedural_examples', 'public_train_documents', 'public_train_tokens', 'cash_compute_cost_usd',
-              'inputs',
-          )
-          for key in keys:
-              assert current[key] == frozen[key], (key, current[key], frozen[key])
-          PY
-
-      - name: Measure aligned free-generation termination behavior
-        run: |
-          PY="$HOME/.cache/genesis-ai-ci/venv/bin/python"
-          PYTHONPATH=src "$PY" -m genesis_ai.termination_diagnostic \
-            --checkpoint "$WORK/candidate.pt" \
-            --suite evals/m6-domain-selection-v1.json \
-            --output "$RESULT" \
-            --sample-limit 8 \
-            --device cpu
-          PYTHONPATH=src "$PY" -m genesis_ai.result_provenance \
-            "$RESULT" \
-            --source-commit "$GITHUB_SHA" \
-            --workflow-run-id "$GITHUB_RUN_ID"
-
-      - name: Validate diagnostic identity
-        run: |
-          PY="$HOME/.cache/genesis-ai-ci/venv/bin/python"
-          "$PY" - <<'PY'
-          import json
-          from pathlib import Path
-          result = json.loads(Path('research/m6-aligned-termination-diagnostic-v1.json').read_text())
           assert result['diagnostic_version'] == 'm6-termination-diagnostic-v1', result
+          assert result['checkpoint_step'] == 1955, result
           assert result['suite_version'] == 'm6-domain-selection-v1', result
           assert result['suite_sha256'] == '3ff62c0241003198c786afb29c4d64394566ce82dba7eef7681fc9ebe25655d9', result
           assert result['domain'] == 'code', result
           assert result['task_count'] == 60, result
           assert result['task_set_sha256'] == 'edea452777c7328fd13d550ced322bd5815eac664be5f3924047f15122cc17c8', result
+          assert result['generation'] == {
+              'max_new_tokens': 32,
+              'seed': 36101,
+              'temperature': 1.0,
+              'top_k': 1,
+          }, result
+          assert result['strict_exact'] == {'count': 0, 'rate': 0.0}, result
+          assert result['oracle_token_prefix'] == {'count': 60, 'rate': 1.0}, result
+          assert result['oracle_text_prefix'] == {'count': 60, 'rate': 1.0}, result
+          assert result['oracle_prefix_then_extra'] == {'count': 60, 'rate': 1.0}, result
+          assert result['newline_immediately_after_oracle'] == {'count': 0, 'rate': 0.0}, result
+          assert result['response_set_sha256'] == 'e5be0676a071e85298338e636ad516188efce058fec11106c3052b71336ec624', result
+          assert result['result_provenance'] == {
+              'source_commit': 'f15f75cbbeff4261ef9c1fb392844bf52b663bc7',
+              'workflow_run_id': '31840711748',
+          }, result
           assert len(result['samples']) == 8, result
+          assert all(sample['oracle_token_prefix'] for sample in result['samples']), result
+          assert all(sample['oracle_text_prefix'] for sample in result['samples']), result
+          assert all(not sample['strict_pass'] for sample in result['samples']), result
           PY
-
-      - name: Validate repository
-        run: PYTHON_BIN="$HOME/.cache/genesis-ai-ci/venv/bin/python" ./scripts/test_local.sh
-
-      - name: Commit diagnostic safely
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add "$RESULT"
-          if ! git diff --cached --quiet; then
-            git commit -m "M6: record aligned termination diagnostic (#125)"
-            git fetch origin main
-            git rebase origin/main
-            git push origin HEAD:main
-          fi
