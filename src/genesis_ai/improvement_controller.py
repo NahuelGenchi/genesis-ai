@@ -70,12 +70,15 @@ def _domain_metrics(evaluation: dict[str, Any]) -> dict[str, dict[str, float]]:
     return metrics
 
 
-def _focus_budget(accuracy: float) -> int:
+def _cycle_budget(accuracy: float) -> int:
+    # With 4,096 focus examples + 512 replay examples for each preserved
+    # domain, mandatory first/terminator anchors consume 10,240 target updates.
+    # These floors keep meaningful continuation capacity after anchor coverage.
     if accuracy < 0.50:
-        return 2_000_000
+        return 3_000_000
     if accuracy < 0.80:
-        return 1_000_000
-    return 500_000
+        return 2_500_000
+    return 2_000_000
 
 
 def plan_next_cycle(
@@ -107,8 +110,6 @@ def plan_next_cycle(
     if not isinstance(suite_sha256, str) or len(suite_sha256) != 64:
         raise ValueError("suite_sha256 is required")
 
-    # Weakest exact accuracy first. If tied, higher aggregate oracle loss is
-    # weaker; domain name makes the choice deterministic.
     focus = min(
         GCI_DOMAINS,
         key=lambda domain: (
@@ -121,7 +122,7 @@ def plan_next_cycle(
     all_mastered = all(metrics[domain]["exact_accuracy"] >= 0.80 for domain in GCI_DOMAINS)
     target_difficulty = min(difficulty + 1, max_difficulty) if all_mastered else difficulty
     mode = "raise-difficulty" if all_mastered and target_difficulty > difficulty else "repair-weakest-domain"
-    budget = _focus_budget(focus_accuracy)
+    budget = _cycle_budget(focus_accuracy)
 
     gci = score_result(evaluation)
     replay = [domain for domain in GCI_DOMAINS if domain != focus]
@@ -140,10 +141,16 @@ def plan_next_cycle(
             "mode": mode,
             "focus_domain": focus,
             "target_difficulty": target_difficulty,
-            "focus_training_tokens": budget,
+            "target_training_tokens": budget,
             "focus_examples": 4_096,
             "replay_domains": replay,
-            "replay_examples_per_domain": 1_024,
+            "replay_examples_per_domain": 512,
+            "continuation_update_weights": {
+                "focus": 0.70,
+                "each_replay_domain": 0.15,
+            },
+            "mandatory_first_and_terminator_coverage": True,
+            "unique_target_contexts_only": True,
             "procedural_fraction": 0.80,
             "public_fraction": 0.20,
             "cash_compute_cost_usd": 0.0,
