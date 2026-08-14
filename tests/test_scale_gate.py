@@ -67,7 +67,7 @@ class ScaleGateTest(unittest.TestCase):
         }
         return checkpoint, paths
 
-    def _decide(self, checkpoint: Path, paths: dict):
+    def _decide(self, checkpoint: Path, paths: dict, **kwargs):
         return decide_scale_promotion(
             candidate_checkpoint=checkpoint,
             training_run_path=paths["training"],
@@ -78,6 +78,7 @@ class ScaleGateTest(unittest.TestCase):
             candidate_m3_path=paths["candidate_m3"],
             ladder_result_path="research/m6-scaling-ladder-v1.json",
             curriculum_lock_path="research/m6-code-curriculum-v1.json",
+            **kwargs,
         )
 
     def test_all_scale_gates_pass(self):
@@ -120,6 +121,39 @@ class ScaleGateTest(unittest.TestCase):
             failed = {gate["name"] for gate in result["gates"] if not gate["passed"]}
             self.assertIn("reproducibility", failed)
             self.assertIn("m3_exact_contamination", failed)
+
+    def test_generation_alignment_is_an_explicit_blocking_gate(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            checkpoint, paths = self._fixture(root)
+            training = json.loads(paths["training"].read_text())
+            training["training_policy"] = "m6-micro-2m-generation-aligned-v1"
+            training["alignment"] = {
+                "policy": "rolling_last_context_predict_final_position",
+                "target_model_position": 127,
+            }
+            self._write(paths["training"], training)
+            result = self._decide(
+                checkpoint,
+                paths,
+                expected_training_policy="m6-micro-2m-generation-aligned-v1",
+                required_alignment_policy="rolling_last_context_predict_final_position",
+            )
+            alignment_gate = next(gate for gate in result["gates"] if gate["name"] == "procedural_generation_alignment")
+            self.assertTrue(alignment_gate["passed"])
+            self.assertTrue(result["promoted"])
+
+            training["alignment"]["target_model_position"] = 126
+            self._write(paths["training"], training)
+            rejected = self._decide(
+                checkpoint,
+                paths,
+                expected_training_policy="m6-micro-2m-generation-aligned-v1",
+                required_alignment_policy="rolling_last_context_predict_final_position",
+            )
+            alignment_gate = next(gate for gate in rejected["gates"] if gate["name"] == "procedural_generation_alignment")
+            self.assertFalse(alignment_gate["passed"])
+            self.assertFalse(rejected["promoted"])
 
 
 if __name__ == "__main__":
