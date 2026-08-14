@@ -1,0 +1,30 @@
+name: Cleanup accidental M1 branches
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/cleanup-m1-branches.yml
+
+permissions:
+  contents: write
+
+jobs:
+  cleanup:
+    runs-on: [self-hosted, linux, x64]
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Delete accidental branches
+        run: |
+          for branch in \
+            m1/corpus-ingestion-cli \
+            m1/corpus-ingestion-cli-v2 \
+            m1/corpus-ingestion-cli-v3 \
+            m1/corpus-ingestion-cli-v4 \
+            m1/corpus-ingestion-cli-v5
+          do
+            if git ls-remote --exit-code --heads origin "$branch" >/dev/null 2>&1; then
+              git push origin --delete "$branch"
+            fi
+          done
