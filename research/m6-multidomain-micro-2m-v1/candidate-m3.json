@@ -1,0 +1,47 @@
+{
+  "checkpoint_sha256": "c74afec7a3ce081fe5f357be344140cbade8c642d78147e2ea83e3a41bbbbdb9",
+  "contamination": {
+    "blocking": false,
+    "exact_overlap_count": 0,
+    "examples": [],
+    "method": "sha256-nfkc-collapsed-whitespace",
+    "train_documents": 975,
+    "validation_documents": 107
+  },
+  "data_manifest_sha256": "8126c6a8008ea39fa9db138078c5b0f15becf510eebf6160053807d665149a76",
+  "evaluation": {
+    "batches": 20,
+    "checkpoint_step": 3910,
+    "data_manifest_sha256": "8126c6a8008ea39fa9db138078c5b0f15becf510eebf6160053807d665149a76",
+    "documents": 107,
+    "loss": 3.2836257934570314,
+    "parameter_count": 1895808,
+    "perplexity": 26.6723058615426,
+    "split": "validation",
+    "tokens": 29360
+  },
+  "generations": [
+    {
+      "prompt": "The ",
+      "sha256": "15a2ef22f859160c2f32fffff3b7b39cb900ff90e85981113a224da923e26fbd",
+      "text": "The and it\ncalfar a sey and e_me and fice of the in "
+    },
+    {
+      "prompt": "Don ",
+      "sha256": "4bd85a677542d0b7d25442d4d687b719e5d63c97cbf76b1ee5292deb61bdfadf",
+      "text": "Don mit inival the\nneget and not g and fice of the in "
+    },
+    {
+      "prompt": "Il ",
+      "sha256": "974dc48303007fa2f92e71c2c41fe1935c50edaad85154e9c349d9d9220752e7",
+      "text": "Il mit quiival d'ai se le s'e f les flaurecfla le "
+    }
+  ],
+  "primary_metric": {
+    "lower_is_better": true,
+    "name": "validation_loss",
+    "value": 3.2836257934570314
+  },
+  "suite_sha256": "e63ccb9a8ea41c030a6bbbbeb41332c5a53c983cc1bf9d7ea466a9862dfc5bb7",
+  "suite_version": "m3-v1"
+}

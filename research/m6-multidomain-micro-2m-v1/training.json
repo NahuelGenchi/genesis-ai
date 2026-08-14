@@ -1,0 +1,46 @@
+{
+  "anchor_updates": 8190,
+  "batch_size": 8,
+  "cash_compute_cost_usd": 0.0,
+  "continuation_allocations": {
+    "code": 432,
+    "math": 1512,
+    "structured": 2378
+  },
+  "curriculum_lock_sha256": "e3381d17a1c69b7e21ff83bff23fb05c565064a91c263652ad4196fa2f756bc8",
+  "determinism": {
+    "adamw_foreach": false,
+    "adamw_fused": false,
+    "deterministic_algorithms": true,
+    "device": "cpu",
+    "torch_threads": 1
+  },
+  "domain_examples": {
+    "code": 1365,
+    "math": 1365,
+    "structured": 1365
+  },
+  "final_step": 3910,
+  "format_version": "1.0",
+  "inference_checkpoint_sha256": "c74afec7a3ce081fe5f357be344140cbade8c642d78147e2ea83e3a41bbbbdb9",
+  "mean_procedural_training_loss": 0.9783031693527043,
+  "mean_public_training_loss": 3.5938075479034266,
+  "parameter_count": 1895808,
+  "parent_checkpoint_sha256": "0ba16a931451ffbdc369aa685845b0ddb9b6ed03910ac773b50e837fd9886d7e",
+  "parent_step": 1955,
+  "procedural_steps": 1564,
+  "procedural_updates": 12512,
+  "processed_tokens": 2001920,
+  "public_manifest_sha256": "8126c6a8008ea39fa9db138078c5b0f15becf510eebf6160053807d665149a76",
+  "public_steps": 391,
+  "records_sha256": "f1bba437f11b88cdf19ac163074f6255cdff99d4f8975e0a98421526f80c98b6",
+  "schedule_sha256": "224e45e816b84addba1524f302c49d2bff53d82c802bf9d1214f1eb9704a2e89",
+  "schedule_unique_updates": 12512,
+  "seed": 99001,
+  "steps": 1955,
+  "target_training_tokens": 2000000,
+  "terminated_probe_loss_after": 0.9391878709260482,
+  "terminated_probe_loss_before": 4.628984150836914,
+  "tokenizer_sha256": "6f66eba7d552fd22e4c35ba23c1998bbc549ab26ad89a1e0d245524bc802d398",
+  "training_policy": "m6-multidomain-continuation-v1"
+}

@@ -1,0 +1,31 @@
+{
+  "absolute_point_change": -13.888888888888886,
+  "baseline": {
+    "checkpoint_sha256": "0ba16a931451ffbdc369aa685845b0ddb9b6ed03910ac773b50e837fd9886d7e",
+    "domain_exact_accuracy": {
+      "code": 0.95,
+      "math": 0.0,
+      "structured": 0.0
+    },
+    "metric_version": "gci-v1",
+    "score": 31.666666666666668,
+    "suite_sha256": "e04f1298d1705c5d00a43170f01e79f129fce53da26dead637b7b74d79d83afc",
+    "suite_version": "m6-domain-selection-v2"
+  },
+  "candidate": {
+    "checkpoint_sha256": "c74afec7a3ce081fe5f357be344140cbade8c642d78147e2ea83e3a41bbbbdb9",
+    "domain_exact_accuracy": {
+      "code": 0.5166666666666667,
+      "math": 0.016666666666666666,
+      "structured": 0.0
+    },
+    "metric_version": "gci-v1",
+    "score": 17.777777777777782,
+    "suite_sha256": "e04f1298d1705c5d00a43170f01e79f129fce53da26dead637b7b74d79d83afc",
+    "suite_version": "m6-domain-selection-v2"
+  },
+  "format_version": "1.0",
+  "metric_version": "gci-v1",
+  "relative_percent_change": -43.85964912280701,
+  "relative_percent_note": null
+}

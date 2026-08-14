@@ -1,0 +1,63 @@
+{
+  "cash_compute_cost_usd": 0.0,
+  "context_length": 128,
+  "curriculum_version": "m6-multidomain-curriculum-v1",
+  "difficulty": 1,
+  "evaluation": {
+    "domains": {
+      "code": {
+        "prompt_set_sha256": "9c960a4c5017a9ab5aaf7a7c692592d844f98a099b050e126a9efea644b48f89",
+        "task_set_sha256": "edea452777c7328fd13d550ced322bd5815eac664be5f3924047f15122cc17c8",
+        "tasks": 60
+      },
+      "math": {
+        "prompt_set_sha256": "396226cbadb994b8241f5a9848f5d59e2a4c4b8fc90bc9b7749d31dc179a4d5e",
+        "task_set_sha256": "820ba66788eeea7a10fc07f63f3796558aafaa9a53a2790dea3825db2a5e423c",
+        "tasks": 60
+      },
+      "structured": {
+        "prompt_set_sha256": "57c013efd8841acea9ea06e09f4c1f58010a95594abfe913969257cd28cd45b4",
+        "task_set_sha256": "eaf71820fe558b44d4342b9dd526c41e680e33b30723c33cad35ef6dade1d5c4",
+        "tasks": 60
+      }
+    },
+    "exact_prompt_overlap_count": 0,
+    "suite_sha256": "e04f1298d1705c5d00a43170f01e79f129fce53da26dead637b7b74d79d83afc",
+    "suite_version": "m6-domain-selection-v2"
+  },
+  "format_version": "1.0",
+  "procedural": {
+    "domains": {
+      "code": {
+        "attempts": 1475,
+        "examples": 1365,
+        "terminated_response_tokens": 21804
+      },
+      "math": {
+        "attempts": 1386,
+        "examples": 1365,
+        "terminated_response_tokens": 4964
+      },
+      "structured": {
+        "attempts": 1365,
+        "examples": 1365,
+        "terminated_response_tokens": 29772
+      }
+    },
+    "exact_holdout_prompt_overlap_count": 0,
+    "examples": 4095,
+    "examples_per_domain": 1365,
+    "prompt_set_sha256": "c21ac80ff00932c70bb5f891894d29b44c83ea63b0c7614e40eece790e4d1d35",
+    "record_set_sha256": "9241d2a13d9672ccd23c9cd2c3ddb02b84e11c753fc8d10ebb8ad93ba5b2c2c5",
+    "records_file_sha256": "f1bba437f11b88cdf19ac163074f6255cdff99d4f8975e0a98421526f80c98b6",
+    "records_file_size_bytes": 1957679
+  },
+  "procedural_fraction": 0.8,
+  "public_fraction": 0.2,
+  "public_text": {
+    "manifest_sha256": "8126c6a8008ea39fa9db138078c5b0f15becf510eebf6160053807d665149a76"
+  },
+  "target_training_tokens": 2000000,
+  "tokenizer_sha256": "6f66eba7d552fd22e4c35ba23c1998bbc549ab26ad89a1e0d245524bc802d398",
+  "training_seed": 98001
+}
