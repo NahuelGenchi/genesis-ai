@@ -23,3 +23,11 @@ body:
       value: "- [ ] Evidence recorded\n- [ ] Decision recorded"
     validations:
       required: true
+  - type: textarea
+    id: capability
+    attributes:
+      label: Capability accounting
+      description: Finalize immediately before closure; separate project capability from whether this decision directly changed model weights.
+      value: "Model improvement since previous closed Issue: pending\nModel improvement since Issue #1: pending\nGCI-v1: pending\nModel weights changed: pending\nCheckpoint promoted: pending"
+    validations:
+      required: true
