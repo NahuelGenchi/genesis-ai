@@ -13,6 +13,7 @@ on:
       - tests/test_terminated_eval.py
       - tests/test_terminated_training.py
       - tests/test_terminated_gate.py
+      - .gitignore
       - .github/workflows/m6-terminated-micro-2m.yml
 
 permissions:
@@ -253,7 +254,9 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add "$RESULT_DIR"
           if [ "${{ steps.gate.outputs.promoted }}" = "true" ]; then
-            git add "$PUBLISHED" "$MODEL_DIR"
+            # Published checkpoints are ignored by default; force-add only after a passing gate.
+            git add -f "$PUBLISHED"
+            git add "$MODEL_DIR"
           fi
           if ! git diff --cached --quiet; then
             git commit -m "M6: record explicit-termination candidate (#128)"
