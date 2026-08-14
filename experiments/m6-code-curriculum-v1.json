@@ -1,0 +1,15 @@
+{
+  "format_version": "1.0",
+  "curriculum_version": "m6-code-curriculum-v1",
+  "selected_domain": "code",
+  "required_selection_suite_version": "m6-domain-selection-v1",
+  "required_selection_suite_sha256": "3ff62c0241003198c786afb29c4d64394566ce82dba7eef7681fc9ebe25655d9",
+  "evaluation_base_seed": 36001,
+  "training_seed": 46001,
+  "procedural_examples": 4096,
+  "difficulty": 1,
+  "procedural_batch_fraction": 0.8,
+  "public_text_batch_fraction": 0.2,
+  "target_training_tokens": 2000000,
+  "tokenizer_sha256": "6f66eba7d552fd22e4c35ba23c1998bbc549ab26ad89a1e0d245524bc802d398"
+}
