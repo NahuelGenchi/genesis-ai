@@ -12,6 +12,8 @@ class ModelConfig:
     dropout: float = 0.0
     position_encoding: str = "learned"
     ffn_type: str = "dense"
+    norm_type: str = "layernorm"
+    dense_activation: str = "gelu"
     moe_experts: int = 4
     moe_top_k: int = 2
     moe_aux_loss_weight: float = 0.01
@@ -33,6 +35,10 @@ class ModelConfig:
             raise ValueError("rotary position encoding requires an even head dimension")
         if self.ffn_type not in {"dense", "moe"}:
             raise ValueError("ffn_type must be dense or moe")
+        if self.norm_type not in {"layernorm", "rmsnorm"}:
+            raise ValueError("norm_type must be layernorm or rmsnorm")
+        if self.dense_activation not in {"gelu", "swiglu"}:
+            raise ValueError("dense_activation must be gelu or swiglu")
         if self.moe_experts <= 0:
             raise ValueError("moe_experts must be positive")
         if self.moe_top_k <= 0 or self.moe_top_k > self.moe_experts:

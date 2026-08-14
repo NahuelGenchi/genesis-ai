@@ -1,0 +1,71 @@
+{
+  "format_version": "1.0",
+  "name": "m6-architecture-tournament-v1",
+  "seed": 102001,
+  "training_flop_budget": 2000000000000,
+  "target_tokens_per_step": 1024,
+  "learning_rate": 0.001,
+  "validation_batches": 20,
+  "candidates": [
+    {
+      "name": "baseline-learned-layernorm-gelu",
+      "config": {
+        "context_length": 128,
+        "d_model": 192,
+        "n_heads": 6,
+        "n_layers": 4,
+        "d_ff": 768,
+        "dropout": 0.0,
+        "position_encoding": "learned",
+        "ffn_type": "dense",
+        "norm_type": "layernorm",
+        "dense_activation": "gelu"
+      }
+    },
+    {
+      "name": "rope-only",
+      "config": {
+        "context_length": 128,
+        "d_model": 192,
+        "n_heads": 6,
+        "n_layers": 4,
+        "d_ff": 768,
+        "dropout": 0.0,
+        "position_encoding": "rotary",
+        "ffn_type": "dense",
+        "norm_type": "layernorm",
+        "dense_activation": "gelu"
+      }
+    },
+    {
+      "name": "rmsnorm-only",
+      "config": {
+        "context_length": 128,
+        "d_model": 192,
+        "n_heads": 6,
+        "n_layers": 4,
+        "d_ff": 768,
+        "dropout": 0.0,
+        "position_encoding": "learned",
+        "ffn_type": "dense",
+        "norm_type": "rmsnorm",
+        "dense_activation": "gelu"
+      }
+    },
+    {
+      "name": "swiglu-only-parameter-matched",
+      "config": {
+        "context_length": 128,
+        "d_model": 192,
+        "n_heads": 6,
+        "n_layers": 4,
+        "d_ff": 512,
+        "dropout": 0.0,
+        "position_encoding": "learned",
+        "ffn_type": "dense",
+        "norm_type": "layernorm",
+        "dense_activation": "swiglu"
+      }
+    }
+  ]
+}
