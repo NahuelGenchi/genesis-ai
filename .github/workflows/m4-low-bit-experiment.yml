@@ -2,12 +2,6 @@ name: M4 low-bit inference experiment
 
 on:
   workflow_dispatch:
-  push:
-    branches: [main]
-    paths:
-      - src/genesis_ai/quantization.py
-      - tests/test_quantization.py
-      - .github/workflows/m4-low-bit-experiment.yml
 
 permissions:
   contents: write
