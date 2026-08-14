@@ -28,8 +28,11 @@ class MultidomainV2ScheduleTest(unittest.TestCase):
 
         domains = ("code", "math", "structured")
         records = []
+        domain_record_ordinals = {domain: [] for domain in domains}
         for domain in domains:
-            records.extend({"domain": domain} for _ in range(EXAMPLES_PER_DOMAIN))
+            for _ in range(EXAMPLES_PER_DOMAIN):
+                domain_record_ordinals[domain].append(len(records))
+                records.append({"domain": domain})
 
         record_ordinals = []
         anchors = []
@@ -38,14 +41,17 @@ class MultidomainV2ScheduleTest(unittest.TestCase):
             for _ in range(2):
                 anchors.append(len(record_ordinals))
                 record_ordinals.append(ordinal)
+
+        # Real responses may contribute multiple unique continuation targets.
+        # Model that explicitly by mapping each unique fake target context
+        # round-robin to a record in its domain.
         quotas = {"code": 4310, "math": 4309, "structured": 4309}
-        offsets = {domain: 0 for domain in domains}
-        for ordinal, record in enumerate(records):
-            domain = record["domain"]
-            if offsets[domain] < quotas[domain]:
+        for domain in domains:
+            ordinals = domain_record_ordinals[domain]
+            for offset in range(quotas[domain]):
                 continuation.append(len(record_ordinals))
-                record_ordinals.append(ordinal)
-                offsets[domain] += 1
+                record_ordinals.append(ordinals[offset % len(ordinals)])
+
         dataset = FakeDataset(anchors, continuation, record_ordinals)
         selected, accounting = build_balanced_schedule(dataset, records, total_samples=37504, seed=123)
         self.assertEqual(len(selected), 37504)
