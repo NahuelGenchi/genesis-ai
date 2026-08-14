@@ -1,6 +1,8 @@
 name: Bootstrap tracking
 
 on:
+  issues:
+    types: [edited]
   push:
     branches: [main]
     paths:
@@ -15,6 +17,7 @@ permissions:
 
 jobs:
   bootstrap:
+    if: github.event_name != 'issues' || github.event.issue.title == 'Fix connector-triggered bootstrap'
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
