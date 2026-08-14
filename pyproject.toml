@@ -27,6 +27,10 @@ genesis-cycle-record = "genesis_ai.cycle:main"
 genesis-scale = "genesis_ai.scaling:main"
 genesis-domain-select = "genesis_ai.domain_selection:main"
 genesis-curriculum = "genesis_ai.curriculum:main"
+genesis-scale-train = "genesis_ai.scale_training:main"
+genesis-scale-repro = "genesis_ai.scale_repro:main"
+genesis-scale-gate = "genesis_ai.scale_gate:main"
+genesis-scale-model-card = "genesis_ai.scale_model_card:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
