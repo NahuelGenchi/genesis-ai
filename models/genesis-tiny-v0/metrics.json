@@ -6,12 +6,11 @@
     "dropout": 0.0,
     "n_heads": 4,
     "n_layers": 3,
-    "position_encoding": "learned",
     "vocab_size": 512
   },
   "checkpoint": {
-    "sha256": "329e38a2ee885212ce7ff4d94ea93c89fca826c9e93f352bc273a9799fc4bbb8",
-    "size_bytes": 1594207
+    "sha256": "4db01f8239cfc28933bc3152b7b698ffe089491ce1acf5b66de8adc53b9f8ed9",
+    "size_bytes": 1594143
   },
   "evaluation": {
     "batches": 20,
@@ -66,7 +65,7 @@
   "training": {
     "batch_size": 8,
     "data_manifest_sha256": "8126c6a8008ea39fa9db138078c5b0f15becf510eebf6160053807d665149a76",
-    "elapsed_seconds": 1.6513313829964318,
+    "elapsed_seconds": 1.386398927999835,
     "last_training_loss": 3.9865145683288574,
     "learning_rate": 0.001,
     "probe_loss_after": 3.982328414916992,
