@@ -93,8 +93,17 @@
   },
   {
     "milestone": "M0 — Bootstrap & Rules",
+    "title": "Fix connector-triggered bootstrap",
+    "body": "**Goal**\nMake remote tracking bootstrap run when connector pushes do not start GitHub Actions.\n\n**Why**\nTwo connector-originated pushes produced zero workflow runs.\n\n**Done when**\n- [ ] Targeted Issue edit triggers bootstrap\n- [ ] Existing trigger Issue is reconciled to M0\n- [ ] Bootstrap run succeeds",
+    "labels": [
+      "type:bug",
+      "area:infra"
+    ]
+  },
+  {
+    "milestone": "M0 — Bootstrap & Rules",
     "title": "Verify remote bootstrap",
-    "body": "**Goal**\nVerify repository files, Milestones, Issues, and CI on GitHub.\n\n**Why**\nLocal bootstrap is complete but remote creation still needs GitHub-side verification.\n\n**Done when**\n- [ ] Files are on `main`\n- [ ] 9 Milestones exist\n- [ ] Bootstrap Issues exist with correct states\n- [ ] CI passes",
+    "body": "**Goal**\nVerify repository files, Milestones, Issues, and CI on GitHub.\n\n**Why**\nLocal bootstrap is complete but remote creation still needs GitHub-side verification.\n\n**Done when**\n- [x] Files are on `main`\n- [ ] 9 Milestones exist\n- [ ] Bootstrap Issues exist with correct states\n- [ ] CI passes",
     "labels": [
       "area:infra"
     ]
