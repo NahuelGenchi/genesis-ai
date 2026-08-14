@@ -18,10 +18,14 @@ Architecture:
 
 Larger M6 stages remain locked regardless of local feasibility.
 
-## Training v1
+## Training v2
 - Random initialization; no inherited model weights.
 - Seed: `97001`.
-- AdamW.
+- CPU-only reproducibility contract.
+- Torch intra-op threads: **1**.
+- OpenMP/MKL/OpenBLAS/NumExpr/vecLib worker limits: **1** in the runner environment.
+- PyTorch deterministic algorithms required.
+- AdamW with `foreach=False`, `fused=False`.
 - Base LR: `1e-3`.
 - 50-step linear warmup.
 - Cosine decay to `1e-4`.
@@ -34,6 +38,14 @@ Larger M6 stages remain locked regardless of local feasibility.
 - Required cash compute: $0.
 
 Procedural batches use response-only loss and the frozen #96 left-prefix truncation policy. Public-domain batches use standard next-token loss.
+
+### Why v2 exists
+The first full v1 attempt (`31835552262`) trained both models successfully but failed independent reproduction:
+- config/tokenizer/step matched;
+- **weights differed**;
+- stable metadata therefore differed too.
+
+Both runs began with the same step-1 loss (`6.245032`) and then numerically diverged under the runner's multi-threaded CPU execution. v2 removes that source of reduction/update-order variation rather than weakening the equality requirement.
 
 ## Reproducibility
 The one-shot run trains the model **twice independently** with the same frozen inputs and seed.

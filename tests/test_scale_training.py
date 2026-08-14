@@ -10,7 +10,14 @@ from genesis_ai.config import ModelConfig
 from genesis_ai.ingest import sha256_file
 from genesis_ai.model import GenesisLM
 from genesis_ai.scale_repro import compare_checkpoints
-from genesis_ai.scale_training import BASE_LR, MIN_LR, _lr, validate_training_inputs
+from genesis_ai.scale_training import (
+    BASE_LR,
+    CPU_THREADS,
+    MIN_LR,
+    TRAINING_POLICY_VERSION,
+    _lr,
+    validate_training_inputs,
+)
 from genesis_ai.tokenizer import ByteBPETokenizer
 
 
@@ -69,6 +76,8 @@ class ScaleTrainingTest(unittest.TestCase):
             self.assertEqual(policy["target_tokens_per_step"], 1024)
             self.assertEqual(policy["procedural_fraction"], 0.8)
             self.assertEqual(policy["public_fraction"], 0.2)
+            self.assertEqual(TRAINING_POLICY_VERSION, "m6-micro-2m-training-v2")
+            self.assertEqual(CPU_THREADS, 1)
 
             records.write_text(records.read_text(encoding="utf-8") + "{}\n", encoding="utf-8")
             with self.assertRaises(ValueError):
@@ -99,6 +108,43 @@ class ScaleTrainingTest(unittest.TestCase):
         export_inference_checkpoint(training, inference)
         return inference
 
+    def _trained_inference_checkpoint(self, root: Path, name: str, seed: int) -> Path:
+        previous_threads = torch.get_num_threads()
+        try:
+            torch.set_num_threads(1)
+            torch.use_deterministic_algorithms(True)
+            torch.manual_seed(seed)
+            tokenizer = ByteBPETokenizer(())
+            config = ModelConfig(vocab_size=tokenizer.vocab_size, context_length=8, d_model=8, n_heads=2, n_layers=1, d_ff=16)
+            model = GenesisLM(config)
+            optimizer = torch.optim.AdamW(model.parameters(), lr=1e-3, foreach=False, fused=False)
+            generator = torch.Generator(device="cpu").manual_seed(seed + 1)
+            model.train()
+            for _ in range(12):
+                x = torch.randint(0, config.vocab_size, (4, config.context_length), generator=generator)
+                y = torch.randint(0, config.vocab_size, (4, config.context_length), generator=generator)
+                optimizer.zero_grad(set_to_none=True)
+                _, loss = model(x, y)
+                assert loss is not None
+                loss.backward()
+                torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
+                optimizer.step()
+            training = root / f"{name}-trained.pt"
+            inference = root / f"{name}-trained-inference.pt"
+            save_checkpoint(
+                training,
+                model=model,
+                optimizer=optimizer,
+                step=12,
+                metadata={"policy": "single-thread-test"},
+                tokenizer=tokenizer,
+                batch_generator=generator,
+            )
+            export_inference_checkpoint(training, inference)
+            return inference
+        finally:
+            torch.set_num_threads(previous_threads)
+
     def test_semantic_reproducibility_detects_equal_and_different_weights(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
@@ -107,6 +153,16 @@ class ScaleTrainingTest(unittest.TestCase):
             different = self._inference_checkpoint(root, "different", 8)
             self.assertTrue(compare_checkpoints(first, same)["reproducible"])
             self.assertFalse(compare_checkpoints(first, different)["reproducible"])
+
+    def test_single_thread_training_is_semantically_reproducible(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            first = self._trained_inference_checkpoint(root, "first", 17)
+            second = self._trained_inference_checkpoint(root, "second", 17)
+            result = compare_checkpoints(first, second)
+            self.assertTrue(result["weights_equal"])
+            self.assertTrue(result["metadata_equal"])
+            self.assertTrue(result["reproducible"])
 
 
 if __name__ == "__main__":
