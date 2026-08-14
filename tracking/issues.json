@@ -94,11 +94,30 @@
   {
     "milestone": "M0 — Bootstrap & Rules",
     "title": "Fix connector-triggered bootstrap",
-    "body": "**Goal**\nMake remote tracking bootstrap run when connector pushes do not start GitHub Actions.\n\n**Why**\nTwo connector-originated pushes produced zero workflow runs.\n\n**Done when**\n- [ ] Targeted Issue edit triggers bootstrap\n- [ ] Existing trigger Issue is reconciled to M0\n- [ ] Bootstrap run succeeds",
+    "body": "**Goal**\nInvestigate why connector-originated pushes initially appeared to create no Actions runs.\n\n**Why**\nThe first API checks returned zero runs.\n\n**Done when**\n- [x] Confirm push events were received\n- [x] Identify delayed run visibility\n- [x] Remove temporary Issue-edit trigger\n\n**Notes**\nRuns appeared after API propagation. The real blocker is hosted-runner billing, tracked separately.",
     "labels": [
       "type:bug",
       "area:infra"
+    ],
+    "state": "closed"
+  },
+  {
+    "milestone": "M0 — Bootstrap & Rules",
+    "title": "Register zero-cost self-hosted runner",
+    "body": "**Goal**\nConnect one trusted local Linux x64 machine as the project runner.\n\n**Why**\nMilestone bootstrap and CI need a $0 execution path.\n\n**Done when**\n- [ ] Runner is online\n- [ ] Tracking bootstrap passes\n- [ ] CI passes",
+    "labels": [
+      "area:infra"
     ]
+  },
+  {
+    "milestone": "M0 — Bootstrap & Rules",
+    "title": "Replace billed GitHub-hosted runners",
+    "body": "**Goal**\nRemove GitHub-hosted runners as a project dependency.\n\n**Why**\nGitHub refuses to start hosted jobs because of an account billing/spending restriction.\n\n**Done when**\n- [x] Root cause recorded\n- [x] Workflows target self-hosted runners\n- [x] Runner setup documented",
+    "labels": [
+      "type:bug",
+      "area:infra"
+    ],
+    "state": "closed"
   },
   {
     "milestone": "M0 — Bootstrap & Rules",

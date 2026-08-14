@@ -1,8 +1,6 @@
 name: Bootstrap tracking
 
 on:
-  issues:
-    types: [edited]
   push:
     branches: [main]
     paths:
@@ -17,12 +15,11 @@ permissions:
 
 jobs:
   bootstrap:
-    if: github.event_name != 'issues' || github.event.issue.title == 'Fix connector-triggered bootstrap'
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, linux, x64]
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
-      - name: Create missing labels, milestones, and issues
+      - name: Create or reconcile labels, milestones, and issues
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: python scripts/bootstrap_github_tracking.py
