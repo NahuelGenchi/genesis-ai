@@ -1,0 +1,96 @@
+{
+  "format_version": "1.0",
+  "name": "m6-scaling-ladder-v1",
+  "seed": 6060,
+  "target_tokens_per_step": 1024,
+  "warmup_steps": 3,
+  "measured_steps": 10,
+  "feasibility": {
+    "local_max_training_hours": 6.0,
+    "local_peak_rss_max_mb": 24576.0
+  },
+  "promotion": {
+    "min_domain_accuracy_absolute_gain": 0.05,
+    "max_m3_validation_loss_regression_fraction": 0.02,
+    "require_zero_exact_contamination": true,
+    "require_reproducible_checkpoint": true,
+    "require_zero_cash_compute": true
+  },
+  "stages": [
+    {
+      "name": "baseline-0.4m",
+      "role": "reference",
+      "training_tokens": 177152,
+      "config": {
+        "context_length": 128,
+        "d_model": 96,
+        "n_heads": 4,
+        "n_layers": 3,
+        "d_ff": 384,
+        "dropout": 0.0,
+        "position_encoding": "learned",
+        "ffn_type": "dense"
+      }
+    },
+    {
+      "name": "micro-2m",
+      "role": "candidate",
+      "training_tokens": 2000000,
+      "config": {
+        "context_length": 128,
+        "d_model": 192,
+        "n_heads": 6,
+        "n_layers": 4,
+        "d_ff": 768,
+        "dropout": 0.0,
+        "position_encoding": "learned",
+        "ffn_type": "dense"
+      }
+    },
+    {
+      "name": "small-5m",
+      "role": "candidate",
+      "training_tokens": 5000000,
+      "config": {
+        "context_length": 128,
+        "d_model": 256,
+        "n_heads": 8,
+        "n_layers": 6,
+        "d_ff": 1024,
+        "dropout": 0.0,
+        "position_encoding": "learned",
+        "ffn_type": "dense"
+      }
+    },
+    {
+      "name": "medium-12m",
+      "role": "candidate",
+      "training_tokens": 10000000,
+      "config": {
+        "context_length": 128,
+        "d_model": 384,
+        "n_heads": 8,
+        "n_layers": 6,
+        "d_ff": 1536,
+        "dropout": 0.0,
+        "position_encoding": "learned",
+        "ffn_type": "dense"
+      }
+    },
+    {
+      "name": "medium-25m",
+      "role": "candidate",
+      "training_tokens": 15000000,
+      "config": {
+        "context_length": 128,
+        "d_model": 512,
+        "n_heads": 8,
+        "n_layers": 8,
+        "d_ff": 2048,
+        "dropout": 0.0,
+        "position_encoding": "learned",
+        "ffn_type": "dense"
+      }
+    }
+  ]
+}
