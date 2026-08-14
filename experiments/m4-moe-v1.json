@@ -1,0 +1,56 @@
+{
+  "format_version": "1.0",
+  "name": "m4-moe-v1",
+  "seed": 8112,
+  "training_flop_budget": 500000000000,
+  "target_tokens_per_step": 1024,
+  "learning_rate": 0.001,
+  "validation_batches": 20,
+  "candidates": [
+    {
+      "name": "dense-384",
+      "config": {
+        "context_length": 128,
+        "d_model": 96,
+        "n_heads": 4,
+        "n_layers": 3,
+        "d_ff": 384,
+        "dropout": 0.0,
+        "position_encoding": "learned",
+        "ffn_type": "dense"
+      }
+    },
+    {
+      "name": "moe4-top2-192",
+      "config": {
+        "context_length": 128,
+        "d_model": 96,
+        "n_heads": 4,
+        "n_layers": 3,
+        "d_ff": 192,
+        "dropout": 0.0,
+        "position_encoding": "learned",
+        "ffn_type": "moe",
+        "moe_experts": 4,
+        "moe_top_k": 2,
+        "moe_aux_loss_weight": 0.01
+      }
+    },
+    {
+      "name": "moe8-top2-192",
+      "config": {
+        "context_length": 128,
+        "d_model": 96,
+        "n_heads": 4,
+        "n_layers": 3,
+        "d_ff": 192,
+        "dropout": 0.0,
+        "position_encoding": "learned",
+        "ffn_type": "moe",
+        "moe_experts": 8,
+        "moe_top_k": 2,
+        "moe_aux_loss_weight": 0.01
+      }
+    }
+  ]
+}

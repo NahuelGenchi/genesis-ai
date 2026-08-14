@@ -11,6 +11,10 @@ class ModelConfig:
     d_ff: int = 768
     dropout: float = 0.0
     position_encoding: str = "learned"
+    ffn_type: str = "dense"
+    moe_experts: int = 4
+    moe_top_k: int = 2
+    moe_aux_loss_weight: float = 0.01
 
     def validate(self) -> None:
         if self.vocab_size <= 0:
@@ -27,6 +31,14 @@ class ModelConfig:
             raise ValueError("position_encoding must be learned or rotary")
         if self.position_encoding == "rotary" and (self.d_model // self.n_heads) % 2 != 0:
             raise ValueError("rotary position encoding requires an even head dimension")
+        if self.ffn_type not in {"dense", "moe"}:
+            raise ValueError("ffn_type must be dense or moe")
+        if self.moe_experts <= 0:
+            raise ValueError("moe_experts must be positive")
+        if self.moe_top_k <= 0 or self.moe_top_k > self.moe_experts:
+            raise ValueError("moe_top_k must be in [1, moe_experts]")
+        if self.moe_aux_loss_weight < 0:
+            raise ValueError("moe_aux_loss_weight must be non-negative")
 
     def to_dict(self) -> dict:
         return asdict(self)
