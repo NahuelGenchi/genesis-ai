@@ -1,0 +1,244 @@
+name: M6 generation-aligned micro-2m
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - src/genesis_ai/aligned_training.py
+      - src/genesis_ai/aligned_scale_gate.py
+      - src/genesis_ai/scale_gate.py
+      - src/genesis_ai/scale_model_card.py
+      - tests/test_aligned_training.py
+      - tests/test_scale_gate.py
+      - .github/workflows/m6-aligned-micro-2m.yml
+
+permissions:
+  contents: write
+
+concurrency:
+  group: m6-aligned-micro-2m-v1
+  cancel-in-progress: false
+
+jobs:
+  train:
+    runs-on: [self-hosted, linux, x64]
+    timeout-minutes: 90
+    env:
+      WORK: runs/m6-aligned-micro-2m-v1
+      RESULT_DIR: research/m6-aligned-micro-2m-v1
+      CANDIDATE: runs/m6-aligned-micro-2m-v1/candidate-a.pt
+      PUBLISHED: checkpoints/genesis-micro-2m-aligned-v1.pt
+      MODEL_DIR: models/genesis-micro-2m-aligned-v1
+      OMP_NUM_THREADS: "1"
+      MKL_NUM_THREADS: "1"
+      OPENBLAS_NUM_THREADS: "1"
+      NUMEXPR_NUM_THREADS: "1"
+      VECLIB_MAXIMUM_THREADS: "1"
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Prepare persistent Python environment
+        run: |
+          ENV_DIR="$HOME/.cache/genesis-ai-ci/venv"
+          if [ ! -x "$ENV_DIR/bin/python" ]; then python3 -m venv "$ENV_DIR"; fi
+          if ! "$ENV_DIR/bin/python" -c 'import torch' >/dev/null 2>&1; then
+            "$ENV_DIR/bin/python" -m pip install --upgrade pip
+            "$ENV_DIR/bin/python" -m pip install --index-url https://download.pytorch.org/whl/cpu torch
+          fi
+
+      - name: Rebuild frozen training inputs
+        run: |
+          PY="$HOME/.cache/genesis-ai-ci/venv/bin/python"
+          rm -rf "$WORK" "$RESULT_DIR"
+          mkdir -p "$WORK" "$RESULT_DIR"
+          cp data/bootstrap-tokenizer-lock.json "$WORK/bootstrap-tokenizer-lock.json"
+          PYTHONPATH=src "$PY" -m genesis_ai.bootstrap_corpus \
+            --catalog data/bootstrap-tokenizer-sources.json \
+            --workspace "$WORK/public-corpus" \
+            --output "$WORK/rebuilt-tokenizer.json" \
+            --lock "$WORK/bootstrap-tokenizer-lock.json" \
+            --vocab-size 512
+          cmp data/bootstrap-tokenizer-lock.json "$WORK/bootstrap-tokenizer-lock.json"
+          cmp tokenizers/genesis-v0.json "$WORK/rebuilt-tokenizer.json"
+          PYTHONPATH=src "$PY" -m genesis_ai.curriculum \
+            --spec experiments/m6-code-curriculum-v1.json \
+            --selection research/m6-domain-selection-v1.json \
+            --evaluation-suite evals/m6-domain-selection-v1.json \
+            --tokenizer tokenizers/genesis-v0.json \
+            --public-data "$WORK/public-corpus/filtered" \
+            --public-source-lock data/bootstrap-tokenizer-lock.json \
+            --public-source-catalog data/bootstrap-tokenizer-sources.json \
+            --records "$WORK/procedural.jsonl" \
+            --output "$WORK/curriculum-lock.json"
+          "$PY" - <<'PY'
+          import json
+          from pathlib import Path
+          generated = json.loads(Path('runs/m6-aligned-micro-2m-v1/curriculum-lock.json').read_text())
+          frozen = json.loads(Path('research/m6-code-curriculum-v1.json').read_text())
+          frozen.pop('result_provenance', None)
+          assert generated == frozen, 'rebuilt curriculum differs from frozen #96'
+          PY
+
+      - name: Train primary aligned candidate
+        run: |
+          PY="$HOME/.cache/genesis-ai-ci/venv/bin/python"
+          PYTHONPATH=src "$PY" -m genesis_ai.aligned_training \
+            --ladder-definition experiments/m6-scaling-ladder-v1.json \
+            --ladder-result research/m6-scaling-ladder-v1.json \
+            --curriculum-lock research/m6-code-curriculum-v1.json \
+            --records "$WORK/procedural.jsonl" \
+            --public-data "$WORK/public-corpus/filtered" \
+            --tokenizer tokenizers/genesis-v0.json \
+            --checkpoint "$WORK/candidate-a-training.pt" \
+            --export "$CANDIDATE" \
+            --run "$WORK/training.json" \
+            --device cpu
+
+      - name: Train independent aligned replica
+        run: |
+          PY="$HOME/.cache/genesis-ai-ci/venv/bin/python"
+          PYTHONPATH=src "$PY" -m genesis_ai.aligned_training \
+            --ladder-definition experiments/m6-scaling-ladder-v1.json \
+            --ladder-result research/m6-scaling-ladder-v1.json \
+            --curriculum-lock research/m6-code-curriculum-v1.json \
+            --records "$WORK/procedural.jsonl" \
+            --public-data "$WORK/public-corpus/filtered" \
+            --tokenizer tokenizers/genesis-v0.json \
+            --checkpoint "$WORK/candidate-b-training.pt" \
+            --export "$WORK/candidate-b.pt" \
+            --run "$WORK/training-replica.json" \
+            --device cpu
+
+      - name: Verify independent reproduction
+        run: |
+          PY="$HOME/.cache/genesis-ai-ci/venv/bin/python"
+          PYTHONPATH=src "$PY" -m genesis_ai.scale_repro \
+            --primary "$CANDIDATE" \
+            --replica "$WORK/candidate-b.pt" \
+            --output "$WORK/reproduction.json"
+
+      - name: Evaluate unchanged frozen code capability
+        run: |
+          PY="$HOME/.cache/genesis-ai-ci/venv/bin/python"
+          PYTHONPATH=src "$PY" -m genesis_ai.domain_selection \
+            --checkpoint "$CANDIDATE" \
+            --suite evals/m6-domain-selection-v1.json \
+            --output "$WORK/candidate-domain.json" \
+            --device cpu
+
+      - name: Measure generation-aligned diagnostic
+        run: |
+          PY="$HOME/.cache/genesis-ai-ci/venv/bin/python"
+          PYTHONPATH=src "$PY" -m genesis_ai.position_alignment \
+            --checkpoint "$CANDIDATE" \
+            --suite evals/m6-domain-selection-v1.json \
+            --output "$WORK/alignment.json" \
+            --device cpu
+
+      - name: Evaluate M3 general-language regression
+        run: |
+          PY="$HOME/.cache/genesis-ai-ci/venv/bin/python"
+          PYTHONPATH=src "$PY" -m genesis_ai.eval_lab \
+            --checkpoint checkpoints/genesis-tiny-v0.pt \
+            --data "$WORK/public-corpus/filtered" \
+            --suite evals/m3-v1.json \
+            --output "$WORK/baseline-m3.json" \
+            --device cpu
+          PYTHONPATH=src "$PY" -m genesis_ai.eval_lab \
+            --checkpoint "$CANDIDATE" \
+            --data "$WORK/public-corpus/filtered" \
+            --suite evals/m3-v1.json \
+            --output "$WORK/candidate-m3.json" \
+            --device cpu
+
+      - name: Stage immutable experiment inputs
+        run: |
+          cp "$WORK/training.json" "$RESULT_DIR/training.json"
+          cp "$WORK/reproduction.json" "$RESULT_DIR/reproduction.json"
+          cp "$WORK/candidate-domain.json" "$RESULT_DIR/candidate-domain.json"
+          cp "$WORK/alignment.json" "$RESULT_DIR/alignment.json"
+          cp "$WORK/baseline-m3.json" "$RESULT_DIR/baseline-m3.json"
+          cp "$WORK/candidate-m3.json" "$RESULT_DIR/candidate-m3.json"
+
+      - name: Apply unchanged M6 scale-promotion gate
+        id: gate
+        run: |
+          PY="$HOME/.cache/genesis-ai-ci/venv/bin/python"
+          set +e
+          PYTHONPATH=src "$PY" -m genesis_ai.aligned_scale_gate \
+            --candidate "$CANDIDATE" \
+            --training-run "$RESULT_DIR/training.json" \
+            --reproduction "$RESULT_DIR/reproduction.json" \
+            --baseline-domain research/m6-domain-selection-v1.json \
+            --candidate-domain "$RESULT_DIR/candidate-domain.json" \
+            --baseline-m3 "$RESULT_DIR/baseline-m3.json" \
+            --candidate-m3 "$RESULT_DIR/candidate-m3.json" \
+            --ladder-result research/m6-scaling-ladder-v1.json \
+            --curriculum-lock research/m6-code-curriculum-v1.json \
+            --output "$RESULT_DIR/gate.json"
+          STATUS=$?
+          set -e
+          if [ "$STATUS" -ne 0 ] && [ "$STATUS" -ne 2 ]; then exit "$STATUS"; fi
+          PYTHONPATH=src "$PY" -m genesis_ai.result_provenance \
+            "$RESULT_DIR/gate.json" \
+            --source-commit "$GITHUB_SHA" \
+            --workflow-run-id "$GITHUB_RUN_ID"
+          PROMOTED=$("$PY" - <<'PY'
+          import json
+          from pathlib import Path
+          print(str(json.loads(Path('research/m6-aligned-micro-2m-v1/gate.json').read_text())['promoted']).lower())
+          PY
+          )
+          echo "promoted=$PROMOTED" >> "$GITHUB_OUTPUT"
+
+      - name: Publish promoted aligned checkpoint and model card
+        if: steps.gate.outputs.promoted == 'true'
+        run: |
+          PY="$HOME/.cache/genesis-ai-ci/venv/bin/python"
+          cp "$CANDIDATE" "$PUBLISHED"
+          PYTHONPATH=src "$PY" -m genesis_ai.scale_model_card \
+            --checkpoint "$PUBLISHED" \
+            --training-run "$RESULT_DIR/training.json" \
+            --domain-result "$RESULT_DIR/candidate-domain.json" \
+            --baseline-domain research/m6-domain-selection-v1.json \
+            --baseline-m3 "$RESULT_DIR/baseline-m3.json" \
+            --candidate-m3 "$RESULT_DIR/candidate-m3.json" \
+            --gate "$RESULT_DIR/gate.json" \
+            --curriculum-lock research/m6-code-curriculum-v1.json \
+            --model-name genesis-micro-2m-aligned-v1 \
+            --alignment-result "$RESULT_DIR/alignment.json" \
+            --output-dir "$MODEL_DIR"
+
+      - name: Verify publication boundary
+        run: |
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          gate = json.loads(Path('research/m6-aligned-micro-2m-v1/gate.json').read_text())
+          published = Path('checkpoints/genesis-micro-2m-aligned-v1.pt')
+          card = Path('models/genesis-micro-2m-aligned-v1/MODEL_CARD.md')
+          metrics = Path('models/genesis-micro-2m-aligned-v1/metrics.json')
+          if gate['promoted']:
+              assert published.is_file() and card.is_file() and metrics.is_file(), gate
+          else:
+              assert not published.exists() and not card.exists() and not metrics.exists(), gate
+          PY
+
+      - name: Validate repository
+        run: PYTHON_BIN="$HOME/.cache/genesis-ai-ci/venv/bin/python" ./scripts/test_local.sh
+
+      - name: Commit experiment result safely
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add "$RESULT_DIR"
+          if [ "${{ steps.gate.outputs.promoted }}" = "true" ]; then
+            git add "$PUBLISHED" "$MODEL_DIR"
+          fi
+          if ! git diff --cached --quiet; then
+            git commit -m "M6: record generation-aligned micro-2m experiment (#121)"
+            git fetch origin main
+            git rebase origin/main
+            git push origin HEAD:main
+          fi
