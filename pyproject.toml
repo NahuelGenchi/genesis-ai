@@ -14,6 +14,7 @@ genesis-train = "genesis_ai.train:main"
 genesis-generate = "genesis_ai.generate:main"
 genesis-eval = "genesis_ai.evaluate:main"
 genesis-ingest = "genesis_ai.ingest:main"
+genesis-filter = "genesis_ai.filtering:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
