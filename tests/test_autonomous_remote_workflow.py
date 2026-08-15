@@ -25,6 +25,8 @@ def test_remote_autonomous_workflow_contract() -> None:
     for module in required_modules:
         assert module in workflow
 
+    assert "research/accelerators/cpu-farm-latest.json" in workflow
+    assert "--research-evidence" in workflow
     assert "checkpoints/genesis-autonomous-incumbent.pt" in workflow
     assert "if [ \"$PROMOTED\" = \"true\" ]" in workflow
     assert 'git push origin HEAD:main' in workflow

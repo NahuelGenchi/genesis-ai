@@ -21,6 +21,7 @@ class TokenDataset(Dataset):
         *,
         split: str = "train",
         validation_fraction: float = 0.1,
+        min_chars: int = 0,
     ) -> None:
         if context_length <= 0:
             raise ValueError("context_length must be positive")
@@ -28,6 +29,8 @@ class TokenDataset(Dataset):
             raise ValueError("split must be train, validation, or all")
         if not 0.0 < validation_fraction < 1.0:
             raise ValueError("validation_fraction must be in (0, 1)")
+        if not isinstance(min_chars, int) or isinstance(min_chars, bool) or min_chars < 0:
+            raise ValueError("min_chars must be a non-negative integer")
 
         root = Path(root)
         threshold = int(validation_fraction * 10_000)
@@ -42,6 +45,8 @@ class TokenDataset(Dataset):
                 raise ValueError("filtered document must have a non-empty id")
             if not isinstance(text, str):
                 raise ValueError(f"document {document_id} must have text")
+            if len(text.strip()) < min_chars:
+                continue
             bucket = int.from_bytes(hashlib.sha256(document_id.encode("utf-8")).digest()[:4], "big") % 10_000
             is_validation = bucket < threshold
             if split == "train" and is_validation:
@@ -65,6 +70,7 @@ class TokenDataset(Dataset):
         self.context_length = context_length
         self.document_ids = tuple(document_ids)
         self.split = split
+        self.min_chars = min_chars
 
     @property
     def token_count(self) -> int:
