@@ -1,7 +1,7 @@
 {
   "format_version": "1.0",
   "suite_version": "m6-domain-selection-v2",
-  "base_seed": 39001,
+  "base_seed": 49001,
   "tasks_per_domain": 60,
   "difficulty": 4,
   "domains": ["math", "structured", "code"],
@@ -9,7 +9,7 @@
     "max_new_tokens": 80,
     "temperature": 1.0,
     "top_k": 1,
-    "seed": 39101
+    "seed": 49101
   },
   "termination": {
     "delimiter": "\n",
