@@ -15,9 +15,11 @@ def test_successful_autonomous_cycles_chain_immediately() -> None:
     assert "self-hosted" not in workflow
 
 
-def test_watchdog_recovers_an_idle_chain() -> None:
+def test_watchdog_recovers_and_bootstraps_an_idle_chain() -> None:
     workflow = Path(".github/workflows/autonomous-watchdog.yml").read_text(encoding="utf-8")
-    assert 'cron: "7 * * * *"' in workflow
+    assert 'cron: "7,22,37,52 * * * *"' in workflow
+    assert ".github/workflows/autonomous-watchdog.yml" in workflow
+    assert ".github/workflows/autonomous-continuation.yml" in workflow
     assert "actions: write" in workflow
     assert "autonomous-improvement.yml/runs?per_page=20" in workflow
     assert '"queued", "in_progress", "waiting", "pending", "requested"' in workflow
