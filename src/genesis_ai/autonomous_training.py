@@ -14,12 +14,13 @@ from .aligned_training import batch_from_indices
 from .autonomous_curriculum import CURRICULUM_VERSION
 from .checkpoint import export_inference_checkpoint, load_model, save_checkpoint, tokenizer_from_payload
 from .data import TokenDataset, sample_batch
+from .improvement_controller import PUBLIC_MIN_CHARS_VARIANTS
 from .ingest import sha256_file
 from .scale_training import BASE_LR, CPU_THREADS, GRAD_CLIP, _lr
 from .terminated_training import TerminatedGenerationAlignedDataset
 from .tokenizer import ByteBPETokenizer
 
-TRAINING_POLICY_VERSION = "autonomous-continuation-v1.1"
+TRAINING_POLICY_VERSION = "autonomous-continuation-v1.2"
 TARGET_TOKENS_PER_STEP = 1024
 EXPECTED_PARAMETERS = 1_895_808
 DOMAINS = ("code", "math", "structured")
@@ -86,6 +87,11 @@ def validate_inputs(
     if int(curriculum.get("exact_holdout_prompt_overlap_count", -1)) != 0:
         raise ValueError("autonomous curriculum overlaps target holdout")
 
+    public_min_chars = curriculum.get("public_min_chars")
+    allowed_min_chars = {0, *PUBLIC_MIN_CHARS_VARIANTS.values()}
+    if not isinstance(public_min_chars, int) or isinstance(public_min_chars, bool) or public_min_chars not in allowed_min_chars:
+        raise ValueError("autonomous public minimum length is outside screened allow-list")
+
     model, parent_payload = load_model(parent_checkpoint, "cpu")
     tokenizer = ByteBPETokenizer.load(tokenizer_path)
     if tokenizer_from_payload(parent_payload).to_dict() != tokenizer.to_dict():
@@ -143,6 +149,7 @@ def validate_inputs(
         "target_training_tokens": target_training_tokens,
         "procedural_fraction": float(curriculum["procedural_fraction"]),
         "public_fraction": float(curriculum["public_fraction"]),
+        "public_min_chars": public_min_chars,
         "focus_domain": focus,
         "role_counts": role_counts,
         "plan_sha256": plan_sha256,
@@ -265,7 +272,13 @@ def train_continuation(
     model = model.to(device)
     optimizer = torch.optim.AdamW(model.parameters(), lr=BASE_LR, foreach=False, fused=False)
     dataset = TerminatedGenerationAlignedDataset(records, tokenizer, model.config.context_length)
-    public_dataset = TokenDataset(public_data, tokenizer, model.config.context_length, split="train")
+    public_dataset = TokenDataset(
+        public_data,
+        tokenizer,
+        model.config.context_length,
+        split="train",
+        min_chars=policy["public_min_chars"],
+    )
 
     batch_size = TARGET_TOKENS_PER_STEP // model.config.context_length
     raw_steps = math.ceil(policy["target_training_tokens"] / TARGET_TOKENS_PER_STEP)
@@ -321,6 +334,7 @@ def train_continuation(
         "plan_sha256": policy["plan_sha256"],
         "parent_checkpoint_sha256": policy["parent_checkpoint_sha256"],
         "curriculum_lock_sha256": policy["curriculum_lock_sha256"],
+        "public_min_chars": policy["public_min_chars"],
     }
     save_checkpoint(
         checkpoint_path,
@@ -350,6 +364,9 @@ def train_continuation(
         "procedural_steps": procedural_steps,
         "public_steps": public_steps,
         "procedural_updates": procedural_updates,
+        "public_min_chars": policy["public_min_chars"],
+        "public_document_count": public_dataset.document_count,
+        "public_token_count": public_dataset.token_count,
         "schedule_sha256": _hash_indices(schedule),
         "schedule_unique_updates": int(len(torch.unique(schedule))),
         "schedule_accounting": accounting,
