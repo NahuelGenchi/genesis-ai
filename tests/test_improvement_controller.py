@@ -70,15 +70,22 @@ class ImprovementControllerTest(unittest.TestCase):
         with self.assertRaises(ValueError):
             plan_next_cycle(value, incumbent_checkpoint_sha256=SHA)
 
-    def test_plan_is_deterministic_and_hash_bound(self):
-        first = plan_next_cycle(evaluation(0.95, 0.30, 0.40), incumbent_checkpoint_sha256=SHA)
-        second = plan_next_cycle(evaluation(0.95, 0.30, 0.40), incumbent_checkpoint_sha256=SHA)
-        self.assertEqual(first, second)
+    def test_plan_is_deterministic_for_same_cycle_and_fresh_for_next_cycle(self):
+        metrics = evaluation(0.95, 0.30, 0.40)
+        first = plan_next_cycle(metrics, incumbent_checkpoint_sha256=SHA, cycle_index=7)
+        replay = plan_next_cycle(metrics, incumbent_checkpoint_sha256=SHA, cycle_index=7)
+        next_cycle = plan_next_cycle(metrics, incumbent_checkpoint_sha256=SHA, cycle_index=8)
+        self.assertEqual(first, replay)
+        self.assertEqual(first["input"]["cycle_index"], 7)
+        self.assertEqual(next_cycle["input"]["cycle_index"], 8)
         self.assertEqual(len(first["plan_sha256"]), 64)
+        self.assertNotEqual(first["plan_sha256"], next_cycle["plan_sha256"])
 
-    def test_invalid_checkpoint_or_suite_identity_fails_closed(self):
+    def test_invalid_checkpoint_suite_or_cycle_identity_fails_closed(self):
         with self.assertRaises(ValueError):
             plan_next_cycle(evaluation(0.9, 0.8, 0.7), incumbent_checkpoint_sha256="short")
+        with self.assertRaises(ValueError):
+            plan_next_cycle(evaluation(0.9, 0.8, 0.7), incumbent_checkpoint_sha256=SHA, cycle_index=0)
         value = evaluation(0.9, 0.8, 0.7)
         value["suite_sha256"] = "short"
         with self.assertRaises(ValueError):
