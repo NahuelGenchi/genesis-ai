@@ -24,19 +24,22 @@ The repository includes `.github/workflows/kaggle-gpu-dispatch.yml`.
 
 One-time repository setup:
 
-- add `KAGGLE_USERNAME` as a GitHub Actions secret;
-- add `KAGGLE_KEY` as a GitHub Actions secret.
+- create a Kaggle API token;
+- add it to GitHub Actions as the `KAGGLE_API_TOKEN` repository secret.
 
-Never commit Kaggle credentials.
+The Kaggle username is supplied as a normal workflow input; it is not a credential. Never commit the API token.
 
 To submit a run, use **Actions → Kaggle GPU dispatch → Run workflow** and provide:
 
 - the successful CPU research-farm run ID;
-- an enabled manifest under `accelerators/jobs/`.
+- an enabled manifest under `accelerators/jobs/`;
+- the Kaggle username that owns the `genesis-ai-gpu-runner` kernel.
 
 The workflow downloads that exact CPU shortlist, re-validates eligibility, freezes the current Git commit into the Kaggle payload, and submits the kernel with `NvidiaTeslaP100`. The GitHub runner only performs dispatch; model training occurs on Kaggle.
 
-Kaggle CLI reference: https://github.com/Kaggle/kaggle-cli/blob/main/docs/kernels.md
+Current Kaggle CLI authentication reference: https://github.com/Kaggle/kaggle-cli/blob/main/docs/authentication.md
+
+Kaggle CLI kernel reference: https://github.com/Kaggle/kaggle-cli/blob/main/docs/kernels.md
 
 ## Google Colab
 
