@@ -13,7 +13,8 @@ The controller may consume only:
 - aggregate per-domain exact accuracy;
 - aggregate per-domain terminated oracle loss;
 - aggregate termination rate;
-- incumbent checkpoint SHA-256.
+- incumbent checkpoint SHA-256;
+- the monotonic persisted autonomous cycle index.
 
 Prompt text, task bodies, oracle answers, generated responses, and other holdout content are rejected by the controller API.
 
@@ -26,6 +27,17 @@ The controller deterministically chooses the weakest domain by:
 3. domain name as the final deterministic tie-breaker.
 
 When all domains reach at least 80% strict exact accuracy, the controller raises difficulty instead of repeatedly polishing the same easy suite. Difficulty escalation requires a new frozen target suite and an incumbent baseline on that suite **before** training; cross-difficulty before/after comparisons are forbidden.
+
+## Fresh deterministic cycles
+
+The persisted `cycle_index` is included in the controller input and therefore in `plan_sha256`. This is an exploration nonce, not a quality signal or promotion input.
+
+- Replaying the same incumbent, evaluation, and cycle index reconstructs the exact same plan.
+- Advancing only the cycle index produces a new plan SHA-256.
+- Curriculum domain seeds and the training seed are already derived from the plan SHA-256, so a rejected cycle automatically leads to fresh verifier-backed examples and a fresh deterministic candidate on the next scheduled attempt.
+- Promotion gates, benchmark content, compute budget, and holdout boundaries are unchanged.
+
+This prevents a rejected deterministic candidate from being retrained forever while preserving exact per-cycle reproducibility.
 
 ## Replay-safe adaptive compute
 
@@ -94,6 +106,7 @@ Only this immutable promotion decision may replace the incumbent.
 - Uses serialized concurrency and a five-hour hard job timeout.
 - Rebuilds the provenance-locked public corpus from source each cycle.
 - Evaluates the current incumbent before planning.
+- The controller reads the next cycle index from `research/autonomous/state.json` through the workflow's existing `STATE` environment binding.
 - Creates a plan-bound curriculum and trains a primary candidate plus independent deterministic replica.
 - Evaluates incumbent and candidate on the same frozen target suite and on the M3 regression boundary.
 - Commits immutable cycle measurements on both rejection and promotion.
