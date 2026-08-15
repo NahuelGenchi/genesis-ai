@@ -1,0 +1,47 @@
+{
+  "checkpoint_sha256": "aa672b2f3030cb76b09c399ea6a6fe8ea020b336c23e867ba2d35cc9f73c3e8e",
+  "contamination": {
+    "blocking": false,
+    "exact_overlap_count": 0,
+    "examples": [],
+    "method": "sha256-nfkc-collapsed-whitespace",
+    "train_documents": 975,
+    "validation_documents": 107
+  },
+  "data_manifest_sha256": "8126c6a8008ea39fa9db138078c5b0f15becf510eebf6160053807d665149a76",
+  "evaluation": {
+    "batches": 20,
+    "checkpoint_step": 4885,
+    "data_manifest_sha256": "8126c6a8008ea39fa9db138078c5b0f15becf510eebf6160053807d665149a76",
+    "documents": 107,
+    "loss": 3.193548858165741,
+    "parameter_count": 1895808,
+    "perplexity": 24.37477675726692,
+    "split": "validation",
+    "tokens": 29360
+  },
+  "generations": [
+    {
+      "prompt": "The ",
+      "sha256": "581d9a562c8f02d3ad8c8f10b5b3b4b4b47e2ad7864bdca6d7a963f9b24082a9",
+      "text": "The and it\ncaling the negy and not be and fit recin\nhim f"
+    },
+    {
+      "prompt": "Don ",
+      "sha256": "5bae7f0c39914818a4d3b5880f341fb1c9343596f5fcdb245743ad8989d07ebe",
+      "text": "Don mit inival the\nnegy and not be and falt of the in "
+    },
+    {
+      "prompt": "Il ",
+      "sha256": "77126119d73ff1ed8d3643d402244e5d23d2954374022098c0451a73834023f5",
+      "text": "Il mit iniès en\nCa le elle de vait fit les fla le "
+    }
+  ],
+  "primary_metric": {
+    "lower_is_better": true,
+    "name": "validation_loss",
+    "value": 3.193548858165741
+  },
+  "suite_sha256": "e63ccb9a8ea41c030a6bbbbeb41332c5a53c983cc1bf9d7ea466a9862dfc5bb7",
+  "suite_version": "m3-v1"
+}
