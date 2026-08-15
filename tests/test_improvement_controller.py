@@ -29,7 +29,7 @@ class ImprovementControllerTest(unittest.TestCase):
         self.assertEqual(decision["target_training_tokens"], 3_000_000)
         self.assertEqual(decision["focus_examples"], 4096)
         self.assertEqual(decision["replay_domains"], ["code", "structured"])
-        self.assertEqual(decision["replay_examples_per_domain"], 512)
+        self.assertEqual(decision["replay_examples_per_domain"], 1024)
         self.assertEqual(decision["continuation_update_weights"], {"focus": 0.70, "each_replay_domain": 0.15})
         self.assertTrue(decision["mandatory_first_and_terminator_coverage"])
         self.assertTrue(decision["unique_target_contexts_only"])
@@ -43,6 +43,9 @@ class ImprovementControllerTest(unittest.TestCase):
         self.assertEqual(weak["decision"]["target_training_tokens"], 3_000_000)
         self.assertEqual(medium["decision"]["target_training_tokens"], 2_500_000)
         self.assertEqual(strong["decision"]["target_training_tokens"], 2_000_000)
+        self.assertEqual(weak["decision"]["replay_examples_per_domain"], 1024)
+        self.assertEqual(medium["decision"]["replay_examples_per_domain"], 896)
+        self.assertEqual(strong["decision"]["replay_examples_per_domain"], 768)
 
     def test_tie_breaks_by_higher_aggregate_loss(self):
         plan = plan_next_cycle(
