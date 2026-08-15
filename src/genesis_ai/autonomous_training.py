@@ -97,17 +97,25 @@ def validate_inputs(
     focus = str(curriculum.get("focus_domain"))
     if focus not in DOMAINS:
         raise ValueError("invalid autonomous focus domain")
+    locked_domains = curriculum.get("domain_records")
+    if not isinstance(locked_domains, dict) or set(locked_domains) != set(DOMAINS):
+        raise ValueError("autonomous curriculum domain record accounting is invalid")
     role_counts = {domain: {"focus": 0, "replay": 0} for domain in DOMAINS}
     for record in records:
         role_counts[str(record["domain"])][str(record["role"])] += 1
-    if role_counts[focus]["focus"] != 4096:
-        raise ValueError("autonomous focus domain must contain 4096 focus records")
     for domain in DOMAINS:
-        if domain == focus:
-            if role_counts[domain]["replay"] != 0:
-                raise ValueError("focus domain may not also contain replay records")
-        elif role_counts[domain]["replay"] != 512 or role_counts[domain]["focus"] != 0:
-            raise ValueError("each non-focus domain must contain exactly 512 replay records")
+        locked = locked_domains[domain]
+        if not isinstance(locked, dict):
+            raise ValueError("autonomous curriculum domain record block is invalid")
+        expected_role = "focus" if domain == focus else "replay"
+        expected_examples = int(locked.get("examples", -1))
+        if locked.get("role") != expected_role or expected_examples <= 0:
+            raise ValueError("autonomous curriculum role/count lock is invalid")
+        if role_counts[domain][expected_role] != expected_examples:
+            raise ValueError(f"autonomous {domain} record count differs from curriculum lock")
+        other_role = "replay" if expected_role == "focus" else "focus"
+        if role_counts[domain][other_role] != 0:
+            raise ValueError(f"autonomous {domain} contains an unexpected {other_role} role")
 
     policy = {
         "parent_checkpoint_sha256": parent_sha,
@@ -143,8 +151,16 @@ def build_focus_schedule(
     seed: int,
 ) -> tuple[torch.Tensor, dict[str, Any]]:
     anchors = list(dataset.anchor_indices)
-    if len(anchors) != 10_240:
-        raise ValueError(f"autonomous v1 requires 10,240 first/terminator anchors, got {len(anchors)}")
+    record_counts = {domain: 0 for domain in DOMAINS}
+    for record in records:
+        domain = str(record["domain"])
+        if domain not in record_counts:
+            raise ValueError(f"unknown autonomous record domain: {domain}")
+        record_counts[domain] += 1
+    expected_anchors = {domain: record_counts[domain] * 2 for domain in DOMAINS}
+    expected_anchor_total = sum(expected_anchors.values())
+    if len(anchors) != expected_anchor_total:
+        raise ValueError(f"autonomous first/terminator anchor count drifted: expected {expected_anchor_total}, got {len(anchors)}")
     if total_samples < len(anchors):
         raise ValueError("autonomous budget cannot cover mandatory anchors")
     if total_samples > len(dataset):
@@ -155,9 +171,8 @@ def build_focus_schedule(
     for index in anchors:
         record_ordinal = int(dataset.record_ordinals[index])
         anchor_by_domain[domain_by_record[record_ordinal]] += 1
-    expected_anchors = {domain: (8192 if domain == focus_domain else 1024) for domain in DOMAINS}
     if anchor_by_domain != expected_anchors:
-        raise ValueError(f"autonomous anchor accounting drifted: {anchor_by_domain}")
+        raise ValueError(f"autonomous anchor accounting drifted: expected {expected_anchors}, got {anchor_by_domain}")
 
     continuation_by_domain: dict[str, list[int]] = {domain: [] for domain in DOMAINS}
     for index in dataset.continuation_indices:
@@ -188,6 +203,7 @@ def build_focus_schedule(
     if len(torch.unique(selected)) != len(selected):
         raise AssertionError("autonomous schedule contains duplicate target contexts")
     return selected, {
+        "record_count_by_domain": record_counts,
         "anchor_updates_by_domain": anchor_by_domain,
         "continuation_available_by_domain": available,
         "continuation_updates_by_domain": quotas,
