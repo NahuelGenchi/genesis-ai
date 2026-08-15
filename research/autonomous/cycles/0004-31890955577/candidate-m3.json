@@ -1,0 +1,47 @@
+{
+  "checkpoint_sha256": "d369d807e18179fdc41b250864c593b3aa6c2b09a92b96576d90ff843acd4ae2",
+  "contamination": {
+    "blocking": false,
+    "exact_overlap_count": 0,
+    "examples": [],
+    "method": "sha256-nfkc-collapsed-whitespace",
+    "train_documents": 975,
+    "validation_documents": 107
+  },
+  "data_manifest_sha256": "8126c6a8008ea39fa9db138078c5b0f15becf510eebf6160053807d665149a76",
+  "evaluation": {
+    "batches": 20,
+    "checkpoint_step": 4885,
+    "data_manifest_sha256": "8126c6a8008ea39fa9db138078c5b0f15becf510eebf6160053807d665149a76",
+    "documents": 107,
+    "loss": 3.161460220813751,
+    "parameter_count": 1895808,
+    "perplexity": 23.605039345212695,
+    "split": "validation",
+    "tokens": 29360
+  },
+  "generations": [
+    {
+      "prompt": "The ",
+      "sha256": "40d22f04aaf412bb726bf3f95a434760fca0a96670b6ce05c3d3ba05cbe90568",
+      "text": "The and it\ncaling his with asgl not be and fice of the in "
+    },
+    {
+      "prompt": "Don ",
+      "sha256": "c68c51e4c7b7b941976f8101b3de69dfdffcb96a290041a4cfe05cc4bfa430d4",
+      "text": "Don and her\ncalal his; that wor not be and falce of the in "
+    },
+    {
+      "prompt": "Il ",
+      "sha256": "395c1b1f0ee2822355f201b8bb0f09c9f9e8df35b1a313ba5dfe3e8447a62b99",
+      "text": "Il é que\ncalieute; un le la de vait fatues fes le "
+    }
+  ],
+  "primary_metric": {
+    "lower_is_better": true,
+    "name": "validation_loss",
+    "value": 3.161460220813751
+  },
+  "suite_sha256": "e63ccb9a8ea41c030a6bbbbeb41332c5a53c983cc1bf9d7ea466a9862dfc5bb7",
+  "suite_version": "m3-v1"
+}
