@@ -1,14 +1,7 @@
 {
   "audit_version": "public-release-v1",
   "current_tree": {
-    "blockers": [
-      {
-        "detail": "pull_request jobs execute on a self-hosted runner; harden before public visibility",
-        "location": ".github/workflows/ci.yml",
-        "rule": "public_pr_self_hosted_runner",
-        "severity": "blocker"
-      }
-    ],
+    "blockers": [],
     "tracked_paths": 242,
     "warnings": [
       {
@@ -39,14 +32,14 @@
         "size_bytes": 1594143
       }
     ],
-    "objects_with_paths": 850,
-    "scanned_blobs": 392,
-    "scanned_text_blobs": 389
+    "objects_with_paths": 858,
+    "scanned_blobs": 395,
+    "scanned_text_blobs": 392
   },
   "github_text": {
     "findings": [],
     "issue_comments_scanned": 1,
-    "issues_and_prs_scanned": 167,
+    "issues_and_prs_scanned": 170,
     "review_comments_scanned": 0,
     "reviews_scanned": 0,
     "secret_scanning": {
@@ -57,9 +50,9 @@
   "privacy": "Secret values are never included in this report; findings contain rule IDs and locations only.",
   "repository": "NahuelGenchi/genesis-ai",
   "summary": {
-    "blocker_count": 1,
+    "blocker_count": 0,
     "content_clear": true,
-    "public_ready": false,
+    "public_ready": true,
     "review_count": 0,
     "warning_count": 1
   }
