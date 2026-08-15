@@ -94,6 +94,38 @@ def rolling_target_loss(
     }
 
 
+def rolling_target_diagnostics(
+    *,
+    model,
+    tokenizer,
+    task: dict[str, Any],
+    response: str,
+    device: str,
+) -> dict[str, Any]:
+    """Return deterministic teacher-forced greedy token traces for one response."""
+    prompt_ids = tokenizer.encode(task["prompt"] + "\nAnswer:")
+    response_ids = tokenizer.encode(response)
+    if not prompt_ids or not response_ids:
+        raise ValueError("empty prompt/response tokenization")
+    if len(response_ids) >= model.config.context_length:
+        raise ValueError("response does not fit model context")
+
+    history = list(prompt_ids)
+    predicted_ids: list[int] = []
+    with torch.no_grad():
+        for target in response_ids:
+            context = history[-model.config.context_length :]
+            x = torch.tensor([context], dtype=torch.long, device=device)
+            logits, _ = model(x)
+            predicted_ids.append(int(torch.argmax(logits[:, -1, :], dim=-1).item()))
+            history.append(target)
+
+    return {
+        "target_ids": [int(value) for value in response_ids],
+        "predicted_ids": predicted_ids,
+    }
+
+
 def diagnose_checkpoint(
     *,
     checkpoint: str | Path,
