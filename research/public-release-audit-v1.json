@@ -1,0 +1,66 @@
+{
+  "audit_version": "public-release-v1",
+  "current_tree": {
+    "blockers": [
+      {
+        "detail": "pull_request jobs execute on a self-hosted runner; harden before public visibility",
+        "location": ".github/workflows/ci.yml",
+        "rule": "public_pr_self_hosted_runner",
+        "severity": "blocker"
+      }
+    ],
+    "tracked_paths": 241,
+    "warnings": [
+      {
+        "detail": "no explicit repository license found; this is a collaboration/reuse issue, not a secret leak",
+        "location": "repository root",
+        "rule": "missing_license",
+        "severity": "warning"
+      }
+    ]
+  },
+  "format_version": "1.0",
+  "git": {
+    "findings": [],
+    "model_artifacts": [
+      {
+        "oid": "9225c0ff2b5d62128799152af886fef6cc04058b",
+        "path": "checkpoints/genesis-micro-2m-v1.pt",
+        "size_bytes": 7604191
+      },
+      {
+        "oid": "388308f847acdfdb253e6d4c23aa4f4377a59316",
+        "path": "checkpoints/genesis-tiny-v0.pt",
+        "size_bytes": 1594207
+      },
+      {
+        "oid": "99ee907fefeeddb5a71e60e6005c2e1f7f5a16e5",
+        "path": "checkpoints/genesis-tiny-v0.pt",
+        "size_bytes": 1594143
+      }
+    ],
+    "objects_with_paths": 842,
+    "scanned_blobs": 389,
+    "scanned_text_blobs": 386
+  },
+  "github_text": {
+    "findings": [],
+    "issue_comments_scanned": 1,
+    "issues_and_prs_scanned": 165,
+    "review_comments_scanned": 0,
+    "reviews_scanned": 0,
+    "secret_scanning": {
+      "accessible": false,
+      "http_status": 403
+    }
+  },
+  "privacy": "Secret values are never included in this report; findings contain rule IDs and locations only.",
+  "repository": "NahuelGenchi/genesis-ai",
+  "summary": {
+    "blocker_count": 1,
+    "content_clear": true,
+    "public_ready": false,
+    "review_count": 0,
+    "warning_count": 1
+  }
+}
