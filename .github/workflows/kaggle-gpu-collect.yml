@@ -1,0 +1,87 @@
+name: Kaggle GPU result collector
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "47 * * * *"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: kaggle-gpu-result-collector
+  cancel-in-progress: true
+
+jobs:
+  collect:
+    if: github.event.repository.private == false
+    runs-on: ubuntu-slim
+    timeout-minutes: 10
+    env:
+      KAGGLE_USERNAME: ${{ vars.KAGGLE_USERNAME }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Detect opportunistic Kaggle credentials
+        id: credentials
+        env:
+          KAGGLE_API_TOKEN: ${{ secrets.KAGGLE_API_TOKEN }}
+        run: |
+          if [ -n "$KAGGLE_API_TOKEN" ] && [ -n "$KAGGLE_USERNAME" ]; then
+            echo "available=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "available=false" >> "$GITHUB_OUTPUT"
+            echo "Kaggle collection skipped: credentials are not configured."
+          fi
+
+      - name: Download latest accelerator record only
+        id: download
+        if: steps.credentials.outputs.available == 'true'
+        continue-on-error: true
+        env:
+          KAGGLE_API_TOKEN: ${{ secrets.KAGGLE_API_TOKEN }}
+        run: |
+          python -m pip install --disable-pip-version-check --no-input kaggle
+          rm -rf kaggle-output
+          mkdir -p kaggle-output
+          kaggle kernels output "$KAGGLE_USERNAME/genesis-ai-gpu-runner" \
+            --path kaggle-output \
+            --force \
+            --file-pattern '.*accelerator-record\.json$'
+
+      - name: Validate and persist latest Kaggle research evidence
+        if: steps.credentials.outputs.available == 'true' && steps.download.outcome == 'success'
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          matches = list(Path("kaggle-output").rglob("accelerator-record.json"))
+          if len(matches) != 1:
+              raise SystemExit(f"expected one accelerator-record.json, found {len(matches)}")
+          record = json.loads(matches[0].read_text(encoding="utf-8"))
+          assert record.get("platform") == "kaggle", record
+          assert record.get("promotion_authority") is False, record
+          assert record.get("promotion_eligible") is False, record
+          assert record.get("requires_frozen_evaluation_before_promotion") is True, record
+          assert record.get("cash_compute_cost_usd") == 0.0, record
+          assert isinstance(record.get("source_commit"), str) and len(record["source_commit"]) == 40, record
+          assert isinstance(record.get("cpu_farm_run_id"), int) and record["cpu_farm_run_id"] > 0, record
+          target = Path("research/accelerators/kaggle-latest.json")
+          target.parent.mkdir(parents=True, exist_ok=True)
+          target.write_text(json.dumps(record, indent=2, sort_keys=True) + "\n", encoding="utf-8", newline="\n")
+          PY
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add research/accelerators/kaggle-latest.json
+          if ! git diff --cached --quiet; then
+            git commit -m "Research: refresh Kaggle accelerator evidence (#194)"
+            git fetch origin main
+            git rebase origin/main
+            git push origin HEAD:main
+          fi
+
+      - name: Record unavailable Kaggle output without failing autonomy
+        if: steps.credentials.outputs.available != 'true' || steps.download.outcome != 'success'
+        run: |
+          echo "No new Kaggle record was collected; the canonical GitHub-hosted autonomous loop remains independent."
