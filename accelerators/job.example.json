@@ -1,0 +1,33 @@
+{
+  "format_version": "1.0",
+  "kind": "genesis-train-v1",
+  "enabled": false,
+  "id": "replace-with-cpu-screened-model-job",
+  "issue": 175,
+  "cpu_screen": {
+    "lane": "architecture",
+    "variant": "replace-with-surviving-variant"
+  },
+  "training": {
+    "data": "replace-with-filtered-corpus-directory",
+    "tokenizer": "replace-with-tokenizer.json",
+    "steps": 1000,
+    "batch_size": 8,
+    "lr": 0.001,
+    "seed": 1337,
+    "checkpoint_every": 100,
+    "model": {
+      "context_length": 128,
+      "d_model": 96,
+      "n_heads": 4,
+      "n_layers": 3,
+      "d_ff": 384
+    }
+  },
+  "budget": {
+    "max_steps": 1000,
+    "max_checkpoint_interval": 100
+  },
+  "resume_if_present": true,
+  "promotion_authority": false
+}
