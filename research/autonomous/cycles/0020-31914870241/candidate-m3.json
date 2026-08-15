@@ -1,0 +1,47 @@
+{
+  "checkpoint_sha256": "07d77c390f746416f6f160cbf6438b342fd87e83f55134438e719d7ba2550450",
+  "contamination": {
+    "blocking": false,
+    "exact_overlap_count": 0,
+    "examples": [],
+    "method": "sha256-nfkc-collapsed-whitespace",
+    "train_documents": 975,
+    "validation_documents": 107
+  },
+  "data_manifest_sha256": "8126c6a8008ea39fa9db138078c5b0f15becf510eebf6160053807d665149a76",
+  "evaluation": {
+    "batches": 20,
+    "checkpoint_step": 4885,
+    "data_manifest_sha256": "8126c6a8008ea39fa9db138078c5b0f15becf510eebf6160053807d665149a76",
+    "documents": 107,
+    "loss": 3.233282434940338,
+    "parameter_count": 1895808,
+    "perplexity": 25.362772135718394,
+    "split": "validation",
+    "tokens": 29360
+  },
+  "generations": [
+    {
+      "prompt": "The ",
+      "sha256": "2f415f77ee1030e1a82e11d8f5b6f3ca3acfa81ffd511a40ddd9349d92c8f1e5",
+      "text": "The and whicalk his\nwith as and not g and fice of the in "
+    },
+    {
+      "prompt": "Don ",
+      "sha256": "118404320a93a2d1960d345aca537e2133fc8edb3693803101bd65b4bb08221c",
+      "text": "Don and whical on a gy and not g and fice of the in "
+    },
+    {
+      "prompt": "Il ",
+      "sha256": "1317294e29790f457cfd9e2356c564ede168d8d65bc2d40100f189cbaed84e1f",
+      "text": "Il mit lui vit en\nfit le elle de vait flaues fla le "
+    }
+  ],
+  "primary_metric": {
+    "lower_is_better": true,
+    "name": "validation_loss",
+    "value": 3.233282434940338
+  },
+  "suite_sha256": "e63ccb9a8ea41c030a6bbbbeb41332c5a53c983cc1bf9d7ea466a9862dfc5bb7",
+  "suite_version": "m3-v1"
+}
