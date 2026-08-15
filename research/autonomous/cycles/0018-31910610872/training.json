@@ -1,0 +1,68 @@
+{
+  "batch_size": 8,
+  "cash_compute_cost_usd": 0.0,
+  "curriculum_lock_sha256": "01a5664d45f646c7615d741394f5d994a32a197b3ef258c32ad6c1fb9b5e970b",
+  "determinism": {
+    "adamw_foreach": false,
+    "adamw_fused": false,
+    "deterministic_algorithms": true,
+    "device": "cpu",
+    "torch_threads": 1
+  },
+  "final_step": 4885,
+  "focus_domain": "structured",
+  "format_version": "1.0",
+  "inference_checkpoint_sha256": "922be9658f4c3d95b7fa6d9720e44833186d8db9d33605c6312a58947a1c7c74",
+  "mean_procedural_training_loss": 0.7574647203685007,
+  "mean_public_training_loss": 3.5487679702836905,
+  "parameter_count": 1895808,
+  "parent_checkpoint_sha256": "0ba16a931451ffbdc369aa685845b0ddb9b6ed03910ac773b50e837fd9886d7e",
+  "parent_step": 1955,
+  "plan_sha256": "2386ce8029a474493373ce69f43de9e910ff73bf6dcb9ec6c12586b927301898",
+  "procedural_steps": 2344,
+  "procedural_updates": 18752,
+  "processed_tokens": 3000320,
+  "public_document_count": 975,
+  "public_manifest_sha256": "8126c6a8008ea39fa9db138078c5b0f15becf510eebf6160053807d665149a76",
+  "public_min_chars": 80,
+  "public_steps": 586,
+  "public_token_count": 247453,
+  "records_sha256": "ad03e53aaa3772e7aa13cf7c523616d630fc8bb58f103879d83f8d147ca3d92c",
+  "schedule_accounting": {
+    "anchor_updates_by_domain": {
+      "code": 2048,
+      "math": 2048,
+      "structured": 8192
+    },
+    "continuation_available_by_domain": {
+      "code": 14360,
+      "math": 1677,
+      "structured": 81264
+    },
+    "continuation_updates_by_domain": {
+      "code": 969,
+      "math": 969,
+      "structured": 4526
+    },
+    "record_counts_by_domain": {
+      "code": 1024,
+      "math": 1024,
+      "structured": 4096
+    },
+    "total_anchor_updates": 12288,
+    "total_continuation_updates": 6464,
+    "total_updates": 18752,
+    "total_updates_by_domain": {
+      "code": 3017,
+      "math": 3017,
+      "structured": 12718
+    }
+  },
+  "schedule_sha256": "f45ab33fdda234bbbaefea4d32633cd74b770fa9a0c7beba7c735e32bbd99035",
+  "schedule_unique_updates": 18752,
+  "seed": 56484937,
+  "steps": 2930,
+  "target_training_tokens": 3000000,
+  "tokenizer_sha256": "6f66eba7d552fd22e4c35ba23c1998bbc549ab26ad89a1e0d245524bc802d398",
+  "training_policy": "autonomous-continuation-v1.2"
+}

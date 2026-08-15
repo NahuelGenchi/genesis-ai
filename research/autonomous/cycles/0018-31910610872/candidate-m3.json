@@ -1,0 +1,47 @@
+{
+  "checkpoint_sha256": "922be9658f4c3d95b7fa6d9720e44833186d8db9d33605c6312a58947a1c7c74",
+  "contamination": {
+    "blocking": false,
+    "exact_overlap_count": 0,
+    "examples": [],
+    "method": "sha256-nfkc-collapsed-whitespace",
+    "train_documents": 975,
+    "validation_documents": 107
+  },
+  "data_manifest_sha256": "8126c6a8008ea39fa9db138078c5b0f15becf510eebf6160053807d665149a76",
+  "evaluation": {
+    "batches": 20,
+    "checkpoint_step": 4885,
+    "data_manifest_sha256": "8126c6a8008ea39fa9db138078c5b0f15becf510eebf6160053807d665149a76",
+    "documents": 107,
+    "loss": 3.2078470945358277,
+    "parameter_count": 1895808,
+    "perplexity": 24.72579657882549,
+    "split": "validation",
+    "tokens": 29360
+  },
+  "generations": [
+    {
+      "prompt": "The ",
+      "sha256": "1146411c89f3b267f91fb3746417c3bb6be488fbe70ca9aee1e549176b40d721",
+      "text": "The and her\ncaling his; gy and not g and falt of the in "
+    },
+    {
+      "prompt": "Don ",
+      "sha256": "f3dbb4088b56ba75238b738e30792a582f7ecbe43f1d0f7ab8f3646c9043db26",
+      "text": "Don and her\ncaling his; gy and not g and flat of the in "
+    },
+    {
+      "prompt": "Il ",
+      "sha256": "dce5aa3d8c87a155a94b083807b9455148362ae1b817c42a02aecc61dc2e4406",
+      "text": "Il mit quiiès en\ndes ne pas la f la flau de la le "
+    }
+  ],
+  "primary_metric": {
+    "lower_is_better": true,
+    "name": "validation_loss",
+    "value": 3.2078470945358277
+  },
+  "suite_sha256": "e63ccb9a8ea41c030a6bbbbeb41332c5a53c983cc1bf9d7ea466a9862dfc5bb7",
+  "suite_version": "m3-v1"
+}
