@@ -1,0 +1,44 @@
+{
+  "cash_compute_cost_usd": 0.0,
+  "continuation_update_weights": {
+    "each_replay_domain": 0.15,
+    "focus": 0.7
+  },
+  "curriculum_version": "autonomous-curriculum-v1",
+  "domain_records": {
+    "code": {
+      "attempts": 1084,
+      "examples": 1024,
+      "role": "replay",
+      "terminated_response_tokens": 16440
+    },
+    "math": {
+      "attempts": 1042,
+      "examples": 1024,
+      "role": "replay",
+      "terminated_response_tokens": 3755
+    },
+    "structured": {
+      "attempts": 4096,
+      "examples": 4096,
+      "role": "focus",
+      "terminated_response_tokens": 89264
+    }
+  },
+  "exact_holdout_prompt_overlap_count": 0,
+  "focus_domain": "structured",
+  "format_version": "1.0",
+  "incumbent_checkpoint_sha256": "0ba16a931451ffbdc369aa685845b0ddb9b6ed03910ac773b50e837fd9886d7e",
+  "plan_sha256": "0ddc914670753265666b9703d4a860a757030e4d53b7320af7e13fad37dbd5b2",
+  "procedural_fraction": 0.8,
+  "public_fraction": 0.2,
+  "public_manifest_sha256": "8126c6a8008ea39fa9db138078c5b0f15becf510eebf6160053807d665149a76",
+  "record_count": 6144,
+  "record_set_sha256": "6d81c4f433a0d3a8fc42159fc5c0d7be6c239c000fc92466e46a16df52b4238d",
+  "records_file_sha256": "76b8b987ee529ca3a36a05b3d895bd63b935f47604ad5af8c8dcf2ea242e78f0",
+  "target_difficulty": 1,
+  "target_suite_sha256": "e04f1298d1705c5d00a43170f01e79f129fce53da26dead637b7b74d79d83afc",
+  "target_suite_version": "m6-domain-selection-v2",
+  "target_training_tokens": 3000000,
+  "tokenizer_sha256": "6f66eba7d552fd22e4c35ba23c1998bbc549ab26ad89a1e0d245524bc802d398"
+}
