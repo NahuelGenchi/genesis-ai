@@ -1,6 +1,11 @@
+import json
+import os
+import tempfile
 import unittest
+from pathlib import Path
+from unittest.mock import patch
 
-from genesis_ai.improvement_controller import plan_next_cycle
+from genesis_ai.improvement_controller import _scheduled_cycle_index, plan_next_cycle
 
 
 SHA = "a" * 64
@@ -80,6 +85,14 @@ class ImprovementControllerTest(unittest.TestCase):
         self.assertEqual(next_cycle["input"]["cycle_index"], 8)
         self.assertEqual(len(first["plan_sha256"]), 64)
         self.assertNotEqual(first["plan_sha256"], next_cycle["plan_sha256"])
+
+    def test_scheduled_cycle_index_comes_from_persistent_state(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            state = Path(tmp) / "state.json"
+            state.write_text(json.dumps({"cycle_index": 11}), encoding="utf-8")
+            with patch.dict(os.environ, {"STATE": str(state)}, clear=False):
+                self.assertEqual(_scheduled_cycle_index(None), 12)
+                self.assertEqual(_scheduled_cycle_index(99), 99)
 
     def test_invalid_checkpoint_suite_or_cycle_identity_fails_closed(self):
         with self.assertRaises(ValueError):
