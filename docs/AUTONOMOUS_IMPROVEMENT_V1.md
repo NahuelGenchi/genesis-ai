@@ -32,8 +32,8 @@ When all domains reach at least 80% strict exact accuracy, the controller raises
 Each cycle uses:
 
 - 4,096 fresh focus-domain verifier-oracle examples;
-- 512 replay examples from each non-focus domain;
-- mandatory first-answer and terminator coverage;
+- budget-aware replay examples from each non-focus domain: 1,024 for a 3M-token cycle, 768 for 2.5M, and 512 for 2M;
+- mandatory first-answer and terminator coverage for every generated record;
 - unique target contexts only;
 - continuation capacity weighted 70% to the focus skill and 15% to each replay skill;
 - an 80/20 procedural/public-data step mix.
@@ -44,7 +44,9 @@ The total training budget is bounded by observed focus capability:
 - 50–80% exact: 2.5M;
 - >=80% exact: 2M.
 
-The 2M floor is intentional. With 4,096 focus records plus two 512-record replay sets, first-answer and terminator anchors already require 10,240 procedural target updates. Smaller budgets would recreate the anchor-starvation failure measured in #136.
+Replay records scale with that budget because short-response domains such as math expose fewer unique continuation contexts per example. The trainer derives mandatory anchor accounting from the plan-bound record counts and still fails closed if any domain cannot satisfy its continuation quota without duplication.
+
+The 2M floor remains intentional. At the minimum budget, 4,096 focus records plus two 512-record replay sets already require 10,240 mandatory first-answer/terminator target updates. Smaller budgets could recreate the anchor-starvation failure measured in #136.
 
 ## Curriculum execution boundary
 

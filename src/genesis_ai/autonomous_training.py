@@ -19,10 +19,15 @@ from .scale_training import BASE_LR, CPU_THREADS, GRAD_CLIP, _lr
 from .terminated_training import TerminatedGenerationAlignedDataset
 from .tokenizer import ByteBPETokenizer
 
-TRAINING_POLICY_VERSION = "autonomous-continuation-v1"
+TRAINING_POLICY_VERSION = "autonomous-continuation-v1.1"
 TARGET_TOKENS_PER_STEP = 1024
 EXPECTED_PARAMETERS = 1_895_808
 DOMAINS = ("code", "math", "structured")
+REPLAY_EXAMPLES_BY_BUDGET = {
+    3_000_000: 1_024,
+    2_500_000: 768,
+    2_000_000: 512,
+}
 
 
 def _load_json(path: str | Path) -> dict[str, Any]:
@@ -97,6 +102,12 @@ def validate_inputs(
     focus = str(curriculum.get("focus_domain"))
     if focus not in DOMAINS:
         raise ValueError("invalid autonomous focus domain")
+
+    target_training_tokens = int(curriculum["target_training_tokens"])
+    if target_training_tokens not in REPLAY_EXAMPLES_BY_BUDGET:
+        raise ValueError("autonomous v1 training budget is outside controller contract")
+    expected_replay_records = REPLAY_EXAMPLES_BY_BUDGET[target_training_tokens]
+
     role_counts = {domain: {"focus": 0, "replay": 0} for domain in DOMAINS}
     for record in records:
         role_counts[str(record["domain"])][str(record["role"])] += 1
@@ -106,8 +117,22 @@ def validate_inputs(
         if domain == focus:
             if role_counts[domain]["replay"] != 0:
                 raise ValueError("focus domain may not also contain replay records")
-        elif role_counts[domain]["replay"] != 512 or role_counts[domain]["focus"] != 0:
-            raise ValueError("each non-focus domain must contain exactly 512 replay records")
+        elif role_counts[domain]["replay"] != expected_replay_records or role_counts[domain]["focus"] != 0:
+            raise ValueError(
+                f"each non-focus domain must contain exactly {expected_replay_records} replay records for this budget"
+            )
+
+    domain_records = curriculum.get("domain_records")
+    if not isinstance(domain_records, dict) or set(domain_records) != set(DOMAINS):
+        raise ValueError("autonomous curriculum domain record summary is invalid")
+    for domain in DOMAINS:
+        summary = domain_records[domain]
+        if not isinstance(summary, dict):
+            raise ValueError(f"autonomous curriculum domain summary is invalid: {domain}")
+        expected_role = "focus" if domain == focus else "replay"
+        expected_examples = role_counts[domain][expected_role]
+        if summary.get("role") != expected_role or int(summary.get("examples", -1)) != expected_examples:
+            raise ValueError(f"autonomous curriculum record summary drifted: {domain}")
 
     policy = {
         "parent_checkpoint_sha256": parent_sha,
@@ -115,15 +140,13 @@ def validate_inputs(
         "records_sha256": sha256_file(records_path),
         "public_manifest_sha256": sha256_file(public_data / "manifest.json"),
         "tokenizer_sha256": sha256_file(tokenizer_path),
-        "target_training_tokens": int(curriculum["target_training_tokens"]),
+        "target_training_tokens": target_training_tokens,
         "procedural_fraction": float(curriculum["procedural_fraction"]),
         "public_fraction": float(curriculum["public_fraction"]),
         "focus_domain": focus,
         "role_counts": role_counts,
         "plan_sha256": plan_sha256,
     }
-    if policy["target_training_tokens"] not in {2_000_000, 2_500_000, 3_000_000}:
-        raise ValueError("autonomous v1 training budget is outside controller contract")
     if not math.isclose(policy["procedural_fraction"], 0.8) or not math.isclose(policy["public_fraction"], 0.2):
         raise ValueError("autonomous v1 requires exact 80/20 mix")
     return model, tokenizer, records, curriculum, policy, parent_payload
@@ -142,20 +165,29 @@ def build_focus_schedule(
     total_samples: int,
     seed: int,
 ) -> tuple[torch.Tensor, dict[str, Any]]:
+    if focus_domain not in DOMAINS:
+        raise ValueError("invalid autonomous focus domain")
+    domain_by_record = [str(record["domain"]) for record in records]
+    record_counts = {domain: domain_by_record.count(domain) for domain in DOMAINS}
+    if any(count <= 0 for count in record_counts.values()):
+        raise ValueError("autonomous schedule requires records for every domain")
+
     anchors = list(dataset.anchor_indices)
-    if len(anchors) != 10_240:
-        raise ValueError(f"autonomous v1 requires 10,240 first/terminator anchors, got {len(anchors)}")
+    expected_anchors = {domain: record_counts[domain] * 2 for domain in DOMAINS}
+    expected_anchor_total = sum(expected_anchors.values())
+    if len(anchors) != expected_anchor_total:
+        raise ValueError(
+            f"autonomous first/terminator anchor count drifted: expected {expected_anchor_total}, got {len(anchors)}"
+        )
     if total_samples < len(anchors):
         raise ValueError("autonomous budget cannot cover mandatory anchors")
     if total_samples > len(dataset):
         raise ValueError("autonomous v1 forbids duplicate target contexts")
 
-    domain_by_record = [str(record["domain"]) for record in records]
     anchor_by_domain = {domain: 0 for domain in DOMAINS}
     for index in anchors:
         record_ordinal = int(dataset.record_ordinals[index])
         anchor_by_domain[domain_by_record[record_ordinal]] += 1
-    expected_anchors = {domain: (8192 if domain == focus_domain else 1024) for domain in DOMAINS}
     if anchor_by_domain != expected_anchors:
         raise ValueError(f"autonomous anchor accounting drifted: {anchor_by_domain}")
 
@@ -188,6 +220,7 @@ def build_focus_schedule(
     if len(torch.unique(selected)) != len(selected):
         raise AssertionError("autonomous schedule contains duplicate target contexts")
     return selected, {
+        "record_counts_by_domain": record_counts,
         "anchor_updates_by_domain": anchor_by_domain,
         "continuation_available_by_domain": available,
         "continuation_updates_by_domain": quotas,
