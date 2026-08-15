@@ -1,0 +1,9 @@
+{
+  "cash_compute_cost_usd": 0.0,
+  "cycle_index": 0,
+  "difficulty": 1,
+  "format_version": "1.0",
+  "incumbent_checkpoint": "checkpoints/genesis-micro-2m-v1.pt",
+  "last_cycle": null,
+  "state_version": "autonomous-state-v1"
+}
