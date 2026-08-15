@@ -1,0 +1,47 @@
+{
+  "checkpoint_sha256": "1b43680c08e057790627d02f76f8dc68d2d4c8fdc750627bca1a2b5f0cd35687",
+  "contamination": {
+    "blocking": false,
+    "exact_overlap_count": 0,
+    "examples": [],
+    "method": "sha256-nfkc-collapsed-whitespace",
+    "train_documents": 975,
+    "validation_documents": 107
+  },
+  "data_manifest_sha256": "8126c6a8008ea39fa9db138078c5b0f15becf510eebf6160053807d665149a76",
+  "evaluation": {
+    "batches": 20,
+    "checkpoint_step": 4885,
+    "data_manifest_sha256": "8126c6a8008ea39fa9db138078c5b0f15becf510eebf6160053807d665149a76",
+    "documents": 107,
+    "loss": 3.193009006977081,
+    "parameter_count": 1895808,
+    "perplexity": 24.361621556306122,
+    "split": "validation",
+    "tokens": 29360
+  },
+  "generations": [
+    {
+      "prompt": "The ",
+      "sha256": "fc215cd65afffc7554db23484345dbdfa65c4f9a5cdfbf1002736f1c6827a9bd",
+      "text": "The and her\ncalfar a gy and not g and flat of the in "
+    },
+    {
+      "prompt": "Don ",
+      "sha256": "8a3f922f0c3b4f104bb5ca36bf1e74f3576b29e079d37ee90eec682f44482279",
+      "text": "Don mit inial que a que la mor que la\nfice de la que "
+    },
+    {
+      "prompt": "Il ",
+      "sha256": "817ade3a1fc1b0dc4b84ee00bbdf3df93204844c5fef82613fef2b3b2891934a",
+      "text": "Il é que\ncals endégingor la féia la recoupon que "
+    }
+  ],
+  "primary_metric": {
+    "lower_is_better": true,
+    "name": "validation_loss",
+    "value": 3.193009006977081
+  },
+  "suite_sha256": "e63ccb9a8ea41c030a6bbbbeb41332c5a53c983cc1bf9d7ea466a9862dfc5bb7",
+  "suite_version": "m3-v1"
+}
