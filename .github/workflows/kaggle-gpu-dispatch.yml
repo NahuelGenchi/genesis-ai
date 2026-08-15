@@ -1,0 +1,126 @@
+name: Kaggle GPU dispatch
+
+on:
+  workflow_dispatch:
+    inputs:
+      cpu_farm_run_id:
+        description: "Successful CPU research farm run ID"
+        required: true
+        type: string
+      job_manifest:
+        description: "Enabled accelerator job manifest under accelerators/jobs/"
+        required: true
+        type: string
+
+permissions:
+  actions: read
+  contents: read
+
+concurrency:
+  group: kaggle-gpu-dispatch
+  cancel-in-progress: false
+
+jobs:
+  dispatch:
+    if: github.event.repository.private == false
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Validate requested manifest path
+        env:
+          JOB_MANIFEST: ${{ inputs.job_manifest }}
+        run: |
+          case "$JOB_MANIFEST" in
+            accelerators/jobs/*.json) ;;
+            *) echo "job_manifest must be under accelerators/jobs/" >&2; exit 2 ;;
+          esac
+          test -f "$JOB_MANIFEST"
+
+      - name: Download CPU shortlist
+        uses: actions/download-artifact@v4
+        with:
+          name: cpu-farm-summary
+          path: cpu-summary
+          run-id: ${{ inputs.cpu_farm_run_id }}
+          github-token: ${{ github.token }}
+
+      - name: Enforce CPU-screen gate
+        env:
+          PYTHONPATH: src
+          JOB_MANIFEST: ${{ inputs.job_manifest }}
+        run: |
+          python -m genesis_ai.accelerator_job validate \
+            --job "$JOB_MANIFEST" \
+            --cpu-summary cpu-summary/cpu-farm-summary.json
+
+      - name: Require Kaggle credentials
+        env:
+          KAGGLE_USERNAME: ${{ secrets.KAGGLE_USERNAME }}
+          KAGGLE_KEY: ${{ secrets.KAGGLE_KEY }}
+        run: |
+          test -n "$KAGGLE_USERNAME" || { echo "Missing KAGGLE_USERNAME repository secret" >&2; exit 2; }
+          test -n "$KAGGLE_KEY" || { echo "Missing KAGGLE_KEY repository secret" >&2; exit 2; }
+
+      - name: Build frozen Kaggle payload
+        env:
+          JOB_MANIFEST: ${{ inputs.job_manifest }}
+          KAGGLE_USERNAME: ${{ secrets.KAGGLE_USERNAME }}
+          REPO_REF: ${{ github.sha }}
+        run: |
+          mkdir -p kaggle-payload
+          cp accelerators/kaggle/genesis_gpu.py kaggle-payload/genesis_gpu.py
+          cp "$JOB_MANIFEST" kaggle-payload/job.json
+          cp cpu-summary/cpu-farm-summary.json kaggle-payload/cpu-farm-summary.json
+          python - <<'PY'
+          import json, os
+          from pathlib import Path
+          payload = Path("kaggle-payload")
+          dispatch = {
+              "repo_url": "https://github.com/NahuelGenchi/genesis-ai.git",
+              "ref": os.environ["REPO_REF"],
+          }
+          metadata = {
+              "id": f"{os.environ['KAGGLE_USERNAME']}/genesis-ai-gpu-runner",
+              "title": "Genesis AI GPU runner",
+              "code_file": "genesis_gpu.py",
+              "language": "python",
+              "kernel_type": "script",
+              "is_private": True,
+              "enable_gpu": True,
+              "enable_tpu": False,
+              "enable_internet": True,
+              "keywords": ["machine-learning", "research"],
+              "dataset_sources": [],
+              "kernel_sources": [],
+              "competition_sources": [],
+              "model_sources": [],
+          }
+          (payload / "dispatch.json").write_text(json.dumps(dispatch, indent=2) + "\n")
+          (payload / "kernel-metadata.json").write_text(json.dumps(metadata, indent=2) + "\n")
+          PY
+
+      - name: Submit free P100 run
+        env:
+          KAGGLE_USERNAME: ${{ secrets.KAGGLE_USERNAME }}
+          KAGGLE_KEY: ${{ secrets.KAGGLE_KEY }}
+        run: |
+          python -m pip install --disable-pip-version-check --no-input kaggle
+          kaggle kernels push \
+            -p kaggle-payload \
+            --accelerator NvidiaTeslaP100 \
+            --timeout 120
+          {
+            echo "### Kaggle GPU dispatch"
+            echo "Submitted CPU-screened job to the free Tesla P100 runner."
+            echo "Kernel: https://www.kaggle.com/code/${KAGGLE_USERNAME}/genesis-ai-gpu-runner"
+            echo "CPU farm run: ${{ inputs.cpu_farm_run_id }}"
+            echo "Job manifest: \`${{ inputs.job_manifest }}\`"
+          } >> "$GITHUB_STEP_SUMMARY"
