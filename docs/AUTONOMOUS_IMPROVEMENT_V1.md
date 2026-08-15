@@ -82,6 +82,34 @@ The incumbent is never edited in place. Primary and independent replica candidat
 
 Only this immutable promotion decision may replace the incumbent.
 
+## Remote autonomous execution
+
+`.github/workflows/autonomous-improvement.yml` turns the controller into a persistent remote loop.
+
+- Runs only on GitHub-hosted `ubuntu-latest`; `self-hosted` is forbidden.
+- Runs automatically every Tuesday and Friday at 05:17 UTC.
+- Also runs once when autonomy/controller/evaluator wiring changes on `main`.
+- Uses serialized concurrency and a five-hour hard job timeout.
+- Rebuilds the provenance-locked public corpus from source each cycle.
+- Evaluates the current incumbent before planning.
+- Creates a plan-bound curriculum and trains a primary candidate plus independent deterministic replica.
+- Evaluates incumbent and candidate on the same frozen target suite and on the M3 regression boundary.
+- Commits immutable cycle measurements on both rejection and promotion.
+- Commits checkpoint weights and updates the incumbent pointer only after every external promotion gate passes.
+- Uses `research/autonomous/state.json` as the minimal persistent state needed for the next scheduled run.
+
+The routine loop therefore has no dependency on a personal computer or a manual workflow dispatch. A machine owned by the user may remain offline indefinitely without stopping scheduled attempts.
+
+## Difficulty escalation
+
+Difficulty 1 uses `evals/m6-domain-selection-v2.json`. Difficulties 2–5 are resolved to the frozen GCI-Ladder suite files. If the controller requests a difficulty whose frozen suite is not present on `main`, the workflow fails closed before curriculum generation or training. Adding the frozen ladder suite later automatically unlocks the next level without changing controller semantics.
+
+## Persistence rules
+
+Rejected candidate weights remain ephemeral and are never committed. Each completed cycle records plan, curriculum lock, training accounting, reproduction evidence, identical-suite evaluations, M3 evaluations, gate output, and a concise summary under `research/autonomous/cycles/`.
+
+A passing candidate is copied to `checkpoints/genesis-autonomous-incumbent.pt`, documented under `models/genesis-autonomous-incumbent/`, and becomes the parent of the next scheduled cycle. Git history remains the immutable audit trail for promoted incumbent changes.
+
 ## Anti-reward-hacking boundary
 
 The planner cannot inspect or modify private holdout answers or graders. Curriculum generation, model training, and promotion evaluation remain separate code/data surfaces. This prevents the self-improvement controller from directly optimizing against private evaluation content or rewriting its own success criterion.
