@@ -1,0 +1,47 @@
+{
+  "checkpoint_sha256": "034d70a508f410a3b10e431f7dad2f524a05510e90ee9bf5343a1da3e411ed86",
+  "contamination": {
+    "blocking": false,
+    "exact_overlap_count": 0,
+    "examples": [],
+    "method": "sha256-nfkc-collapsed-whitespace",
+    "train_documents": 975,
+    "validation_documents": 107
+  },
+  "data_manifest_sha256": "8126c6a8008ea39fa9db138078c5b0f15becf510eebf6160053807d665149a76",
+  "evaluation": {
+    "batches": 20,
+    "checkpoint_step": 4885,
+    "data_manifest_sha256": "8126c6a8008ea39fa9db138078c5b0f15becf510eebf6160053807d665149a76",
+    "documents": 107,
+    "loss": 3.194597315788269,
+    "parameter_count": 1895808,
+    "perplexity": 24.40034607958866,
+    "split": "validation",
+    "tokens": 29360
+  },
+  "generations": [
+    {
+      "prompt": "The ",
+      "sha256": "60767bb054fd910df0d881b25b0f10bfcd52c4a3bcd4fd34d78ce22c9e126cab",
+      "text": "The and it\ncalal the with asgor not g and flat of the in "
+    },
+    {
+      "prompt": "Don ",
+      "sha256": "e485bb0a6fc1f17b308ae18fea40fb4f8b5843c02350c8a376dc940a0f01e59e",
+      "text": "Don éit lui vit ent que le morses la fla, de la le "
+    },
+    {
+      "prompt": "Il ",
+      "sha256": "46bba9135115acd3f70baf89d031c7c8bab1f81f418a7a70aa43fec37614f70b",
+      "text": "Il mit lui valt chous vole la de vait fla les fla le "
+    }
+  ],
+  "primary_metric": {
+    "lower_is_better": true,
+    "name": "validation_loss",
+    "value": 3.194597315788269
+  },
+  "suite_sha256": "e63ccb9a8ea41c030a6bbbbeb41332c5a53c983cc1bf9d7ea466a9862dfc5bb7",
+  "suite_version": "m3-v1"
+}
