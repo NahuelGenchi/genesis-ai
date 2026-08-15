@@ -1,0 +1,47 @@
+{
+  "checkpoint_sha256": "0560716d15fa3dcdaae652f1d877c8110ffd1ec4e19cc92fcbbf0227d752050c",
+  "contamination": {
+    "blocking": false,
+    "exact_overlap_count": 0,
+    "examples": [],
+    "method": "sha256-nfkc-collapsed-whitespace",
+    "train_documents": 975,
+    "validation_documents": 107
+  },
+  "data_manifest_sha256": "8126c6a8008ea39fa9db138078c5b0f15becf510eebf6160053807d665149a76",
+  "evaluation": {
+    "batches": 20,
+    "checkpoint_step": 4885,
+    "data_manifest_sha256": "8126c6a8008ea39fa9db138078c5b0f15becf510eebf6160053807d665149a76",
+    "documents": 107,
+    "loss": 3.2113126039505007,
+    "parameter_count": 1895808,
+    "perplexity": 24.811632706703445,
+    "split": "validation",
+    "tokens": 29360
+  },
+  "generations": [
+    {
+      "prompt": "The ",
+      "sha256": "0560a196705a0d24dabafc45e6b85c5dad0285b19ecb9003d2a336df0f6f3a66",
+      "text": "The and her\ncalfar a ity and not w and falfrecos\nthat f"
+    },
+    {
+      "prompt": "Don ",
+      "sha256": "ffedb71baf4275a132387dd9d57e6536fe51acaaf1dac225eea815d897314e70",
+      "text": "Don mit ini un en\nCay pas la la la faltes fes que "
+    },
+    {
+      "prompt": "Il ",
+      "sha256": "a9447e1d3ea9d732d6548e612851c8ce31aa8a3eb5b0ecddc9a990d0ec997676",
+      "text": "Il mit quiiès en\ndes et! s'e avait les flau de la le "
+    }
+  ],
+  "primary_metric": {
+    "lower_is_better": true,
+    "name": "validation_loss",
+    "value": 3.2113126039505007
+  },
+  "suite_sha256": "e63ccb9a8ea41c030a6bbbbeb41332c5a53c983cc1bf9d7ea466a9862dfc5bb7",
+  "suite_version": "m3-v1"
+}
