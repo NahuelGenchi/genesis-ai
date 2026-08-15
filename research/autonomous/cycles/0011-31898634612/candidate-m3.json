@@ -1,0 +1,47 @@
+{
+  "checkpoint_sha256": "84a79989ed606c98e349f025f757b37d1a4ba1fcc2ec7b13e368433ed50e42a9",
+  "contamination": {
+    "blocking": false,
+    "exact_overlap_count": 0,
+    "examples": [],
+    "method": "sha256-nfkc-collapsed-whitespace",
+    "train_documents": 975,
+    "validation_documents": 107
+  },
+  "data_manifest_sha256": "8126c6a8008ea39fa9db138078c5b0f15becf510eebf6160053807d665149a76",
+  "evaluation": {
+    "batches": 20,
+    "checkpoint_step": 4885,
+    "data_manifest_sha256": "8126c6a8008ea39fa9db138078c5b0f15becf510eebf6160053807d665149a76",
+    "documents": 107,
+    "loss": 3.193714904785156,
+    "parameter_count": 1895808,
+    "perplexity": 24.378824442589394,
+    "split": "validation",
+    "tokens": 29360
+  },
+  "generations": [
+    {
+      "prompt": "The ",
+      "sha256": "6fa2985ea237fcabb2e91efc1813cd97e979f2a088b2b88f287e240b97b9e83d",
+      "text": "The and it\ncalgar a sey se d me ma mues hos se "
+    },
+    {
+      "prompt": "Don ",
+      "sha256": "a10aa8f62391b60d3d91ecd271c637fe2a35c67788784b54d5b256c45dffa0ea",
+      "text": "Don mit inival the\nbity and not g and flat of the in "
+    },
+    {
+      "prompt": "Il ",
+      "sha256": "4f6c87aac9279a50e457837da792870cdfe3daa14db8643cb404006ff8ed2ec1",
+      "text": "Il mit qui vit d'aire et! s'e avait la fit les fla le "
+    }
+  ],
+  "primary_metric": {
+    "lower_is_better": true,
+    "name": "validation_loss",
+    "value": 3.193714904785156
+  },
+  "suite_sha256": "e63ccb9a8ea41c030a6bbbbeb41332c5a53c983cc1bf9d7ea466a9862dfc5bb7",
+  "suite_version": "m3-v1"
+}
