@@ -1,0 +1,48 @@
+{
+  "format_version": "1.0",
+  "farm_version": "cpu-screen-v1",
+  "runner": "ubuntu-latest",
+  "public_only": true,
+  "paid_runners_allowed": false,
+  "screening_only": true,
+  "max_jobs": 20,
+  "max_parallel": 12,
+  "timeout_minutes": 12,
+  "seed": 17201,
+  "lanes": {
+    "architecture": {"kind": "candidate", "objective": "minimize", "threshold_fraction": 0.01},
+    "optimizer": {"kind": "candidate", "objective": "minimize", "threshold_fraction": 0.01},
+    "tiny-model": {"kind": "candidate", "objective": "minimize", "threshold_fraction": 0.01},
+    "tokenizer": {"kind": "candidate", "objective": "maximize", "threshold_fraction": 0.01},
+    "data-filtering": {"kind": "candidate", "objective": "maximize", "threshold_fraction": 0.01},
+    "evaluation": {"kind": "guard", "objective": "maximize", "threshold_fraction": 0.0},
+    "verifier": {"kind": "guard", "objective": "maximize", "threshold_fraction": 0.0}
+  },
+  "candidates": [
+    {"lane": "architecture", "variant": "layernorm-gelu", "baseline": true},
+    {"lane": "architecture", "variant": "rmsnorm-gelu", "baseline": false},
+    {"lane": "architecture", "variant": "layernorm-swiglu", "baseline": false},
+
+    {"lane": "optimizer", "variant": "adamw", "baseline": true},
+    {"lane": "optimizer", "variant": "sgd", "baseline": false},
+
+    {"lane": "tiny-model", "variant": "tiny-96x2", "baseline": true},
+    {"lane": "tiny-model", "variant": "tiny-128x2", "baseline": false},
+    {"lane": "tiny-model", "variant": "tiny-128x3", "baseline": false},
+
+    {"lane": "tokenizer", "variant": "genesis-v0", "baseline": true},
+    {"lane": "tokenizer", "variant": "genesis-v0-trim384", "baseline": false},
+    {"lane": "tokenizer", "variant": "byte-256", "baseline": false},
+
+    {"lane": "data-filtering", "variant": "min-chars-40", "baseline": true},
+    {"lane": "data-filtering", "variant": "min-chars-20", "baseline": false},
+    {"lane": "data-filtering", "variant": "min-chars-80", "baseline": false},
+
+    {"lane": "evaluation", "variant": "m3-contract", "baseline": false},
+    {"lane": "evaluation", "variant": "domain-v2-contract", "baseline": false},
+
+    {"lane": "verifier", "variant": "integer-exact", "baseline": false},
+    {"lane": "verifier", "variant": "json-exact", "baseline": false},
+    {"lane": "verifier", "variant": "restricted-expression", "baseline": false}
+  ]
+}

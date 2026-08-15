@@ -1,0 +1,135 @@
+name: CPU research farm
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "23 4 * * 1"
+  push:
+    branches: [main]
+    paths:
+      - "experiments/cpu-farm-v1.json"
+      - "src/genesis_ai/cpu_farm.py"
+      - "src/genesis_ai/model.py"
+      - "src/genesis_ai/config.py"
+      - "src/genesis_ai/research.py"
+      - "src/genesis_ai/tokenizer.py"
+      - "src/genesis_ai/filtering.py"
+      - "src/genesis_ai/verifiers.py"
+      - "evals/m3-v1.json"
+      - "evals/m6-domain-selection-v2.json"
+      - ".github/workflows/cpu-research-farm.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cpu-research-farm-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  plan:
+    if: github.event.repository.private == false
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    outputs:
+      matrix: ${{ steps.matrix.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Enforce zero-cost standard-runner contract
+        run: |
+          test "${{ github.event.repository.private }}" = "false"
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          definition = json.loads(Path('experiments/cpu-farm-v1.json').read_text())
+          assert definition['runner'] == 'ubuntu-latest'
+          assert definition['paid_runners_allowed'] is False
+          assert definition['public_only'] is True
+          assert definition['screening_only'] is True
+          assert definition['max_jobs'] <= 20
+          assert definition['max_parallel'] <= 12
+          assert definition['timeout_minutes'] <= 12
+          PY
+      - name: Build bounded matrix
+        id: matrix
+        run: |
+          MATRIX=$(PYTHONPATH=src python -m genesis_ai.cpu_farm matrix --definition experiments/cpu-farm-v1.json)
+          echo "matrix=$MATRIX" >> "$GITHUB_OUTPUT"
+
+  screen:
+    needs: plan
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    strategy:
+      fail-fast: false
+      max-parallel: 12
+      matrix: ${{ fromJSON(needs.plan.outputs.matrix) }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install CPU PyTorch only for model screens
+        if: matrix.needs_torch == true
+        run: |
+          python -m pip install --disable-pip-version-check --no-input --index-url https://download.pytorch.org/whl/cpu torch
+      - name: Run deterministic CPU screen
+        env:
+          PYTHONPATH: src
+        run: |
+          mkdir -p out
+          python -m genesis_ai.cpu_farm run \
+            --definition experiments/cpu-farm-v1.json \
+            --lane "${{ matrix.lane }}" \
+            --variant "${{ matrix.variant }}" \
+            --seed "${{ matrix.seed }}" \
+            --output "out/${{ matrix.lane }}--${{ matrix.variant }}.json"
+      - name: Upload tiny screening record
+        uses: actions/upload-artifact@v4
+        with:
+          name: cpu-screen-${{ matrix.lane }}-${{ matrix.variant }}
+          path: out/*.json
+          if-no-files-found: error
+          retention-days: 1
+
+  aggregate:
+    needs: [plan, screen]
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Download screening records
+        uses: actions/download-artifact@v4
+        with:
+          pattern: cpu-screen-*
+          path: artifacts
+          merge-multiple: true
+      - name: Aggregate CPU winners without promotion authority
+        env:
+          PYTHONPATH: src
+        run: |
+          mkdir -p summary
+          python -m genesis_ai.cpu_farm aggregate \
+            --definition experiments/cpu-farm-v1.json \
+            --input-dir artifacts \
+            --output summary/cpu-farm-summary.json
+          cat summary/cpu-farm-summary.json >> "$GITHUB_STEP_SUMMARY"
+      - name: Upload machine-readable shortlist
+        uses: actions/upload-artifact@v4
+        with:
+          name: cpu-farm-summary
+          path: summary/cpu-farm-summary.json
+          if-no-files-found: error
+          retention-days: 7
