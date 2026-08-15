@@ -45,7 +45,7 @@ class TokenDataset(Dataset):
                 raise ValueError("filtered document must have a non-empty id")
             if not isinstance(text, str):
                 raise ValueError(f"document {document_id} must have text")
-            if len(text) < min_chars:
+            if len(text.strip()) < min_chars:
                 continue
             bucket = int.from_bytes(hashlib.sha256(document_id.encode("utf-8")).digest()[:4], "big") % 10_000
             is_validation = bucket < threshold
