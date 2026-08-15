@@ -1,0 +1,114 @@
+{
+  "cash_compute_cost_usd": 0.0,
+  "expensive_stage_eligible": [
+    {
+      "improvement_fraction": 0.10000000000000003,
+      "lane": "data-filtering",
+      "source": "cpu-screen-v1",
+      "variant": "min-chars-80"
+    }
+  ],
+  "farm_version": "cpu-screen-v1",
+  "format_version": "1.0",
+  "gpu_policy": {
+    "eligible_only_after_cpu_screen": true,
+    "full_reproduction_and_frozen_evaluation_required_before_promotion": true,
+    "screening_result_can_promote_checkpoint": false
+  },
+  "guards_pass": true,
+  "job_count": 19,
+  "lane_summaries": {
+    "architecture": {
+      "baseline": "layernorm-gelu",
+      "baseline_metric": 3.8234472274780273,
+      "improvement_fraction": 0.0,
+      "kind": "candidate",
+      "objective": "minimize",
+      "survives_cpu_screen": false,
+      "threshold_fraction": 0.01,
+      "winner": "layernorm-gelu",
+      "winner_metric": 3.8234472274780273
+    },
+    "data-filtering": {
+      "baseline": "min-chars-40",
+      "baseline_metric": 0.9090909090909091,
+      "improvement_fraction": 0.10000000000000003,
+      "kind": "candidate",
+      "objective": "maximize",
+      "survives_cpu_screen": true,
+      "threshold_fraction": 0.01,
+      "winner": "min-chars-80",
+      "winner_metric": 1.0
+    },
+    "evaluation": {
+      "kind": "guard",
+      "passed": true,
+      "results": [
+        [
+          "domain-v2-contract",
+          1.0
+        ],
+        [
+          "m3-contract",
+          1.0
+        ]
+      ]
+    },
+    "optimizer": {
+      "baseline": "adamw",
+      "baseline_metric": 3.8234434127807617,
+      "improvement_fraction": 0.0,
+      "kind": "candidate",
+      "objective": "minimize",
+      "survives_cpu_screen": false,
+      "threshold_fraction": 0.01,
+      "winner": "adamw",
+      "winner_metric": 3.8234434127807617
+    },
+    "tiny-model": {
+      "baseline": "tiny-96x2",
+      "baseline_metric": 2.7802553176879883,
+      "improvement_fraction": 0.0,
+      "kind": "candidate",
+      "objective": "minimize",
+      "survives_cpu_screen": false,
+      "threshold_fraction": 0.01,
+      "winner": "tiny-96x2",
+      "winner_metric": 2.7802553176879883
+    },
+    "tokenizer": {
+      "baseline": "genesis-v0",
+      "baseline_metric": 1.5093632958801497,
+      "improvement_fraction": 0.0,
+      "kind": "candidate",
+      "objective": "maximize",
+      "survives_cpu_screen": false,
+      "threshold_fraction": 0.01,
+      "winner": "genesis-v0",
+      "winner_metric": 1.5093632958801497
+    },
+    "verifier": {
+      "kind": "guard",
+      "passed": true,
+      "results": [
+        [
+          "integer-exact",
+          1.0
+        ],
+        [
+          "json-exact",
+          1.0
+        ],
+        [
+          "restricted-expression",
+          1.0
+        ]
+      ]
+    }
+  },
+  "promotion_eligible": false,
+  "runner_contract": "ubuntu-latest",
+  "screening_only": true,
+  "source_commit": "479ebf2b6fd5a95f01dbe6400dd9bacd84d5c28b",
+  "workflow_run_id": 31888803210
+}
