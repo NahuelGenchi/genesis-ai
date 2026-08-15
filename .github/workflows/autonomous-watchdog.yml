@@ -3,7 +3,12 @@ name: Autonomous continuity watchdog
 on:
   workflow_dispatch:
   schedule:
-    - cron: "7 * * * *"
+    - cron: "7,22,37,52 * * * *"
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/autonomous-watchdog.yml"
+      - ".github/workflows/autonomous-continuation.yml"
 
 permissions:
   actions: write
