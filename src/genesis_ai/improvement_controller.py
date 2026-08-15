@@ -3,12 +3,13 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import os
 from pathlib import Path
 from typing import Any
 
 from .capability_index import GCI_DOMAINS, score_result
 
-CONTROLLER_VERSION = "autonomous-improvement-controller-v1.1"
+CONTROLLER_VERSION = "autonomous-improvement-controller-v1.2"
 FORBIDDEN_CONTENT_KEYS = {"task", "tasks", "prompt", "prompts", "response", "responses", "answer", "answers", "oracle", "oracles", "text", "texts"}
 
 
@@ -62,9 +63,6 @@ def _cycle_budget(accuracy: float) -> int:
 
 
 def _replay_examples(target_training_tokens: int) -> int:
-    # Short math answers expose fewer unique continuation contexts per record.
-    # Scale replay records with the procedural update budget so the frozen
-    # 15% replay quota remains feasible without ever duplicating a context.
     by_budget = {
         3_000_000: 1_024,
         2_500_000: 768,
@@ -76,9 +74,17 @@ def _replay_examples(target_training_tokens: int) -> int:
         raise ValueError("unsupported autonomous training budget") from exc
 
 
-def plan_next_cycle(evaluation: dict[str, Any], *, incumbent_checkpoint_sha256: str, max_difficulty: int = 5) -> dict[str, Any]:
+def plan_next_cycle(
+    evaluation: dict[str, Any],
+    *,
+    incumbent_checkpoint_sha256: str,
+    cycle_index: int = 1,
+    max_difficulty: int = 5,
+) -> dict[str, Any]:
     if not incumbent_checkpoint_sha256 or len(incumbent_checkpoint_sha256) != 64:
         raise ValueError("incumbent checkpoint SHA-256 is required")
+    if not isinstance(cycle_index, int) or isinstance(cycle_index, bool) or cycle_index < 1:
+        raise ValueError("cycle_index must be a positive integer")
     if max_difficulty < 1:
         raise ValueError("max_difficulty must be positive")
     _reject_holdout_content(evaluation)
@@ -107,6 +113,7 @@ def plan_next_cycle(evaluation: dict[str, Any], *, incumbent_checkpoint_sha256: 
         "format_version": "1.0",
         "controller_version": CONTROLLER_VERSION,
         "input": {
+            "cycle_index": cycle_index,
             "incumbent_checkpoint_sha256": incumbent_checkpoint_sha256,
             "suite_version": suite_version,
             "suite_sha256": suite_sha256,
@@ -151,16 +158,36 @@ def plan_next_cycle(evaluation: dict[str, Any], *, incumbent_checkpoint_sha256: 
     return plan
 
 
+def _scheduled_cycle_index(explicit: int | None) -> int:
+    if explicit is not None:
+        return explicit
+    state_path = os.environ.get("STATE")
+    if not state_path:
+        raise ValueError("cycle index is required: pass --cycle-index or provide STATE")
+    state = json.loads(Path(state_path).read_text(encoding="utf-8"))
+    if not isinstance(state, dict):
+        raise ValueError("autonomous state must be a JSON object")
+    current = state.get("cycle_index")
+    if not isinstance(current, int) or isinstance(current, bool) or current < 0:
+        raise ValueError("autonomous state cycle_index is invalid")
+    return current + 1
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="Plan one autonomous Genesis improvement cycle from aggregate metrics only.")
     parser.add_argument("--evaluation", type=Path, required=True)
     parser.add_argument("--incumbent-sha256", required=True)
+    parser.add_argument("--cycle-index", type=int)
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
     evaluation = json.loads(args.evaluation.read_text(encoding="utf-8"))
     if not isinstance(evaluation, dict):
         raise ValueError("evaluation must be a JSON object")
-    result = plan_next_cycle(evaluation, incumbent_checkpoint_sha256=args.incumbent_sha256)
+    result = plan_next_cycle(
+        evaluation,
+        incumbent_checkpoint_sha256=args.incumbent_sha256,
+        cycle_index=_scheduled_cycle_index(args.cycle_index),
+    )
     args.output.parent.mkdir(parents=True, exist_ok=True)
     rendered = json.dumps(result, indent=2, sort_keys=True) + "\n"
     args.output.write_text(rendered, encoding="utf-8", newline="\n")
