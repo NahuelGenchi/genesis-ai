@@ -1,0 +1,66 @@
+name: Public release audit
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - scripts/audit_public_release.py
+      - .github/workflows/public-release-audit.yml
+
+permissions:
+  contents: write
+  issues: read
+  pull-requests: read
+
+jobs:
+  audit:
+    runs-on: [self-hosted, linux, x64]
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Fetch every branch, tag, and pull-request head
+        run: |
+          git fetch --force --prune origin '+refs/heads/*:refs/remotes/origin/*'
+          git fetch --force origin '+refs/tags/*:refs/tags/*'
+          git fetch --force origin '+refs/pull/*/head:refs/remotes/pull/*'
+
+      - name: Scan Git history and GitHub text
+        id: audit
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set +e
+          python3 scripts/audit_public_release.py \
+            --repo "$GITHUB_REPOSITORY" \
+            --output research/public-release-audit-v1.json
+          STATUS=$?
+          set -e
+          echo "status=$STATUS" >> "$GITHUB_OUTPUT"
+          if [ "$STATUS" -ne 0 ] && [ "$STATUS" -ne 2 ]; then
+            exit "$STATUS"
+          fi
+
+      - name: Commit value-redacted audit report
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add research/public-release-audit-v1.json
+          if ! git diff --cached --quiet; then
+            git commit -m "Audit: record public-release scan (#162)"
+            git fetch origin main
+            git rebase origin/main
+            git push origin HEAD:main
+          fi
+
+      - name: Report readiness
+        run: |
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          result = json.loads(Path('research/public-release-audit-v1.json').read_text())
+          print(json.dumps(result['summary'], indent=2, sort_keys=True))
+          PY
