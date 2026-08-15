@@ -1,4 +1,4 @@
-name: M6 v2 CPU kernel fingerprint
+name: M6 v2 MKLDNN-off version fingerprint
 
 on:
   workflow_dispatch:
@@ -20,10 +20,9 @@ jobs:
     timeout-minutes: 15
     strategy:
       fail-fast: false
-      max-parallel: 9
+      max-parallel: 5
       matrix:
-        torch_version: ["2.11.0", "2.12.0", "2.13.0"]
-        kernel_mode: ["native", "avx2", "mkldnn-off"]
+        torch_version: ["2.7.1", "2.8.0", "2.9.1", "2.10.0", "2.11.0"]
     env:
       WORK: runs/m6-v2-cpu-kernel-fingerprint
       TARGET_PROBE: "4.228255425977561"
@@ -41,24 +40,15 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Configure CPU kernel mode
-        run: |
-          if [ "${{ matrix.kernel_mode }}" = "avx2" ]; then
-            echo "ATEN_CPU_CAPABILITY=avx2" >> "$GITHUB_ENV"
-          fi
-          echo "kernel_mode=${{ matrix.kernel_mode }}"
-          grep -m1 -E 'model name|flags' /proc/cpuinfo || true
-
       - name: Install candidate CPU PyTorch only
         run: |
           python -m pip install --index-url https://download.pytorch.org/whl/cpu "torch==${{ matrix.torch_version }}"
           python - <<'PY'
-          import os, platform, torch
+          import platform, torch
           print({
               "python": platform.python_version(),
               "torch": torch.__version__,
               "cuda": torch.version.cuda,
-              "aten_cpu_capability": os.environ.get("ATEN_CPU_CAPABILITY"),
               "mkldnn_available": torch.backends.mkldnn.is_available(),
           })
           PY
@@ -82,9 +72,7 @@ jobs:
             --records "$WORK/procedural.jsonl" \
             --output "$WORK/curriculum.json"
 
-      - name: Measure pre-training deterministic fingerprint
-        env:
-          KERNEL_MODE: ${{ matrix.kernel_mode }}
+      - name: Measure pre-training deterministic fingerprint with MKLDNN disabled
         run: |
           PYTHONPATH=src python - <<'PY'
           import json, os, platform, random
@@ -93,9 +81,7 @@ jobs:
           from genesis_ai.multidomain_training_v2 import SEED, _loss_probe, validate_inputs
           from genesis_ai.terminated_training import TerminatedGenerationAlignedDataset
 
-          kernel_mode = os.environ['KERNEL_MODE']
-          if kernel_mode == 'mkldnn-off':
-              torch.backends.mkldnn.enabled = False
+          torch.backends.mkldnn.enabled = False
           torch.set_num_threads(1)
           torch.use_deterministic_algorithms(True)
           random.seed(SEED)
@@ -116,8 +102,7 @@ jobs:
               'format_version': '1.0',
               'python': platform.python_version(),
               'torch': torch.__version__,
-              'kernel_mode': kernel_mode,
-              'aten_cpu_capability': os.environ.get('ATEN_CPU_CAPABILITY'),
+              'kernel_mode': 'mkldnn-off',
               'mkldnn_enabled': torch.backends.mkldnn.enabled,
               'probe_loss': observed,
               'target_probe_loss': target,
@@ -133,6 +118,6 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
-          name: v2-cpu-kernel-${{ matrix.torch_version }}-${{ matrix.kernel_mode }}
+          name: v2-mkldnn-off-${{ matrix.torch_version }}
           path: fingerprint.json
           retention-days: 7
