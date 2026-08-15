@@ -11,6 +11,10 @@ on:
         description: "Enabled accelerator job manifest under accelerators/jobs/"
         required: true
         type: string
+      kaggle_username:
+        description: "Kaggle username that owns genesis-ai-gpu-runner"
+        required: true
+        type: string
 
 permissions:
   actions: read
@@ -61,18 +65,16 @@ jobs:
             --job "$JOB_MANIFEST" \
             --cpu-summary cpu-summary/cpu-farm-summary.json
 
-      - name: Require Kaggle credentials
+      - name: Require Kaggle API token
         env:
-          KAGGLE_USERNAME: ${{ secrets.KAGGLE_USERNAME }}
-          KAGGLE_KEY: ${{ secrets.KAGGLE_KEY }}
+          KAGGLE_API_TOKEN: ${{ secrets.KAGGLE_API_TOKEN }}
         run: |
-          test -n "$KAGGLE_USERNAME" || { echo "Missing KAGGLE_USERNAME repository secret" >&2; exit 2; }
-          test -n "$KAGGLE_KEY" || { echo "Missing KAGGLE_KEY repository secret" >&2; exit 2; }
+          test -n "$KAGGLE_API_TOKEN" || { echo "Missing KAGGLE_API_TOKEN repository secret" >&2; exit 2; }
 
       - name: Build frozen Kaggle payload
         env:
           JOB_MANIFEST: ${{ inputs.job_manifest }}
-          KAGGLE_USERNAME: ${{ secrets.KAGGLE_USERNAME }}
+          KAGGLE_USERNAME: ${{ inputs.kaggle_username }}
           REPO_REF: ${{ github.sha }}
         run: |
           mkdir -p kaggle-payload
@@ -109,8 +111,8 @@ jobs:
 
       - name: Submit free P100 run
         env:
-          KAGGLE_USERNAME: ${{ secrets.KAGGLE_USERNAME }}
-          KAGGLE_KEY: ${{ secrets.KAGGLE_KEY }}
+          KAGGLE_USERNAME: ${{ inputs.kaggle_username }}
+          KAGGLE_API_TOKEN: ${{ secrets.KAGGLE_API_TOKEN }}
         run: |
           python -m pip install --disable-pip-version-check --no-input kaggle
           kaggle kernels push \
