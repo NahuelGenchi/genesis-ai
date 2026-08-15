@@ -10,6 +10,11 @@ from .capability_index import GCI_DOMAINS, score_result
 
 CONTROLLER_VERSION = "autonomous-improvement-controller-v1"
 FORBIDDEN_CONTENT_KEYS = {"task", "tasks", "prompt", "prompts", "response", "responses", "answer", "answers", "oracle", "oracles", "text", "texts"}
+REPLAY_EXAMPLES_BY_BUDGET = {
+    2_000_000: 768,
+    2_500_000: 896,
+    3_000_000: 1_024,
+}
 
 
 def _canonical(value: object) -> str:
@@ -61,6 +66,13 @@ def _cycle_budget(accuracy: float) -> int:
     return 2_000_000
 
 
+def _replay_examples_for_budget(target_training_tokens: int) -> int:
+    try:
+        return REPLAY_EXAMPLES_BY_BUDGET[target_training_tokens]
+    except KeyError as exc:
+        raise ValueError("unsupported autonomous training budget") from exc
+
+
 def plan_next_cycle(evaluation: dict[str, Any], *, incumbent_checkpoint_sha256: str, max_difficulty: int = 5) -> dict[str, Any]:
     if not incumbent_checkpoint_sha256 or len(incumbent_checkpoint_sha256) != 64:
         raise ValueError("incumbent checkpoint SHA-256 is required")
@@ -86,6 +98,7 @@ def plan_next_cycle(evaluation: dict[str, Any], *, incumbent_checkpoint_sha256: 
     mode = "raise-difficulty" if requires_new_suite else "repair-weakest-domain"
     replay = [domain for domain in GCI_DOMAINS if domain != focus]
     gci = score_result(evaluation)
+    target_training_tokens = _cycle_budget(focus_accuracy)
 
     plan = {
         "format_version": "1.0",
@@ -108,10 +121,10 @@ def plan_next_cycle(evaluation: dict[str, Any], *, incumbent_checkpoint_sha256: 
             "mode": mode,
             "focus_domain": focus,
             "target_difficulty": target_difficulty,
-            "target_training_tokens": _cycle_budget(focus_accuracy),
+            "target_training_tokens": target_training_tokens,
             "focus_examples": 4_096,
             "replay_domains": replay,
-            "replay_examples_per_domain": 512,
+            "replay_examples_per_domain": _replay_examples_for_budget(target_training_tokens),
             "continuation_update_weights": {"focus": 0.70, "each_replay_domain": 0.15},
             "mandatory_first_and_terminator_coverage": True,
             "unique_target_contexts_only": True,
