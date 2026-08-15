@@ -134,8 +134,10 @@ class AcceleratorJobTests(unittest.TestCase):
         workflow = (ROOT / ".github" / "workflows" / "kaggle-gpu-dispatch.yml").read_text()
         self.assertIn("genesis_ai.accelerator_job validate", workflow)
         self.assertIn("NvidiaTeslaP100", workflow)
-        self.assertIn("KAGGLE_USERNAME", workflow)
-        self.assertIn("KAGGLE_KEY", workflow)
+        self.assertIn("kaggle_username", workflow)
+        self.assertIn("KAGGLE_API_TOKEN", workflow)
+        self.assertNotIn("KAGGLE_KEY", workflow)
+        self.assertNotIn("secrets.KAGGLE_USERNAME", workflow)
         self.assertNotIn("self-hosted", workflow)
         self.assertNotIn("ubuntu-latest-", workflow)
 
