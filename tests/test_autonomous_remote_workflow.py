@@ -39,3 +39,19 @@ def test_autonomous_result_commits_do_not_retrigger_cycle() -> None:
     assert "research/autonomous" not in push_block
     assert "checkpoints/genesis-autonomous-incumbent.pt" not in push_block
     assert "models/genesis-autonomous-incumbent" not in push_block
+
+
+def test_queued_cycle_syncs_latest_state_before_resolution_and_binds_provenance() -> None:
+    workflow = Path(".github/workflows/autonomous-improvement.yml").read_text(encoding="utf-8")
+
+    sync_marker = "- name: Sync serialized cycle to latest main"
+    state_marker = "- name: Resolve incumbent and current frozen suite"
+    assert sync_marker in workflow
+    assert workflow.index(sync_marker) < workflow.index(state_marker)
+    assert "git fetch origin main" in workflow
+    assert "git reset --hard origin/main" in workflow
+    assert 'SOURCE_COMMIT=$(git rev-parse HEAD)' in workflow
+    assert 'echo "commit=$SOURCE_COMMIT" >> "$GITHUB_OUTPUT"' in workflow
+    assert '--source-commit "${{ steps.source.outputs.commit }}"' in workflow
+    assert 'SOURCE_COMMIT: ${{ steps.source.outputs.commit }}' in workflow
+    assert '"source_commit": os.environ["SOURCE_COMMIT"]' in workflow
