@@ -3,4 +3,5 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 PYTHON_BIN="${PYTHON_BIN:-python3}"
 PYTHONPATH=src "$PYTHON_BIN" scripts/validate_tracking.py
+"$PYTHON_BIN" scripts/render_progress.py --check
 PYTHONPATH=src "$PYTHON_BIN" -m unittest discover -s tests -v
