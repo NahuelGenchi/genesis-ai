@@ -63,6 +63,39 @@ class TokenDatasetTest(unittest.TestCase):
             self.assertTrue(torch.equal(x1, x2))
             self.assertTrue(torch.equal(y1, y2))
 
+    def test_min_chars_filters_public_sampling_without_mutating_manifest(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            data = _filtered_fixture(root, count=100)
+            tokenizer = ByteBPETokenizer(())
+            baseline = TokenDataset(data, tokenizer, 8, split="all")
+            screened = TokenDataset(data, tokenizer, 8, split="all", min_chars=80)
+            self.assertEqual(baseline.document_count, 100)
+            self.assertLess(screened.document_count, baseline.document_count)
+            self.assertEqual(screened.min_chars, 80)
+            self.assertTrue((data / "manifest.json").is_file())
+
+    def test_min_chars_uses_stripped_length_like_cpu_farm_filter(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            data = _filtered_fixture(root, count=2)
+            shard = data / "shard-00000.jsonl"
+            documents = [
+                {"id": "short-padded", "text": "short" + " " * 200},
+                {"id": "long", "text": "L" * 120},
+            ]
+            payload = b"".join(
+                (json.dumps(document, sort_keys=True, separators=(",", ":")) + "\n").encode("utf-8")
+                for document in documents
+            )
+            shard.write_bytes(payload)
+            manifest = json.loads((data / "manifest.json").read_text(encoding="utf-8"))
+            manifest["documents"] = 2
+            manifest["shards"][0].update({"documents": 2, "sha256": hashlib.sha256(payload).hexdigest(), "size_bytes": len(payload)})
+            (data / "manifest.json").write_text(json.dumps(manifest), encoding="utf-8")
+            dataset = TokenDataset(data, ByteBPETokenizer(()), 8, split="all", min_chars=80)
+            self.assertEqual(dataset.document_ids, ("long",))
+
 
 if __name__ == "__main__":
     unittest.main()
