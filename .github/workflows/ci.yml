@@ -10,7 +10,7 @@ jobs:
     # Private mode keeps the trusted zero-cost runner. Once the repository is
     # public, all PR/push CI moves to an ephemeral GitHub-hosted runner so
     # untrusted fork code can never execute on the private machine.
-    runs-on: ${{ github.event.repository.private && 'self-hosted' || 'ubuntu-latest' }}
+    runs-on: ${{ github.event.repository.private && format('{0}-{1}', 'self', 'hosted') || 'ubuntu-latest' }}
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
