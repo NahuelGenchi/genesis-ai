@@ -7,6 +7,7 @@ on:
     paths:
       - scripts/audit_public_release.py
       - .github/workflows/public-release-audit.yml
+      - .github/workflows/ci.yml
 
 permissions:
   contents: write
