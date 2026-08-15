@@ -1,0 +1,47 @@
+{
+  "checkpoint_sha256": "4f435d4e57d53cf751d7a730464a2d5fb515c8960899d8e0f8d2298d2a5b373e",
+  "contamination": {
+    "blocking": false,
+    "exact_overlap_count": 0,
+    "examples": [],
+    "method": "sha256-nfkc-collapsed-whitespace",
+    "train_documents": 975,
+    "validation_documents": 107
+  },
+  "data_manifest_sha256": "8126c6a8008ea39fa9db138078c5b0f15becf510eebf6160053807d665149a76",
+  "evaluation": {
+    "batches": 20,
+    "checkpoint_step": 4885,
+    "data_manifest_sha256": "8126c6a8008ea39fa9db138078c5b0f15becf510eebf6160053807d665149a76",
+    "documents": 107,
+    "loss": 3.1825249075889586,
+    "parameter_count": 1895808,
+    "perplexity": 24.107546098081475,
+    "split": "validation",
+    "tokens": 29360
+  },
+  "generations": [
+    {
+      "prompt": "The ",
+      "sha256": "1186d210299d892cc14912e7a8bd975bd1c99674b79716f2006fd6af5fb72f71",
+      "text": "The and it\ncaling the fity and not g and falce of the in "
+    },
+    {
+      "prompt": "Don ",
+      "sha256": "80d128f821455acba7e5669a0a78e7616faa038659762988986c01651f450550",
+      "text": "Don mit inival the\nfity and not g and flat of the in "
+    },
+    {
+      "prompt": "Il ",
+      "sha256": "d6f08d0b1a12ca664dba16b7837f26c756e93287d046c4a3932da84d13eb62a4",
+      "text": "Il éit quiiès d'aire et\npas la féient laux fla le "
+    }
+  ],
+  "primary_metric": {
+    "lower_is_better": true,
+    "name": "validation_loss",
+    "value": 3.1825249075889586
+  },
+  "suite_sha256": "e63ccb9a8ea41c030a6bbbbeb41332c5a53c983cc1bf9d7ea466a9862dfc5bb7",
+  "suite_version": "m3-v1"
+}
