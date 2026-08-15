@@ -9,8 +9,13 @@ from typing import Any
 
 from .capability_index import GCI_DOMAINS, score_result
 
-CONTROLLER_VERSION = "autonomous-improvement-controller-v1.2"
+CONTROLLER_VERSION = "autonomous-improvement-controller-v1.3"
 FORBIDDEN_CONTENT_KEYS = {"task", "tasks", "prompt", "prompts", "response", "responses", "answer", "answers", "oracle", "oracles", "text", "texts"}
+PUBLIC_MIN_CHARS_VARIANTS = {
+    "min-chars-20": 20,
+    "min-chars-40": 40,
+    "min-chars-80": 80,
+}
 
 
 def _canonical(value: object) -> str:
@@ -74,12 +79,80 @@ def _replay_examples(target_training_tokens: int) -> int:
         raise ValueError("unsupported autonomous training budget") from exc
 
 
+def _research_policy(evidence: dict[str, Any] | None) -> tuple[int, dict[str, Any] | None]:
+    if evidence is None:
+        return 0, None
+    _reject_holdout_content(evidence, "research")
+    if evidence.get("format_version") != "1.0" or evidence.get("farm_version") != "cpu-screen-v1":
+        raise ValueError("unsupported CPU research evidence")
+    if evidence.get("guards_pass") is not True:
+        raise ValueError("CPU research evidence guards did not pass")
+    if evidence.get("screening_only") is not True or evidence.get("promotion_eligible") is not False:
+        raise ValueError("CPU research evidence must be screening-only and non-promoting")
+    if evidence.get("cash_compute_cost_usd") != 0.0:
+        raise ValueError("CPU research evidence violates zero-cash contract")
+    policy = evidence.get("gpu_policy")
+    if not isinstance(policy, dict):
+        raise ValueError("CPU research evidence GPU policy is missing")
+    if policy.get("eligible_only_after_cpu_screen") is not True:
+        raise ValueError("CPU research evidence does not enforce CPU screening")
+    if policy.get("full_reproduction_and_frozen_evaluation_required_before_promotion") is not True:
+        raise ValueError("CPU research evidence weakens promotion verification")
+    if policy.get("screening_result_can_promote_checkpoint") is not False:
+        raise ValueError("CPU research evidence grants screening promotion authority")
+    source_commit = evidence.get("source_commit")
+    run_id = evidence.get("workflow_run_id")
+    if not isinstance(source_commit, str) or len(source_commit) != 40:
+        raise ValueError("CPU research evidence source commit is invalid")
+    if not isinstance(run_id, int) or isinstance(run_id, bool) or run_id <= 0:
+        raise ValueError("CPU research evidence workflow run id is invalid")
+    eligible = evidence.get("expensive_stage_eligible")
+    if not isinstance(eligible, list):
+        raise ValueError("CPU research evidence eligible list is invalid")
+
+    applied: dict[str, Any] | None = None
+    ignored: list[dict[str, Any]] = []
+    public_min_chars = 0
+    for raw in eligible:
+        if not isinstance(raw, dict):
+            raise ValueError("CPU research eligible hint must be an object")
+        lane = raw.get("lane")
+        variant = raw.get("variant")
+        improvement = raw.get("improvement_fraction")
+        if not isinstance(lane, str) or not isinstance(variant, str):
+            raise ValueError("CPU research eligible hint identity is invalid")
+        if not isinstance(improvement, (int, float)) or isinstance(improvement, bool) or float(improvement) < 0.0:
+            raise ValueError("CPU research eligible hint improvement is invalid")
+        hint = {"lane": lane, "variant": variant, "improvement_fraction": float(improvement)}
+        if lane == "data-filtering":
+            if variant not in PUBLIC_MIN_CHARS_VARIANTS:
+                raise ValueError(f"unsupported screened data-filtering hint: {variant}")
+            if applied is not None:
+                raise ValueError("multiple data-filtering hints cannot be applied in one autonomous cycle")
+            public_min_chars = PUBLIC_MIN_CHARS_VARIANTS[variant]
+            applied = hint
+        else:
+            ignored.append(hint)
+
+    summary = {
+        "farm_version": evidence["farm_version"],
+        "evidence_sha256": _sha256_object(evidence),
+        "workflow_run_id": run_id,
+        "source_commit": source_commit,
+        "applied_hint": applied,
+        "ignored_eligible_hints": ignored,
+        "promotion_authority": False,
+    }
+    return public_min_chars, summary
+
+
 def plan_next_cycle(
     evaluation: dict[str, Any],
     *,
     incumbent_checkpoint_sha256: str,
     cycle_index: int = 1,
     max_difficulty: int = 5,
+    research_evidence: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     if not incumbent_checkpoint_sha256 or len(incumbent_checkpoint_sha256) != 64:
         raise ValueError("incumbent checkpoint SHA-256 is required")
@@ -89,6 +162,7 @@ def plan_next_cycle(
         raise ValueError("max_difficulty must be positive")
     _reject_holdout_content(evaluation)
     metrics = _domain_metrics(evaluation)
+    public_min_chars, research = _research_policy(research_evidence)
     difficulty = evaluation.get("difficulty")
     if not isinstance(difficulty, int) or isinstance(difficulty, bool) or not 1 <= difficulty <= max_difficulty:
         raise ValueError("evaluation difficulty is invalid")
@@ -140,6 +214,7 @@ def plan_next_cycle(
             "unique_target_contexts_only": True,
             "procedural_fraction": 0.80,
             "public_fraction": 0.20,
+            "public_min_chars": public_min_chars,
             "cash_compute_cost_usd": 0.0,
         },
         "promotion_contract": {
@@ -154,6 +229,8 @@ def plan_next_cycle(
             "live_incumbent_weight_mutation_forbidden": True,
         },
     }
+    if research is not None:
+        plan["research_evidence"] = research
     plan["plan_sha256"] = _sha256_object(plan)
     return plan
 
@@ -178,15 +255,22 @@ def main() -> None:
     parser.add_argument("--evaluation", type=Path, required=True)
     parser.add_argument("--incumbent-sha256", required=True)
     parser.add_argument("--cycle-index", type=int)
+    parser.add_argument("--research-evidence", type=Path)
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
     evaluation = json.loads(args.evaluation.read_text(encoding="utf-8"))
     if not isinstance(evaluation, dict):
         raise ValueError("evaluation must be a JSON object")
+    research_evidence = None
+    if args.research_evidence is not None:
+        research_evidence = json.loads(args.research_evidence.read_text(encoding="utf-8"))
+        if not isinstance(research_evidence, dict):
+            raise ValueError("research evidence must be a JSON object")
     result = plan_next_cycle(
         evaluation,
         incumbent_checkpoint_sha256=args.incumbent_sha256,
         cycle_index=_scheduled_cycle_index(args.cycle_index),
+        research_evidence=research_evidence,
     )
     args.output.parent.mkdir(parents=True, exist_ok=True)
     rendered = json.dumps(result, indent=2, sort_keys=True) + "\n"
