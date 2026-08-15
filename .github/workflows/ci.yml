@@ -7,11 +7,14 @@ on:
 
 jobs:
   test:
-    runs-on: [self-hosted, linux, x64]
+    # Private mode keeps the trusted zero-cost runner. Once the repository is
+    # public, all PR/push CI moves to an ephemeral GitHub-hosted runner so
+    # untrusted fork code can never execute on the private machine.
+    runs-on: ${{ github.event.repository.private && 'self-hosted' || 'ubuntu-latest' }}
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
-      - name: Prepare persistent Python environment
+      - name: Prepare Python environment
         run: |
           ENV_DIR="$HOME/.cache/genesis-ai-ci/venv"
           if [ ! -x "$ENV_DIR/bin/python" ]; then
