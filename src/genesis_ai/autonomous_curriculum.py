@@ -9,7 +9,7 @@ from typing import Any
 
 from .challenger import build_task
 from .domain_selection import oracle_response
-from .improvement_controller import CONTROLLER_VERSION
+from .improvement_controller import CONTROLLER_VERSION, PUBLIC_MIN_CHARS_VARIANTS
 from .ingest import sha256_file
 from .multidomain_curriculum import frozen_holdouts
 from .terminated_eval import load_terminated_suite
@@ -49,6 +49,10 @@ def _validate_plan(plan: dict[str, Any]) -> None:
         raise ValueError("autonomous plan must require first/terminator coverage")
     if decision.get("unique_target_contexts_only") is not True:
         raise ValueError("autonomous plan must require unique target contexts")
+    public_min_chars = decision.get("public_min_chars")
+    allowed = {0, *PUBLIC_MIN_CHARS_VARIANTS.values()}
+    if not isinstance(public_min_chars, int) or isinstance(public_min_chars, bool) or public_min_chars not in allowed:
+        raise ValueError("autonomous plan public_min_chars is outside the screened allow-list")
 
 
 def _domain_seed(plan_sha256: str, domain: str) -> int:
@@ -186,7 +190,7 @@ def build_curriculum(
         for record in all_records:
             handle.write(_canonical(record) + "\n")
 
-    return {
+    result = {
         "format_version": "1.0",
         "curriculum_version": CURRICULUM_VERSION,
         "plan_sha256": plan["plan_sha256"],
@@ -196,6 +200,7 @@ def build_curriculum(
         "target_training_tokens": int(decision["target_training_tokens"]),
         "procedural_fraction": float(decision["procedural_fraction"]),
         "public_fraction": float(decision["public_fraction"]),
+        "public_min_chars": int(decision["public_min_chars"]),
         "continuation_update_weights": decision["continuation_update_weights"],
         "domain_records": summary,
         "record_count": len(all_records),
@@ -208,6 +213,9 @@ def build_curriculum(
         "public_manifest_sha256": sha256_file(public_data / "manifest.json"),
         "cash_compute_cost_usd": 0.0,
     }
+    if "research_evidence" in plan:
+        result["research_evidence"] = plan["research_evidence"]
+    return result
 
 
 def main() -> None:
