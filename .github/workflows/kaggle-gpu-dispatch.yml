@@ -4,17 +4,20 @@ on:
   workflow_dispatch:
     inputs:
       cpu_farm_run_id:
-        description: "Successful CPU research farm run ID"
-        required: true
+        description: "Successful CPU research farm run ID; blank uses workflow_run only"
+        required: false
         type: string
       job_manifest:
-        description: "Enabled accelerator job manifest under accelerators/jobs/"
-        required: true
+        description: "Optional enabled accelerator manifest; blank auto-selects an eligible committed manifest"
+        required: false
         type: string
       kaggle_username:
-        description: "Kaggle username that owns genesis-ai-gpu-runner"
-        required: true
+        description: "Optional Kaggle username; repository variable KAGGLE_USERNAME takes precedence"
+        required: false
         type: string
+  workflow_run:
+    workflows: ["CPU research farm"]
+    types: [completed]
 
 permissions:
   actions: read
@@ -26,9 +29,14 @@ concurrency:
 
 jobs:
   dispatch:
-    if: github.event.repository.private == false
+    if: github.event.repository.private == false && (github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success')
     runs-on: ubuntu-latest
-    timeout-minutes: 8
+    timeout-minutes: 10
+    env:
+      CPU_FARM_RUN_ID: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.id || inputs.cpu_farm_run_id }}
+      MANUAL_JOB_MANIFEST: ${{ inputs.job_manifest }}
+      KAGGLE_USERNAME: ${{ vars.KAGGLE_USERNAME || inputs.kaggle_username }}
+      REPO_REF: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || github.sha }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -38,44 +46,106 @@ jobs:
         with:
           python-version: "3.11"
 
-      - name: Validate requested manifest path
-        env:
-          JOB_MANIFEST: ${{ inputs.job_manifest }}
+      - name: Require a CPU farm source run
         run: |
-          case "$JOB_MANIFEST" in
-            accelerators/jobs/*.json) ;;
-            *) echo "job_manifest must be under accelerators/jobs/" >&2; exit 2 ;;
-          esac
-          test -f "$JOB_MANIFEST"
+          test -n "$CPU_FARM_RUN_ID" || { echo "No CPU farm run ID available" >&2; exit 2; }
 
       - name: Download CPU shortlist
         uses: actions/download-artifact@v4
         with:
           name: cpu-farm-summary
           path: cpu-summary
-          run-id: ${{ inputs.cpu_farm_run_id }}
+          run-id: ${{ env.CPU_FARM_RUN_ID }}
           github-token: ${{ github.token }}
 
-      - name: Enforce CPU-screen gate
+      - name: Select an eligible committed accelerator job
+        id: select
         env:
           PYTHONPATH: src
-          JOB_MANIFEST: ${{ inputs.job_manifest }}
+        run: |
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          summary = json.loads(Path("cpu-summary/cpu-farm-summary.json").read_text(encoding="utf-8"))
+          if summary.get("guards_pass") is not True:
+              raise SystemExit("CPU farm guards did not pass")
+          eligible = {
+              (str(item.get("lane")), str(item.get("variant"))): float(item.get("improvement_fraction", 0.0))
+              for item in summary.get("expensive_stage_eligible", [])
+              if isinstance(item, dict)
+          }
+
+          manual = os.environ.get("MANUAL_JOB_MANIFEST", "").strip()
+          manifests = []
+          if manual:
+              path = Path(manual)
+              if path.parent != Path("accelerators/jobs") or path.suffix != ".json" or not path.is_file():
+                  raise SystemExit("manual job_manifest must be a committed JSON file under accelerators/jobs/")
+              manifests = [path]
+          else:
+              manifests = sorted(Path("accelerators/jobs").glob("*.json"))
+
+          choices = []
+          for path in manifests:
+              try:
+                  job = json.loads(path.read_text(encoding="utf-8"))
+              except json.JSONDecodeError:
+                  continue
+              if job.get("enabled") is not True or job.get("promotion_authority") is not False:
+                  continue
+              cpu = job.get("cpu_screen", {})
+              pair = (str(cpu.get("lane")), str(cpu.get("variant")))
+              if pair not in eligible:
+                  continue
+              # The current generic accelerator runner faithfully implements tiny-model
+              # geometry. Other CPU lanes remain screened but are not silently misapplied.
+              if pair[0] != "tiny-model":
+                  continue
+              choices.append((eligible[pair], path.as_posix(), pair))
+
+          output = Path(os.environ["GITHUB_OUTPUT"])
+          with output.open("a", encoding="utf-8") as handle:
+              if not choices:
+                  handle.write("enabled=false\n")
+                  handle.write("manifest=\n")
+                  print("No CPU-screened committed tiny-model accelerator job is eligible; skipping Kaggle.")
+              else:
+                  choices.sort(key=lambda item: (-item[0], item[1]))
+                  improvement, manifest, pair = choices[0]
+                  handle.write("enabled=true\n")
+                  handle.write(f"manifest={manifest}\n")
+                  print(f"Selected {pair[0]}/{pair[1]} from {manifest} ({improvement:+.6f}).")
+          PY
+
+      - name: Enforce CPU-screen gate
+        if: steps.select.outputs.enabled == 'true'
+        env:
+          PYTHONPATH: src
+          JOB_MANIFEST: ${{ steps.select.outputs.manifest }}
         run: |
           python -m genesis_ai.accelerator_job validate \
             --job "$JOB_MANIFEST" \
             --cpu-summary cpu-summary/cpu-farm-summary.json
 
-      - name: Require Kaggle API token
+      - name: Detect opportunistic Kaggle credentials
+        id: credentials
+        if: steps.select.outputs.enabled == 'true'
         env:
           KAGGLE_API_TOKEN: ${{ secrets.KAGGLE_API_TOKEN }}
         run: |
-          test -n "$KAGGLE_API_TOKEN" || { echo "Missing KAGGLE_API_TOKEN repository secret" >&2; exit 2; }
+          if [ -n "$KAGGLE_API_TOKEN" ] && [ -n "$KAGGLE_USERNAME" ]; then
+            echo "available=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "available=false" >> "$GITHUB_OUTPUT"
+            echo "Kaggle opportunity skipped: configure secret KAGGLE_API_TOKEN and repository variable KAGGLE_USERNAME."
+          fi
 
       - name: Build frozen Kaggle payload
+        if: steps.select.outputs.enabled == 'true' && steps.credentials.outputs.available == 'true'
         env:
-          JOB_MANIFEST: ${{ inputs.job_manifest }}
-          KAGGLE_USERNAME: ${{ inputs.kaggle_username }}
-          REPO_REF: ${{ github.sha }}
+          JOB_MANIFEST: ${{ steps.select.outputs.manifest }}
         run: |
           mkdir -p kaggle-payload
           cp accelerators/kaggle/genesis_gpu.py kaggle-payload/genesis_gpu.py
@@ -88,6 +158,7 @@ jobs:
           dispatch = {
               "repo_url": "https://github.com/NahuelGenchi/genesis-ai.git",
               "ref": os.environ["REPO_REF"],
+              "cpu_farm_run_id": int(os.environ["CPU_FARM_RUN_ID"]),
           }
           metadata = {
               "id": f"{os.environ['KAGGLE_USERNAME']}/genesis-ai-gpu-runner",
@@ -109,20 +180,29 @@ jobs:
           (payload / "kernel-metadata.json").write_text(json.dumps(metadata, indent=2) + "\n")
           PY
 
-      - name: Submit free P100 run
+      - name: Submit free Kaggle GPU run
+        if: steps.select.outputs.enabled == 'true' && steps.credentials.outputs.available == 'true'
         env:
-          KAGGLE_USERNAME: ${{ inputs.kaggle_username }}
           KAGGLE_API_TOKEN: ${{ secrets.KAGGLE_API_TOKEN }}
         run: |
           python -m pip install --disable-pip-version-check --no-input kaggle
           kaggle kernels push \
             -p kaggle-payload \
             --accelerator NvidiaTeslaP100 \
-            --timeout 120
+            --timeout 7200
           {
             echo "### Kaggle GPU dispatch"
-            echo "Submitted CPU-screened job to the free Tesla P100 runner."
-            echo "Kernel: https://www.kaggle.com/code/${KAGGLE_USERNAME}/genesis-ai-gpu-runner"
-            echo "CPU farm run: ${{ inputs.cpu_farm_run_id }}"
-            echo "Job manifest: \`${{ inputs.job_manifest }}\`"
+            echo "Submitted a CPU-screened job to a free Kaggle GPU runtime."
+            echo "CPU farm run: $CPU_FARM_RUN_ID"
+            echo "Job manifest: \`${{ steps.select.outputs.manifest }}\`"
+            echo "Promotion authority: none; frozen evaluation remains mandatory."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Record skipped accelerator opportunity
+        if: steps.select.outputs.enabled != 'true' || steps.credentials.outputs.available != 'true'
+        run: |
+          {
+            echo "### Kaggle GPU dispatch"
+            echo "No accelerator was submitted in this run."
+            echo "This is an opportunistic lane and does not block the continuous canonical CPU improvement loop."
           } >> "$GITHUB_STEP_SUMMARY"

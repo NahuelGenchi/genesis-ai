@@ -3,7 +3,7 @@ name: CPU research farm
 on:
   workflow_dispatch:
   schedule:
-    - cron: "23 4 * * 1"
+    - cron: "23 */3 * * *"
   push:
     branches: [main]
     paths:
@@ -20,7 +20,7 @@ on:
       - ".github/workflows/cpu-research-farm.yml"
 
 permissions:
-  contents: read
+  contents: write
 
 concurrency:
   group: cpu-research-farm-${{ github.ref }}
@@ -102,11 +102,9 @@ jobs:
   aggregate:
     needs: [plan, screen]
     runs-on: ubuntu-latest
-    timeout-minutes: 3
+    timeout-minutes: 4
     steps:
       - uses: actions/checkout@v4
-        with:
-          persist-credentials: false
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
@@ -125,6 +123,16 @@ jobs:
             --definition experiments/cpu-farm-v1.json \
             --input-dir artifacts \
             --output summary/cpu-farm-summary.json
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+          path = Path("summary/cpu-farm-summary.json")
+          value = json.loads(path.read_text(encoding="utf-8"))
+          value["source_commit"] = os.environ["GITHUB_SHA"]
+          value["workflow_run_id"] = int(os.environ["GITHUB_RUN_ID"])
+          path.write_text(json.dumps(value, indent=2, sort_keys=True) + "\n", encoding="utf-8", newline="\n")
+          PY
           cat summary/cpu-farm-summary.json >> "$GITHUB_STEP_SUMMARY"
       - name: Upload machine-readable shortlist
         uses: actions/upload-artifact@v4
@@ -133,3 +141,16 @@ jobs:
           path: summary/cpu-farm-summary.json
           if-no-files-found: error
           retention-days: 7
+      - name: Persist latest aggregate research evidence
+        run: |
+          mkdir -p research/accelerators
+          cp summary/cpu-farm-summary.json research/accelerators/cpu-farm-latest.json
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add research/accelerators/cpu-farm-latest.json
+          if ! git diff --cached --quiet; then
+            git commit -m "Research: refresh CPU farm shortlist (#194)"
+            git fetch origin main
+            git rebase origin/main
+            git push origin HEAD:main
+          fi

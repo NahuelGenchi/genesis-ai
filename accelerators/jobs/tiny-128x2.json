@@ -1,0 +1,33 @@
+{
+  "format_version": "1.0",
+  "kind": "genesis-train-v1",
+  "enabled": true,
+  "id": "tiny-128x2-real-corpus-v1",
+  "issue": 194,
+  "cpu_screen": {
+    "lane": "tiny-model",
+    "variant": "tiny-128x2"
+  },
+  "training": {
+    "data": "runs/accelerator-public-corpus/filtered",
+    "tokenizer": "tokenizers/genesis-v0.json",
+    "steps": 2000,
+    "batch_size": 16,
+    "lr": 0.001,
+    "seed": 1941282,
+    "checkpoint_every": 250,
+    "model": {
+      "context_length": 128,
+      "d_model": 128,
+      "n_heads": 4,
+      "n_layers": 2,
+      "d_ff": 512
+    }
+  },
+  "budget": {
+    "max_steps": 2000,
+    "max_checkpoint_interval": 250
+  },
+  "resume_if_present": true,
+  "promotion_authority": false
+}
