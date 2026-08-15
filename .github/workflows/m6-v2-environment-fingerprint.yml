@@ -20,9 +20,9 @@ jobs:
     timeout-minutes: 15
     strategy:
       fail-fast: false
-      max-parallel: 6
+      max-parallel: 5
       matrix:
-        torch_version: ["2.7.1", "2.8.0", "2.9.1", "2.10.0", "2.11.0", "2.12.0"]
+        torch_version: ["2.2.2", "2.3.1", "2.4.1", "2.5.1", "2.6.0"]
     env:
       WORK: runs/m6-v2-environment-fingerprint
       TARGET_PROBE: "4.228255425977561"
