@@ -40,6 +40,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Sync serialized cycle to latest main
+        id: source
+        run: |
+          git fetch origin main
+          git reset --hard origin/main
+          SOURCE_COMMIT=$(git rev-parse HEAD)
+          echo "commit=$SOURCE_COMMIT" >> "$GITHUB_OUTPUT"
+
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
@@ -247,7 +255,7 @@ jobs:
           if [ "$STATUS" -ne 0 ] && [ "$STATUS" -ne 2 ]; then exit "$STATUS"; fi
           python -m genesis_ai.result_provenance \
             "$WORK/gate.json" \
-            --source-commit "$GITHUB_SHA" \
+            --source-commit "${{ steps.source.outputs.commit }}" \
             --workflow-run-id "$GITHUB_RUN_ID"
           PROMOTED=$(python - <<'PY'
           import json
@@ -268,6 +276,7 @@ jobs:
           TARGET_DIFFICULTY: ${{ steps.target.outputs.difficulty }}
           TARGET_SUITE: ${{ steps.target.outputs.suite }}
           PROMOTED: ${{ steps.gate.outputs.promoted }}
+          SOURCE_COMMIT: ${{ steps.source.outputs.commit }}
         run: |
           RESULT_DIR="$RESULT_ROOT/$(printf '%04d' "$CYCLE")-$GITHUB_RUN_ID"
           export RESULT_DIR
@@ -315,7 +324,7 @@ jobs:
               "plan_sha256": plan["plan_sha256"],
               "processed_tokens": training["processed_tokens"],
               "result_dir": result_dir.as_posix(),
-              "source_commit": os.environ["GITHUB_SHA"],
+              "source_commit": os.environ["SOURCE_COMMIT"],
               "target_suite": os.environ["TARGET_SUITE"],
               "workflow_run_id": os.environ["GITHUB_RUN_ID"],
           }
