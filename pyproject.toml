@@ -38,6 +38,7 @@ genesis-terminated-eval = "genesis_ai.terminated_eval:main"
 genesis-terminated-train = "genesis_ai.terminated_training:main"
 genesis-terminated-gate = "genesis_ai.terminated_gate:main"
 genesis-terminated-model-card = "genesis_ai.terminated_model_card:main"
+genesis-accelerator = "genesis_ai.accelerator_job:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
