@@ -1,0 +1,75 @@
+{
+  "checkpoint_sha256": "4f8d4fde2eb8813a2394c59d15441028192079d525760528004d4375a692e2f0",
+  "checkpoint_step": 4885,
+  "difficulty": 1,
+  "domains": {
+    "code": {
+      "exact_accuracy": 0.6,
+      "exact_correct": 36,
+      "mean_generated_tokens": 15.216666666666667,
+      "oracle_set_sha256": "ac951449f47b7395f9d7bad99ced8c88d20a609fcbafb9c09929619377ceacb4",
+      "raw_response_set_sha256": "2918790eeadbbd7ecf27723599cf91077dbc177a7d49c0d4dfc6d205fd8c3893",
+      "response_set_sha256": "ee916f00dda7cc1ed3348b5f746277ee624ef53b88e3a5a69d2d963657cc0967",
+      "task_count": 60,
+      "task_set_sha256": "edea452777c7328fd13d550ced322bd5815eac664be5f3924047f15122cc17c8",
+      "terminated_count": 60,
+      "terminated_oracle_loss": 0.14009396710287272,
+      "terminated_oracle_set_sha256": "fc06929aeb6b7b4843ebe8026464ded35039b1bfb3b70f0a30a88763ef28cd2a",
+      "terminated_oracle_target_tokens": 951,
+      "termination_rate": 1.0,
+      "unterminated_count": 0
+    },
+    "math": {
+      "exact_accuracy": 0.03333333333333333,
+      "exact_correct": 2,
+      "mean_generated_tokens": 3.65,
+      "oracle_set_sha256": "7152390df9f86d5c74dd6707c59955369ef8ddbba1234ab9d760c246305fad14",
+      "raw_response_set_sha256": "1acb68a89d966a0a41777bdd0ec1397823e5361b1b1f575e13e46117beeec89c",
+      "response_set_sha256": "f28cff2d355278c323a83e2a9d5e8e93e242587a53552aedcc86164f4a18c2b2",
+      "task_count": 60,
+      "task_set_sha256": "820ba66788eeea7a10fc07f63f3796558aafaa9a53a2790dea3825db2a5e423c",
+      "terminated_count": 60,
+      "terminated_oracle_loss": 1.5778162179364623,
+      "terminated_oracle_set_sha256": "e161c396e044809f1b179a769fbb29fa26c26f932a25f4d484dc5c91ed631e37",
+      "terminated_oracle_target_tokens": 214,
+      "termination_rate": 1.0,
+      "unterminated_count": 0
+    },
+    "structured": {
+      "exact_accuracy": 0.0,
+      "exact_correct": 0,
+      "mean_generated_tokens": 26.4,
+      "oracle_set_sha256": "74f8521c42400c2201543d800e9f37767611cc0ce2b3dc9157f1a380d3163e31",
+      "raw_response_set_sha256": "ca5098d870b2b0fa2ea2cc97e502075d4e623790b1a7c6545e6ce04cf38cbbdf",
+      "response_set_sha256": "928b05ca948af7fab2eff80ba856e2f1cba2d3364e80e3cc338c5240b2d2b99e",
+      "task_count": 60,
+      "task_set_sha256": "eaf71820fe558b44d4342b9dd526c41e680e33b30723c33cad35ef6dade1d5c4",
+      "terminated_count": 32,
+      "terminated_oracle_loss": 1.335403171036261,
+      "terminated_oracle_set_sha256": "c97c7b6ff0cf11d0c033fb7f2b7794e5e348978303c50f245b9e31433bb7c55e",
+      "terminated_oracle_target_tokens": 1319,
+      "termination_rate": 0.5333333333333333,
+      "unterminated_count": 28
+    }
+  },
+  "format_version": "1.0",
+  "generation": {
+    "max_new_tokens": 32,
+    "seed": 36101,
+    "temperature": 1.0,
+    "top_k": 1
+  },
+  "selected_domain": "code",
+  "selected_reason": {
+    "exact_accuracy": 0.6,
+    "terminated_oracle_loss": 0.14009396710287272
+  },
+  "selection_rule": "highest_exact_accuracy_then_lowest_terminated_oracle_loss_then_domain_name",
+  "suite_sha256": "e04f1298d1705c5d00a43170f01e79f129fce53da26dead637b7b74d79d83afc",
+  "suite_version": "m6-domain-selection-v2",
+  "tasks_per_domain": 60,
+  "termination": {
+    "delimiter": "\n",
+    "required": true
+  }
+}
