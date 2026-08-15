@@ -20,6 +20,7 @@ wandb/
 *.pth
 *.safetensors
 
-# Promotion-gated published checkpoint only (#132).
+# Promotion-gated published checkpoints only (#132, #142).
 # All candidates and every other model artifact remain ignored.
 !checkpoints/genesis-micro-2m-v1.pt
+!checkpoints/genesis-autonomous-incumbent.pt
