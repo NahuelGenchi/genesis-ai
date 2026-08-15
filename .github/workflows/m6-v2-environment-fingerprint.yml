@@ -1,0 +1,115 @@
+name: M6 v2 environment fingerprint
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/m6-v2-environment-fingerprint.yml
+
+permissions:
+  contents: read
+
+concurrency:
+  group: m6-v2-environment-fingerprint
+  cancel-in-progress: false
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      max-parallel: 6
+      matrix:
+        torch_version: ["2.7.1", "2.8.0", "2.9.1", "2.10.0", "2.11.0", "2.12.0"]
+    env:
+      WORK: runs/m6-v2-environment-fingerprint
+      TARGET_PROBE: "4.228255425977561"
+      OMP_NUM_THREADS: "1"
+      MKL_NUM_THREADS: "1"
+      OPENBLAS_NUM_THREADS: "1"
+      NUMEXPR_NUM_THREADS: "1"
+      VECLIB_MAXIMUM_THREADS: "1"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install candidate CPU PyTorch only
+        run: |
+          python -m pip install --index-url https://download.pytorch.org/whl/cpu "torch==${{ matrix.torch_version }}"
+          python - <<'PY'
+          import platform, torch
+          print({"python": platform.python_version(), "torch": torch.__version__, "cuda": torch.version.cuda})
+          PY
+
+      - name: Rebuild frozen public inputs and curriculum
+        run: |
+          rm -rf "$WORK"
+          mkdir -p "$WORK"
+          cp data/bootstrap-tokenizer-lock.json "$WORK/bootstrap-tokenizer-lock.json"
+          PYTHONPATH=src python -m genesis_ai.bootstrap_corpus \
+            --catalog data/bootstrap-tokenizer-sources.json \
+            --workspace "$WORK/public-corpus" \
+            --output "$WORK/rebuilt-tokenizer.json" \
+            --lock "$WORK/bootstrap-tokenizer-lock.json" \
+            --vocab-size 512
+          cmp tokenizers/genesis-v0.json "$WORK/rebuilt-tokenizer.json"
+          PYTHONPATH=src python -m genesis_ai.multidomain_curriculum_v2 \
+            --suite evals/m6-domain-selection-v2.json \
+            --tokenizer tokenizers/genesis-v0.json \
+            --public-data "$WORK/public-corpus/filtered" \
+            --records "$WORK/procedural.jsonl" \
+            --output "$WORK/curriculum.json"
+
+      - name: Measure pre-training deterministic fingerprint
+        run: |
+          PYTHONPATH=src python - <<'PY'
+          import json, math, os, platform, random
+          from pathlib import Path
+          import torch
+          from genesis_ai.multidomain_training_v2 import SEED, _loss_probe, validate_inputs
+          from genesis_ai.terminated_training import TerminatedGenerationAlignedDataset
+
+          torch.set_num_threads(1)
+          torch.use_deterministic_algorithms(True)
+          random.seed(SEED)
+          torch.manual_seed(SEED)
+          model, tokenizer, records, _, _, _ = validate_inputs(
+              parent_checkpoint='checkpoints/genesis-micro-2m-v1.pt',
+              curriculum_lock='runs/m6-v2-environment-fingerprint/curriculum.json',
+              records_path='runs/m6-v2-environment-fingerprint/procedural.jsonl',
+              public_data='runs/m6-v2-environment-fingerprint/public-corpus/filtered',
+              tokenizer_path='tokenizers/genesis-v0.json',
+          )
+          dataset = TerminatedGenerationAlignedDataset(records, tokenizer, model.config.context_length)
+          probe_generator = torch.Generator(device='cpu').manual_seed(SEED + 30)
+          probe_indices = torch.randperm(len(dataset), generator=probe_generator)[:min(384, len(dataset))]
+          observed = _loss_probe(model, dataset, probe_indices, 'cpu')
+          target = float(os.environ['TARGET_PROBE'])
+          result = {
+              'format_version': '1.0',
+              'python': platform.python_version(),
+              'torch': torch.__version__,
+              'probe_loss': observed,
+              'target_probe_loss': target,
+              'absolute_error': abs(observed - target),
+              'exact_match': observed == target,
+              'cash_compute_cost_usd': 0.0,
+              'training_performed': False,
+              'promotion_eligible': False,
+          }
+          Path('fingerprint.json').write_text(json.dumps(result, indent=2, sort_keys=True) + '\n')
+          print(json.dumps(result, indent=2, sort_keys=True))
+          PY
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: v2-env-fingerprint-torch-${{ matrix.torch_version }}
+          path: fingerprint.json
+          retention-days: 7
