@@ -4,7 +4,7 @@ Issue: #194. Parent autonomy contract: #142.
 
 ## Production loop
 
-`Autonomous verified improvement` remains the only workflow with checkpoint-promotion authority. A successful completed run triggers `Autonomous cycle continuation`, which immediately dispatches the next run on `main`. `Autonomous continuity watchdog` checks hourly and restarts the chain only when no canonical run is queued or executing.
+`Autonomous verified improvement` remains the only workflow with checkpoint-promotion authority. A successful completed run triggers `Autonomous cycle continuation`, which immediately dispatches the next run on `main`. `Autonomous continuity watchdog` checks every 15 minutes and restarts the chain only when no canonical run is queued or executing. The watchdog also runs when its continuity wiring lands on `main`, so deployment bootstraps the first canonical cycle immediately instead of waiting for cron.
 
 Canonical training remains GitHub-hosted `ubuntu-latest`, deterministic CPU, independently reproduced, frozen-suite evaluated, and promotion-gated. Cash compute cost is `$0`.
 
