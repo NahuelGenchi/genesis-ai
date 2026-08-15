@@ -9,7 +9,7 @@
         "severity": "blocker"
       }
     ],
-    "tracked_paths": 241,
+    "tracked_paths": 242,
     "warnings": [
       {
         "detail": "no explicit repository license found; this is a collaboration/reuse issue, not a secret leak",
@@ -39,14 +39,14 @@
         "size_bytes": 1594143
       }
     ],
-    "objects_with_paths": 842,
-    "scanned_blobs": 389,
-    "scanned_text_blobs": 386
+    "objects_with_paths": 850,
+    "scanned_blobs": 392,
+    "scanned_text_blobs": 389
   },
   "github_text": {
     "findings": [],
     "issue_comments_scanned": 1,
-    "issues_and_prs_scanned": 165,
+    "issues_and_prs_scanned": 167,
     "review_comments_scanned": 0,
     "reviews_scanned": 0,
     "secret_scanning": {
