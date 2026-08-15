@@ -63,18 +63,6 @@ class TokenDatasetTest(unittest.TestCase):
             self.assertTrue(torch.equal(x1, x2))
             self.assertTrue(torch.equal(y1, y2))
 
-    def test_min_chars_filters_public_sampling_without_mutating_manifest(self):
-        with tempfile.TemporaryDirectory() as tmp:
-            root = Path(tmp)
-            data = _filtered_fixture(root, count=100)
-            tokenizer = ByteBPETokenizer(())
-            baseline = TokenDataset(data, tokenizer, 8, split="all")
-            screened = TokenDataset(data, tokenizer, 8, split="all", min_chars=80)
-            self.assertEqual(baseline.document_count, 100)
-            self.assertLess(screened.document_count, baseline.document_count)
-            self.assertEqual(screened.min_chars, 80)
-            self.assertTrue((data / "manifest.json").is_file())
-
     def test_min_chars_uses_stripped_length_like_cpu_farm_filter(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
@@ -95,6 +83,8 @@ class TokenDatasetTest(unittest.TestCase):
             (data / "manifest.json").write_text(json.dumps(manifest), encoding="utf-8")
             dataset = TokenDataset(data, ByteBPETokenizer(()), 8, split="all", min_chars=80)
             self.assertEqual(dataset.document_ids, ("long",))
+            self.assertEqual(dataset.min_chars, 80)
+            self.assertTrue((data / "manifest.json").is_file())
 
 
 if __name__ == "__main__":
