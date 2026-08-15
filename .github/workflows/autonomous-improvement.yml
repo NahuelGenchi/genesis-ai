@@ -1,0 +1,380 @@
+name: Autonomous verified improvement
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "17 5 * * 2,5"
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/autonomous-improvement.yml"
+      - "src/genesis_ai/improvement_controller.py"
+      - "src/genesis_ai/autonomous_curriculum.py"
+      - "src/genesis_ai/autonomous_training.py"
+      - "src/genesis_ai/autonomous_gate.py"
+      - "evals/m6-domain-selection-v2.json"
+      - "evals/m6-domain-ladder-*.json"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: autonomous-verified-improvement
+  cancel-in-progress: false
+
+jobs:
+  cycle:
+    if: github.event.repository.private == false
+    runs-on: ubuntu-latest
+    timeout-minutes: 300
+    env:
+      PYTHONPATH: src
+      STATE: research/autonomous/state.json
+      WORK: runs/autonomous-${{ github.run_id }}
+      RESULT_ROOT: research/autonomous/cycles
+      OMP_NUM_THREADS: "4"
+      MKL_NUM_THREADS: "4"
+      OPENBLAS_NUM_THREADS: "4"
+      NUMEXPR_NUM_THREADS: "4"
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Enforce remote zero-cash runner contract
+        run: |
+          test "${{ github.event.repository.private }}" = "false"
+          test "$RUNNER_ENVIRONMENT" = "github-hosted"
+          test "$RUNNER_OS" = "Linux"
+          python - <<'PY'
+          import os
+          assert os.environ["RUNNER_ENVIRONMENT"] == "github-hosted"
+          assert os.environ["RUNNER_OS"] == "Linux"
+          PY
+
+      - name: Install deterministic CPU runtime
+        run: |
+          python -m pip install --disable-pip-version-check --no-input --index-url https://download.pytorch.org/whl/cpu torch
+
+      - name: Resolve incumbent and current frozen suite
+        id: state
+        run: |
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          state_path = Path(os.environ["STATE"])
+          state = json.loads(state_path.read_text(encoding="utf-8"))
+          assert state["state_version"] == "autonomous-state-v1"
+          assert state["cash_compute_cost_usd"] == 0.0
+          incumbent = Path(state["incumbent_checkpoint"])
+          assert incumbent.is_file(), incumbent
+          difficulty = int(state["difficulty"])
+          suites = {
+              1: "evals/m6-domain-selection-v2.json",
+              2: "evals/m6-domain-ladder-d2-v1.json",
+              3: "evals/m6-domain-ladder-d3-v1.json",
+              4: "evals/m6-domain-ladder-d4-v1.json",
+              5: "evals/m6-domain-ladder-d5-v1.json",
+          }
+          suite = Path(suites[difficulty])
+          assert suite.is_file(), f"frozen suite missing for difficulty {difficulty}: {suite}"
+          cycle = int(state["cycle_index"]) + 1
+          with Path(os.environ["GITHUB_OUTPUT"]).open("a", encoding="utf-8") as handle:
+              handle.write(f"incumbent={incumbent.as_posix()}\n")
+              handle.write(f"difficulty={difficulty}\n")
+              handle.write(f"suite={suite.as_posix()}\n")
+              handle.write(f"cycle={cycle}\n")
+          PY
+
+      - name: Evaluate incumbent and let controller plan
+        run: |
+          rm -rf "$WORK"
+          mkdir -p "$WORK"
+          python -m genesis_ai.terminated_eval \
+            --checkpoint "${{ steps.state.outputs.incumbent }}" \
+            --suite "${{ steps.state.outputs.suite }}" \
+            --output "$WORK/incumbent-current-domain.json" \
+            --device cpu
+          INCUMBENT_SHA=$(sha256sum "${{ steps.state.outputs.incumbent }}" | awk '{print $1}')
+          python -m genesis_ai.improvement_controller \
+            --evaluation "$WORK/incumbent-current-domain.json" \
+            --incumbent-sha256 "$INCUMBENT_SHA" \
+            --output "$WORK/plan.json"
+
+      - name: Resolve target frozen suite
+        id: target
+        run: |
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          plan = json.loads(Path(os.environ["WORK"], "plan.json").read_text(encoding="utf-8"))
+          difficulty = int(plan["decision"]["target_difficulty"])
+          suites = {
+              1: "evals/m6-domain-selection-v2.json",
+              2: "evals/m6-domain-ladder-d2-v1.json",
+              3: "evals/m6-domain-ladder-d3-v1.json",
+              4: "evals/m6-domain-ladder-d4-v1.json",
+              5: "evals/m6-domain-ladder-d5-v1.json",
+          }
+          suite = Path(suites[difficulty])
+          if not suite.is_file():
+              raise SystemExit(f"fail-closed: controller requested difficulty {difficulty}, but frozen suite is not on main: {suite}")
+          with Path(os.environ["GITHUB_OUTPUT"]).open("a", encoding="utf-8") as handle:
+              handle.write(f"difficulty={difficulty}\n")
+              handle.write(f"suite={suite.as_posix()}\n")
+          PY
+
+      - name: Score incumbent on target suite before training
+        run: |
+          if [ "${{ steps.target.outputs.suite }}" = "${{ steps.state.outputs.suite }}" ]; then
+            cp "$WORK/incumbent-current-domain.json" "$WORK/baseline-domain.json"
+          else
+            python -m genesis_ai.terminated_eval \
+              --checkpoint "${{ steps.state.outputs.incumbent }}" \
+              --suite "${{ steps.target.outputs.suite }}" \
+              --output "$WORK/baseline-domain.json" \
+              --device cpu
+          fi
+
+      - name: Rebuild provenance-locked public corpus
+        run: |
+          cp data/bootstrap-tokenizer-lock.json "$WORK/bootstrap-tokenizer-lock.json"
+          python -m genesis_ai.bootstrap_corpus \
+            --catalog data/bootstrap-tokenizer-sources.json \
+            --workspace "$WORK/public-corpus" \
+            --output "$WORK/rebuilt-tokenizer.json" \
+            --lock "$WORK/bootstrap-tokenizer-lock.json" \
+            --vocab-size 512
+          cmp data/bootstrap-tokenizer-lock.json "$WORK/bootstrap-tokenizer-lock.json"
+          cmp tokenizers/genesis-v0.json "$WORK/rebuilt-tokenizer.json"
+
+      - name: Build plan-bound verifier curriculum
+        run: |
+          python -m genesis_ai.autonomous_curriculum \
+            --plan "$WORK/plan.json" \
+            --suite "${{ steps.target.outputs.suite }}" \
+            --tokenizer tokenizers/genesis-v0.json \
+            --public-data "$WORK/public-corpus/filtered" \
+            --records "$WORK/records.jsonl" \
+            --output "$WORK/curriculum.json"
+
+      - name: Train primary candidate
+        run: |
+          python -m genesis_ai.autonomous_training \
+            --parent "${{ steps.state.outputs.incumbent }}" \
+            --curriculum-lock "$WORK/curriculum.json" \
+            --records "$WORK/records.jsonl" \
+            --public-data "$WORK/public-corpus/filtered" \
+            --tokenizer tokenizers/genesis-v0.json \
+            --checkpoint "$WORK/candidate-a-training.pt" \
+            --export "$WORK/candidate-a.pt" \
+            --run "$WORK/training.json" \
+            --device cpu
+
+      - name: Train independent replica
+        run: |
+          python -m genesis_ai.autonomous_training \
+            --parent "${{ steps.state.outputs.incumbent }}" \
+            --curriculum-lock "$WORK/curriculum.json" \
+            --records "$WORK/records.jsonl" \
+            --public-data "$WORK/public-corpus/filtered" \
+            --tokenizer tokenizers/genesis-v0.json \
+            --checkpoint "$WORK/candidate-b-training.pt" \
+            --export "$WORK/candidate-b.pt" \
+            --run "$WORK/training-replica.json" \
+            --device cpu
+
+      - name: Require semantic reproduction
+        run: |
+          python -m genesis_ai.scale_repro \
+            --primary "$WORK/candidate-a.pt" \
+            --replica "$WORK/candidate-b.pt" \
+            --output "$WORK/reproduction.json"
+
+      - name: Evaluate candidate on identical frozen suite
+        run: |
+          python -m genesis_ai.terminated_eval \
+            --checkpoint "$WORK/candidate-a.pt" \
+            --suite "${{ steps.target.outputs.suite }}" \
+            --output "$WORK/candidate-domain.json" \
+            --device cpu
+
+      - name: Evaluate M3 regression boundary
+        run: |
+          python -m genesis_ai.eval_lab \
+            --checkpoint "${{ steps.state.outputs.incumbent }}" \
+            --data "$WORK/public-corpus/filtered" \
+            --suite evals/m3-v1.json \
+            --output "$WORK/baseline-m3.json" \
+            --device cpu
+          python -m genesis_ai.eval_lab \
+            --checkpoint "$WORK/candidate-a.pt" \
+            --data "$WORK/public-corpus/filtered" \
+            --suite evals/m3-v1.json \
+            --output "$WORK/candidate-m3.json" \
+            --device cpu
+
+      - name: Apply immutable promotion gate
+        id: gate
+        run: |
+          set +e
+          python -m genesis_ai.autonomous_gate \
+            --plan "$WORK/plan.json" \
+            --curriculum "$WORK/curriculum.json" \
+            --baseline-checkpoint "${{ steps.state.outputs.incumbent }}" \
+            --candidate "$WORK/candidate-a.pt" \
+            --training "$WORK/training.json" \
+            --reproduction "$WORK/reproduction.json" \
+            --baseline-domain "$WORK/baseline-domain.json" \
+            --candidate-domain "$WORK/candidate-domain.json" \
+            --baseline-m3 "$WORK/baseline-m3.json" \
+            --candidate-m3 "$WORK/candidate-m3.json" \
+            --output "$WORK/gate.json"
+          STATUS=$?
+          set -e
+          if [ "$STATUS" -ne 0 ] && [ "$STATUS" -ne 2 ]; then exit "$STATUS"; fi
+          python -m genesis_ai.result_provenance \
+            "$WORK/gate.json" \
+            --source-commit "$GITHUB_SHA" \
+            --workflow-run-id "$GITHUB_RUN_ID"
+          PROMOTED=$(python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+          gate = json.loads(Path(os.environ["WORK"], "gate.json").read_text(encoding="utf-8"))
+          print(str(bool(gate["promoted"])).lower())
+          PY
+          )
+          echo "promoted=$PROMOTED" >> "$GITHUB_OUTPUT"
+
+      - name: Validate repository before persistence
+        run: PYTHON_BIN=python ./scripts/test_local.sh
+
+      - name: Persist measurements and promoted incumbent only
+        env:
+          CYCLE: ${{ steps.state.outputs.cycle }}
+          TARGET_DIFFICULTY: ${{ steps.target.outputs.difficulty }}
+          TARGET_SUITE: ${{ steps.target.outputs.suite }}
+          PROMOTED: ${{ steps.gate.outputs.promoted }}
+        run: |
+          RESULT_DIR="$RESULT_ROOT/$(printf '%04d' "$CYCLE")-$GITHUB_RUN_ID"
+          export RESULT_DIR
+          mkdir -p "$RESULT_DIR"
+          cp "$WORK/plan.json" "$RESULT_DIR/plan.json"
+          cp "$WORK/curriculum.json" "$RESULT_DIR/curriculum.json"
+          cp "$WORK/training.json" "$RESULT_DIR/training.json"
+          cp "$WORK/training-replica.json" "$RESULT_DIR/training-replica.json"
+          cp "$WORK/reproduction.json" "$RESULT_DIR/reproduction.json"
+          cp "$WORK/baseline-domain.json" "$RESULT_DIR/baseline-domain.json"
+          cp "$WORK/candidate-domain.json" "$RESULT_DIR/candidate-domain.json"
+          cp "$WORK/baseline-m3.json" "$RESULT_DIR/baseline-m3.json"
+          cp "$WORK/candidate-m3.json" "$RESULT_DIR/candidate-m3.json"
+          cp "$WORK/gate.json" "$RESULT_DIR/gate.json"
+
+          if [ "$PROMOTED" = "true" ]; then
+            cp "$WORK/candidate-a.pt" checkpoints/genesis-autonomous-incumbent.pt
+          fi
+
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          work = Path(os.environ["WORK"])
+          result_dir = Path(os.environ["RESULT_DIR"])
+          state_path = Path(os.environ["STATE"])
+          state = json.loads(state_path.read_text(encoding="utf-8"))
+          plan = json.loads((work / "plan.json").read_text(encoding="utf-8"))
+          training = json.loads((work / "training.json").read_text(encoding="utf-8"))
+          gate = json.loads((work / "gate.json").read_text(encoding="utf-8"))
+          gci = gate["gci_v1"]
+          promoted = os.environ["PROMOTED"] == "true"
+
+          state["cycle_index"] = int(os.environ["CYCLE"])
+          state["difficulty"] = int(os.environ["TARGET_DIFFICULTY"])
+          if promoted:
+              state["incumbent_checkpoint"] = "checkpoints/genesis-autonomous-incumbent.pt"
+          state["last_cycle"] = {
+              "decision": gate["decision"],
+              "focus_domain": gate["focus_domain"],
+              "gci_after": gci["candidate"]["score"],
+              "gci_before": gci["baseline"]["score"],
+              "gci_change_points": gci["absolute_point_change"],
+              "plan_sha256": plan["plan_sha256"],
+              "processed_tokens": training["processed_tokens"],
+              "result_dir": result_dir.as_posix(),
+              "source_commit": os.environ["GITHUB_SHA"],
+              "target_suite": os.environ["TARGET_SUITE"],
+              "workflow_run_id": os.environ["GITHUB_RUN_ID"],
+          }
+          state_path.write_text(json.dumps(state, indent=2, sort_keys=True) + "\n", encoding="utf-8", newline="\n")
+
+          summary = [
+              f"# Autonomous cycle {state['cycle_index']}",
+              "",
+              f"- Decision: **{gate['decision']}**",
+              f"- Focus: `{gate['focus_domain']}`",
+              f"- GCI-v1: `{gci['baseline']['score']:.4f} -> {gci['candidate']['score']:.4f}` ({gci['absolute_point_change']:+.4f} points)",
+              f"- Processed tokens: `{training['processed_tokens']}`",
+              f"- Cash compute: `$0`",
+              f"- Runner: GitHub-hosted `ubuntu-latest`",
+              f"- Plan: `{plan['plan_sha256']}`",
+          ]
+          (result_dir / "README.md").write_text("\n".join(summary) + "\n", encoding="utf-8", newline="\n")
+
+          if promoted:
+              model_dir = Path("models/genesis-autonomous-incumbent")
+              model_dir.mkdir(parents=True, exist_ok=True)
+              card = [
+                  "# Genesis autonomous incumbent",
+                  "",
+                  "Promotion-gated checkpoint produced by the scheduled autonomous improvement controller.",
+                  "",
+                  f"- Cycle: `{state['cycle_index']}`",
+                  f"- Focus domain: `{gate['focus_domain']}`",
+                  f"- GCI-v1: `{gci['candidate']['score']:.4f}`",
+                  f"- Previous GCI-v1: `{gci['baseline']['score']:.4f}`",
+                  f"- Checkpoint SHA-256: `{gate['candidate_checkpoint_sha256']}`",
+                  f"- Plan SHA-256: `{plan['plan_sha256']}`",
+                  f"- Cash compute: `$0`",
+                  "- Reproduction: required and passed",
+                  "- Promotion: external immutable gate only",
+              ]
+              (model_dir / "README.md").write_text("\n".join(card) + "\n", encoding="utf-8", newline="\n")
+              metadata = {
+                  "checkpoint": "checkpoints/genesis-autonomous-incumbent.pt",
+                  "checkpoint_sha256": gate["candidate_checkpoint_sha256"],
+                  "cycle_index": state["cycle_index"],
+                  "gate": gate["gate_version"],
+                  "gci_v1": gci["candidate"]["score"],
+                  "plan_sha256": plan["plan_sha256"],
+                  "result_dir": result_dir.as_posix(),
+              }
+              (model_dir / "metadata.json").write_text(json.dumps(metadata, indent=2, sort_keys=True) + "\n", encoding="utf-8", newline="\n")
+          PY
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add "$STATE" "$RESULT_DIR"
+          if [ "$PROMOTED" = "true" ]; then
+            git add -f checkpoints/genesis-autonomous-incumbent.pt
+            git add models/genesis-autonomous-incumbent
+          fi
+          DECISION=$(python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+          print(json.loads(Path(os.environ["WORK"], "gate.json").read_text(encoding="utf-8"))["decision"])
+          PY
+          )
+          git commit -m "M6: autonomous cycle $CYCLE $DECISION (#142)"
+          git fetch origin main
+          git rebase origin/main
+          git push origin HEAD:main
