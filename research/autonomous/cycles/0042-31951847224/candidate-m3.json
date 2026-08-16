@@ -1,0 +1,47 @@
+{
+  "checkpoint_sha256": "41a0fb18a2c7768afb94c019b8d5e72950c3e9f14d03d6ff605b51de3567f796",
+  "contamination": {
+    "blocking": false,
+    "exact_overlap_count": 0,
+    "examples": [],
+    "method": "sha256-nfkc-collapsed-whitespace",
+    "train_documents": 975,
+    "validation_documents": 107
+  },
+  "data_manifest_sha256": "8126c6a8008ea39fa9db138078c5b0f15becf510eebf6160053807d665149a76",
+  "evaluation": {
+    "batches": 20,
+    "checkpoint_step": 4885,
+    "data_manifest_sha256": "8126c6a8008ea39fa9db138078c5b0f15becf510eebf6160053807d665149a76",
+    "documents": 107,
+    "loss": 3.2061580419540405,
+    "parameter_count": 1895808,
+    "perplexity": 24.6840686585235,
+    "split": "validation",
+    "tokens": 29360
+  },
+  "generations": [
+    {
+      "prompt": "The ",
+      "sha256": "506e8ae309478141cf995d1b7d65b2b23e3175fe9ea58f8fdb3e378e8d533261",
+      "text": "The and it\ncal me a sey and not be and fious of the in "
+    },
+    {
+      "prompt": "Don ",
+      "sha256": "65fd8f15dc876c8ec228d5cf63f6336a072c68dc330606e858593ea9f9d69703",
+      "text": "Don mit inivit the\nwith ingle not g and fious of the in "
+    },
+    {
+      "prompt": "Il ",
+      "sha256": "0a5f48bebd22441f2d03e1cb39b1003ac747b01e8f2cb332ee55533f0b37e7ea",
+      "text": "Il mit cîme en\nCairesme mor, vait fit les fla le "
+    }
+  ],
+  "primary_metric": {
+    "lower_is_better": true,
+    "name": "validation_loss",
+    "value": 3.2061580419540405
+  },
+  "suite_sha256": "e63ccb9a8ea41c030a6bbbbeb41332c5a53c983cc1bf9d7ea466a9862dfc5bb7",
+  "suite_version": "m3-v1"
+}
