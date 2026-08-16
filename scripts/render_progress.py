@@ -1,11 +1,14 @@
 from __future__ import annotations
 
 import argparse
+import csv
+import io
 import json
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 OUTPUT = ROOT / "docs" / "BENCHMARKS.md"
+CSV_OUTPUT = ROOT / "docs" / "BENCHMARKS.csv"
 
 
 def load(path: str) -> dict:
@@ -68,20 +71,56 @@ def render() -> str:
     return "\n".join(lines)
 
 
+def render_csv() -> str:
+    """Render benchmark data as CSV."""
+    tiny = load("models/genesis-tiny-v0/metrics.json")
+    micro = load("models/genesis-micro-2m-v1/metrics.json")
+    farm = "experiments/cpu-farm-v1.json"
+
+    tiny_loss = tiny["evaluation"]["loss"]
+    micro_loss = micro["general_language"]["candidate_validation_loss"]
+    capability = micro["capability"]
+    training = micro["training"]
+
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow(["Metric", "genesis-tiny-v0", "genesis-micro-2m-v1"])
+    writer.writerow(["Parameters", tiny["parameter_count"], micro["parameter_count"]])
+    writer.writerow(["General validation loss (M3)", f"{tiny_loss:.6f}", f"{micro_loss:.6f}"])
+    writer.writerow(["Restricted expression exact accuracy", "N/A", f"{capability['candidate_exact_accuracy'] * 100:.2f}%"])
+    writer.writerow(["Termination rate", "N/A", f"{capability['candidate_termination_rate'] * 100:.2f}%"])
+    writer.writerow(["Processed training tokens", f"{tiny['training']['train_tokens']:,}", f"{training['processed_tokens']:,}"])
+    writer.writerow(["Required cash compute", "not recorded", f"${training['cash_compute_cost_usd']:.2f}"])
+
+    return output.getvalue()
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="Render the evidence-backed Genesis benchmark dashboard.")
-    parser.add_argument("--check", action="store_true", help="Fail if docs/BENCHMARKS.md is stale")
+    parser.add_argument("--check", action="store_true", help="Verify both outputs are current")
+    parser.add_argument("--csv", action="store_true", help="Also emit CSV output")
     args = parser.parse_args()
     rendered = render()
+    csv_rendered = render_csv() if args.csv else None
+
     if args.check:
         current = OUTPUT.read_text(encoding="utf-8") if OUTPUT.exists() else ""
         if current != rendered:
             raise SystemExit("docs/BENCHMARKS.md is stale; run python3 scripts/render_progress.py")
+        if csv_rendered is not None:
+            current_csv = CSV_OUTPUT.read_text(encoding="utf-8") if CSV_OUTPUT.exists() else ""
+            if current_csv != csv_rendered:
+                raise SystemExit("docs/BENCHMARKS.csv is stale; run python3 scripts/render_progress.py --csv")
         print("benchmark dashboard is current")
         return
+
     OUTPUT.parent.mkdir(parents=True, exist_ok=True)
     OUTPUT.write_text(rendered, encoding="utf-8", newline="\n")
     print(f"wrote {OUTPUT.relative_to(ROOT)}")
+
+    if csv_rendered is not None:
+        CSV_OUTPUT.write_text(csv_rendered, encoding="utf-8", newline="\n")
+        print(f"wrote {CSV_OUTPUT.relative_to(ROOT)}")
 
 
 if __name__ == "__main__":
