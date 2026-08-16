@@ -1,0 +1,47 @@
+{
+  "checkpoint_sha256": "7f1b9c8684224f6344424ba140534ba2c835c661cf2634cdef9a97f562480e5d",
+  "contamination": {
+    "blocking": false,
+    "exact_overlap_count": 0,
+    "examples": [],
+    "method": "sha256-nfkc-collapsed-whitespace",
+    "train_documents": 975,
+    "validation_documents": 107
+  },
+  "data_manifest_sha256": "8126c6a8008ea39fa9db138078c5b0f15becf510eebf6160053807d665149a76",
+  "evaluation": {
+    "batches": 20,
+    "checkpoint_step": 4885,
+    "data_manifest_sha256": "8126c6a8008ea39fa9db138078c5b0f15becf510eebf6160053807d665149a76",
+    "documents": 107,
+    "loss": 3.238342273235321,
+    "parameter_count": 1895808,
+    "perplexity": 25.491428878104994,
+    "split": "validation",
+    "tokens": 29360
+  },
+  "generations": [
+    {
+      "prompt": "The ",
+      "sha256": "ac31e050793bc04d42211f24105e58bf908b3ff91d6bf60c591f594830e3d9e6",
+      "text": "The and her\ncal would bity and not g and falce of the in "
+    },
+    {
+      "prompt": "Don ",
+      "sha256": "41b155c0ace6f96fbff1fe1284e0cd64c9fab5870325cb44c3e6a88c6a8a625f",
+      "text": "Don and her\ncal would with asgle not g and falce of the in "
+    },
+    {
+      "prompt": "Il ",
+      "sha256": "ab4f8895a33087c3c773c5aab167af88fe1d2a597d5de085f0bd64d44ac9b6af",
+      "text": "Il éit triès en\ndes et! mor f les fatues fla le "
+    }
+  ],
+  "primary_metric": {
+    "lower_is_better": true,
+    "name": "validation_loss",
+    "value": 3.238342273235321
+  },
+  "suite_sha256": "e63ccb9a8ea41c030a6bbbbeb41332c5a53c983cc1bf9d7ea466a9862dfc5bb7",
+  "suite_version": "m3-v1"
+}
