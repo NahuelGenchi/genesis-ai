@@ -1,0 +1,47 @@
+{
+  "checkpoint_sha256": "506fd013bb99e7f3a1677bbd6391d845a9d5e61b316b167989cde486f30691f3",
+  "contamination": {
+    "blocking": false,
+    "exact_overlap_count": 0,
+    "examples": [],
+    "method": "sha256-nfkc-collapsed-whitespace",
+    "train_documents": 975,
+    "validation_documents": 107
+  },
+  "data_manifest_sha256": "8126c6a8008ea39fa9db138078c5b0f15becf510eebf6160053807d665149a76",
+  "evaluation": {
+    "batches": 20,
+    "checkpoint_step": 4885,
+    "data_manifest_sha256": "8126c6a8008ea39fa9db138078c5b0f15becf510eebf6160053807d665149a76",
+    "documents": 107,
+    "loss": 3.2069894313812255,
+    "parameter_count": 1895808,
+    "perplexity": 24.704599265508318,
+    "split": "validation",
+    "tokens": 29360
+  },
+  "generations": [
+    {
+      "prompt": "The ",
+      "sha256": "6da9b33b0edadf75e1ead424db73444492fd52399946b65adc2b5ce21f0dd9f6",
+      "text": "The and her\ncalpar a gy and not g and fice of the in "
+    },
+    {
+      "prompt": "Don ",
+      "sha256": "e63c5ea5d53ebfe4658c22d29ab2b373bb1d640399ce282c34bd31dba4742159",
+      "text": "Don mit inialime a que sul la que la y que de la que "
+    },
+    {
+      "prompt": "Il ",
+      "sha256": "a20c377653a1949f4f7e2ba004d3bcc59cc56b1b72c3686803accdb267421579",
+      "text": "Il éit qui vit d'aire ne! Il de vait\n--Il les fla fant"
+    }
+  ],
+  "primary_metric": {
+    "lower_is_better": true,
+    "name": "validation_loss",
+    "value": 3.2069894313812255
+  },
+  "suite_sha256": "e63ccb9a8ea41c030a6bbbbeb41332c5a53c983cc1bf9d7ea466a9862dfc5bb7",
+  "suite_version": "m3-v1"
+}
