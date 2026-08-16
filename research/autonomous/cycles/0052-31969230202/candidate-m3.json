@@ -1,0 +1,47 @@
+{
+  "checkpoint_sha256": "9a3287a76c17f2b7e01446a12f9a5564591f1e70429bad188532190df75ff096",
+  "contamination": {
+    "blocking": false,
+    "exact_overlap_count": 0,
+    "examples": [],
+    "method": "sha256-nfkc-collapsed-whitespace",
+    "train_documents": 975,
+    "validation_documents": 107
+  },
+  "data_manifest_sha256": "8126c6a8008ea39fa9db138078c5b0f15becf510eebf6160053807d665149a76",
+  "evaluation": {
+    "batches": 20,
+    "checkpoint_step": 4885,
+    "data_manifest_sha256": "8126c6a8008ea39fa9db138078c5b0f15becf510eebf6160053807d665149a76",
+    "documents": 107,
+    "loss": 3.2332724213600157,
+    "parameter_count": 1895808,
+    "perplexity": 25.362518164834,
+    "split": "validation",
+    "tokens": 29360
+  },
+  "generations": [
+    {
+      "prompt": "The ",
+      "sha256": "c156d9ab831661cc57a3a28d8287090e091ce6ebed9f0f8cfacdf1a33c35e568",
+      "text": "The and it\ncalal the bity and not g and flat of the in "
+    },
+    {
+      "prompt": "Don ",
+      "sha256": "fedfb4ef6dd69c5723720e8fff4d5dc2ddf488f12cb27914c991bb42d578f9f5",
+      "text": "Don édit\ncalieu che et se la f les flaux fla le "
+    },
+    {
+      "prompt": "Il ",
+      "sha256": "f301914f1f2e1614e28609de6c718a38752037a76adde0e2d48842cea6641873",
+      "text": "Il é que\ncalieu che et se la féient la les fes le "
+    }
+  ],
+  "primary_metric": {
+    "lower_is_better": true,
+    "name": "validation_loss",
+    "value": 3.2332724213600157
+  },
+  "suite_sha256": "e63ccb9a8ea41c030a6bbbbeb41332c5a53c983cc1bf9d7ea466a9862dfc5bb7",
+  "suite_version": "m3-v1"
+}
