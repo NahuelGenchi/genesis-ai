@@ -1,0 +1,137 @@
+{
+  "baseline_checkpoint_sha256": "0ba16a931451ffbdc369aa685845b0ddb9b6ed03910ac773b50e837fd9886d7e",
+  "candidate_checkpoint_sha256": "9f54a1da03835bcd170c315b0f9bd33ffe5faea6acde192a765cc705ada1ec87",
+  "decision": "reject",
+  "focus_absolute_gain": 0.0,
+  "focus_domain": "structured",
+  "format_version": "1.0",
+  "gate_version": "autonomous-promotion-gate-v1",
+  "gates": [
+    {
+      "name": "focus_absolute_gain",
+      "observed": 0.0,
+      "passed": false,
+      "requirement": 0.1
+    },
+    {
+      "name": "gci_absolute_gain",
+      "observed": -3.8888888888888857,
+      "passed": false,
+      "requirement": 3.0
+    },
+    {
+      "name": "nonfocus_regressions",
+      "observed": {
+        "code": -0.1333333333333333,
+        "math": 0.016666666666666666
+      },
+      "passed": false,
+      "requirement": {
+        "minimum_delta_each": -0.05
+      }
+    },
+    {
+      "name": "m3_validation_loss",
+      "observed": {
+        "baseline": 3.3551116466522215,
+        "candidate": 3.211126184463501,
+        "regression_fraction": -0.0429152521146029
+      },
+      "passed": true,
+      "requirement": {
+        "max_regression_fraction": 0.02
+      }
+    },
+    {
+      "name": "m3_exact_contamination",
+      "observed": {
+        "blocking": false,
+        "exact_overlap_count": 0,
+        "examples": [],
+        "method": "sha256-nfkc-collapsed-whitespace",
+        "train_documents": 975,
+        "validation_documents": 107
+      },
+      "passed": true,
+      "requirement": {
+        "blocking": false,
+        "exact_overlap_count": 0
+      }
+    },
+    {
+      "name": "semantic_reproduction",
+      "observed": {
+        "checkpoint_bytes_equal": false,
+        "config_equal": true,
+        "format_version": "1.0",
+        "metadata_equal": true,
+        "primary_checkpoint_sha256": "9f54a1da03835bcd170c315b0f9bd33ffe5faea6acde192a765cc705ada1ec87",
+        "replica_checkpoint_sha256": "1d3c6aabd26c07ee88f4a1a25fc9f0837960022a099b5b47833a66bd43ff2c4d",
+        "repro_version": "m6-repro-v1",
+        "reproducible": true,
+        "state_keys_equal": true,
+        "step_equal": true,
+        "tokenizer_equal": true,
+        "weights_equal": true
+      },
+      "passed": true,
+      "requirement": true
+    },
+    {
+      "name": "holdout_overlap",
+      "observed": 0,
+      "passed": true,
+      "requirement": 0
+    },
+    {
+      "name": "zero_cash_compute",
+      "observed": {
+        "curriculum": 0.0,
+        "training": 0.0
+      },
+      "passed": true,
+      "requirement": 0.0
+    }
+  ],
+  "gci_v1": {
+    "absolute_point_change": -3.8888888888888857,
+    "baseline": {
+      "checkpoint_sha256": "0ba16a931451ffbdc369aa685845b0ddb9b6ed03910ac773b50e837fd9886d7e",
+      "domain_exact_accuracy": {
+        "code": 0.95,
+        "math": 0.0,
+        "structured": 0.0
+      },
+      "metric_version": "gci-v1",
+      "score": 31.666666666666668,
+      "suite_sha256": "e04f1298d1705c5d00a43170f01e79f129fce53da26dead637b7b74d79d83afc",
+      "suite_version": "m6-domain-selection-v2"
+    },
+    "candidate": {
+      "checkpoint_sha256": "9f54a1da03835bcd170c315b0f9bd33ffe5faea6acde192a765cc705ada1ec87",
+      "domain_exact_accuracy": {
+        "code": 0.8166666666666667,
+        "math": 0.016666666666666666,
+        "structured": 0.0
+      },
+      "metric_version": "gci-v1",
+      "score": 27.777777777777782,
+      "suite_sha256": "e04f1298d1705c5d00a43170f01e79f129fce53da26dead637b7b74d79d83afc",
+      "suite_version": "m6-domain-selection-v2"
+    },
+    "format_version": "1.0",
+    "metric_version": "gci-v1",
+    "relative_percent_change": -12.280701754385955,
+    "relative_percent_note": null
+  },
+  "nonfocus_deltas": {
+    "code": -0.1333333333333333,
+    "math": 0.016666666666666666
+  },
+  "plan_sha256": "53433df3d021f110f25174d88b20488f5530d39f38b03404aa152523570b6ac2",
+  "promoted": false,
+  "result_provenance": {
+    "source_commit": "e4a4880d17a184b11eb4000c3e347560c290cb75",
+    "workflow_run_id": "31921362653"
+  }
+}
