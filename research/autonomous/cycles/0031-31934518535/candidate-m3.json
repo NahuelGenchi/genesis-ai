@@ -1,0 +1,47 @@
+{
+  "checkpoint_sha256": "214b308e1afea82a751694cc3a5c6ba6d15cbc15aa5d868b7119f7fc2c9d7e05",
+  "contamination": {
+    "blocking": false,
+    "exact_overlap_count": 0,
+    "examples": [],
+    "method": "sha256-nfkc-collapsed-whitespace",
+    "train_documents": 975,
+    "validation_documents": 107
+  },
+  "data_manifest_sha256": "8126c6a8008ea39fa9db138078c5b0f15becf510eebf6160053807d665149a76",
+  "evaluation": {
+    "batches": 20,
+    "checkpoint_step": 4885,
+    "data_manifest_sha256": "8126c6a8008ea39fa9db138078c5b0f15becf510eebf6160053807d665149a76",
+    "documents": 107,
+    "loss": 3.200459837913513,
+    "parameter_count": 1895808,
+    "perplexity": 24.54381377871887,
+    "split": "validation",
+    "tokens": 29360
+  },
+  "generations": [
+    {
+      "prompt": "The ",
+      "sha256": "4d70b3ca8934ae05b1cb4c41bc56129535d99bc0b085cbe6b453bf0537cc97de",
+      "text": "The and it\ncaling the with asgle not g and fitues in\nhim f"
+    },
+    {
+      "prompt": "Don ",
+      "sha256": "9916d0e4544659c8214070b929828a2c4bc5028876b795b079c21c60a80136ae",
+      "text": "Don and it cal on a gy! of him for a mues in\nhim f"
+    },
+    {
+      "prompt": "Il ",
+      "sha256": "12fd0b8c52f0a13a551dc454889cec813d609b17c8fc2bb3f2b42a99bc290b11",
+      "text": "Il mit qui valient que le elle de vait flaues fla le "
+    }
+  ],
+  "primary_metric": {
+    "lower_is_better": true,
+    "name": "validation_loss",
+    "value": 3.200459837913513
+  },
+  "suite_sha256": "e63ccb9a8ea41c030a6bbbbeb41332c5a53c983cc1bf9d7ea466a9862dfc5bb7",
+  "suite_version": "m3-v1"
+}
