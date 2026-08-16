@@ -1,0 +1,47 @@
+{
+  "checkpoint_sha256": "572368ffd667fc48ecbd3c031278d7f05c46131754ad03522c9dc34c5f9015b5",
+  "contamination": {
+    "blocking": false,
+    "exact_overlap_count": 0,
+    "examples": [],
+    "method": "sha256-nfkc-collapsed-whitespace",
+    "train_documents": 975,
+    "validation_documents": 107
+  },
+  "data_manifest_sha256": "8126c6a8008ea39fa9db138078c5b0f15becf510eebf6160053807d665149a76",
+  "evaluation": {
+    "batches": 20,
+    "checkpoint_step": 4885,
+    "data_manifest_sha256": "8126c6a8008ea39fa9db138078c5b0f15becf510eebf6160053807d665149a76",
+    "documents": 107,
+    "loss": 3.2117402076721193,
+    "parameter_count": 1895808,
+    "perplexity": 24.8222445218524,
+    "split": "validation",
+    "tokens": 29360
+  },
+  "generations": [
+    {
+      "prompt": "The ",
+      "sha256": "321582900b194c7a7593697a89616ef2e55912497922d12bc67f3d4b1e138337",
+      "text": "The and her\ncalal the; gy and not g and fice of the I "
+    },
+    {
+      "prompt": "Don ",
+      "sha256": "5fec7db59e38e4d5d53a33d2732b41b5e9f8ece4890999c3933e6e56647936bf",
+      "text": "Don mit iniès en\nCa le mla f la fit les fla le "
+    },
+    {
+      "prompt": "Il ",
+      "sha256": "db47252df56dcb0cd7bd1422e6f2cbf41651adea4c190a35defb8b5076669b28",
+      "text": "Il mit laiès ent un le la de vait fit, de la le "
+    }
+  ],
+  "primary_metric": {
+    "lower_is_better": true,
+    "name": "validation_loss",
+    "value": 3.2117402076721193
+  },
+  "suite_sha256": "e63ccb9a8ea41c030a6bbbbeb41332c5a53c983cc1bf9d7ea466a9862dfc5bb7",
+  "suite_version": "m3-v1"
+}
