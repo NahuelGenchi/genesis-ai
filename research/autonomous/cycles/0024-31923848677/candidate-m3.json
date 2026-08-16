@@ -1,0 +1,47 @@
+{
+  "checkpoint_sha256": "903f741d0f3323e5691f59c072973de5956d07d3d0f7f6b590c333aaa3e7000d",
+  "contamination": {
+    "blocking": false,
+    "exact_overlap_count": 0,
+    "examples": [],
+    "method": "sha256-nfkc-collapsed-whitespace",
+    "train_documents": 975,
+    "validation_documents": 107
+  },
+  "data_manifest_sha256": "8126c6a8008ea39fa9db138078c5b0f15becf510eebf6160053807d665149a76",
+  "evaluation": {
+    "batches": 20,
+    "checkpoint_step": 4885,
+    "data_manifest_sha256": "8126c6a8008ea39fa9db138078c5b0f15becf510eebf6160053807d665149a76",
+    "documents": 107,
+    "loss": 3.180889403820038,
+    "parameter_count": 1895808,
+    "perplexity": 24.06815034031534,
+    "split": "validation",
+    "tokens": 29360
+  },
+  "generations": [
+    {
+      "prompt": "The ",
+      "sha256": "a1031b37cba952cd88e5fa4db078633e51756128a8541d91d5d2815c1f96992c",
+      "text": "The and it\ncaling the with as and not g and flat of the in "
+    },
+    {
+      "prompt": "Don ",
+      "sha256": "1ebfa2a47b17fdc6525958e3ec658b631e8cfadd7843518cadea95aec48ff4ff",
+      "text": "Don and it\ncal me a que me y de valt la y hos que "
+    },
+    {
+      "prompt": "Il ",
+      "sha256": "f818ca0bb66ae8af15d4b67d4d5dd06c2469c0799acf5f9c02d55b4a245a14c6",
+      "text": "Il é que\ncalpare; que le ée f la fitues fla le "
+    }
+  ],
+  "primary_metric": {
+    "lower_is_better": true,
+    "name": "validation_loss",
+    "value": 3.180889403820038
+  },
+  "suite_sha256": "e63ccb9a8ea41c030a6bbbbeb41332c5a53c983cc1bf9d7ea466a9862dfc5bb7",
+  "suite_version": "m3-v1"
+}
