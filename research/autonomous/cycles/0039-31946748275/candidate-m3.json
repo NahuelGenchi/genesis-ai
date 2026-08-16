@@ -1,0 +1,47 @@
+{
+  "checkpoint_sha256": "71165c0edbded1961c8975ebacf43e526f15f85a637c53cd259ed46e29ad87f6",
+  "contamination": {
+    "blocking": false,
+    "exact_overlap_count": 0,
+    "examples": [],
+    "method": "sha256-nfkc-collapsed-whitespace",
+    "train_documents": 975,
+    "validation_documents": 107
+  },
+  "data_manifest_sha256": "8126c6a8008ea39fa9db138078c5b0f15becf510eebf6160053807d665149a76",
+  "evaluation": {
+    "batches": 20,
+    "checkpoint_step": 4885,
+    "data_manifest_sha256": "8126c6a8008ea39fa9db138078c5b0f15becf510eebf6160053807d665149a76",
+    "documents": 107,
+    "loss": 3.2127317428588866,
+    "parameter_count": 1895808,
+    "perplexity": 24.84686885664012,
+    "split": "validation",
+    "tokens": 29360
+  },
+  "generations": [
+    {
+      "prompt": "The ",
+      "sha256": "a69bc40a1be66ee9d641197ec452d58ffe8d16437e39c2bc336494eceaac7725",
+      "text": "The and her\ncaling his; gy and not g and fice of the in "
+    },
+    {
+      "prompt": "Don ",
+      "sha256": "69d0386645707cdbb80b6d96ae8e8fe9e0b2bbf555c5427b947f4e16683ef528",
+      "text": "Don mit inivit y\nCuny se la f les fit, cos\nle f"
+    },
+    {
+      "prompt": "Il ",
+      "sha256": "2f561fa718a102995d33bf3a665efda9fe2e34888851bfd00aee2c586e0bb0d2",
+      "text": "Il mit triès d'aire et se la f les.--Il les fla fant"
+    }
+  ],
+  "primary_metric": {
+    "lower_is_better": true,
+    "name": "validation_loss",
+    "value": 3.2127317428588866
+  },
+  "suite_sha256": "e63ccb9a8ea41c030a6bbbbeb41332c5a53c983cc1bf9d7ea466a9862dfc5bb7",
+  "suite_version": "m3-v1"
+}
