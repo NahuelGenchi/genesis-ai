@@ -1,0 +1,47 @@
+{
+  "checkpoint_sha256": "06f23ce15efad3439dc115f40242cf1ef9b9cbabb6e8acc120eba87f36e7ef03",
+  "contamination": {
+    "blocking": false,
+    "exact_overlap_count": 0,
+    "examples": [],
+    "method": "sha256-nfkc-collapsed-whitespace",
+    "train_documents": 975,
+    "validation_documents": 107
+  },
+  "data_manifest_sha256": "8126c6a8008ea39fa9db138078c5b0f15becf510eebf6160053807d665149a76",
+  "evaluation": {
+    "batches": 20,
+    "checkpoint_step": 4885,
+    "data_manifest_sha256": "8126c6a8008ea39fa9db138078c5b0f15becf510eebf6160053807d665149a76",
+    "documents": 107,
+    "loss": 3.2242746591567992,
+    "parameter_count": 1895808,
+    "perplexity": 25.135335856422024,
+    "split": "validation",
+    "tokens": 29360
+  },
+  "generations": [
+    {
+      "prompt": "The ",
+      "sha256": "ccb57d765c43a9f45f09c6d1663a640252915d742bd462a9e08b61eb06c9595a",
+      "text": "The and it\ncalgar a sey and not gis my at recos\nthat f"
+    },
+    {
+      "prompt": "Don ",
+      "sha256": "2f9076b93081f07391a39684a25034ed52b01dcfbac231ec9290507b45756593",
+      "text": "Don and it\ncalgar a que sul la me la fice de de que "
+    },
+    {
+      "prompt": "Il ",
+      "sha256": "bd2ae4c8ef3756a8bf3e9853c97bc81b9eb75489e24b95e574465a765dba814c",
+      "text": "Il éit trivaltoutai un le elle de vait fatux fla le "
+    }
+  ],
+  "primary_metric": {
+    "lower_is_better": true,
+    "name": "validation_loss",
+    "value": 3.2242746591567992
+  },
+  "suite_sha256": "e63ccb9a8ea41c030a6bbbbeb41332c5a53c983cc1bf9d7ea466a9862dfc5bb7",
+  "suite_version": "m3-v1"
+}
