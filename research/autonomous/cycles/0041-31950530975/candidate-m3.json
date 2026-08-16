@@ -1,0 +1,47 @@
+{
+  "checkpoint_sha256": "5dc60d6e781ecba65b42f566c26eecf8ff23108741589dd9f5f8ec591482f365",
+  "contamination": {
+    "blocking": false,
+    "exact_overlap_count": 0,
+    "examples": [],
+    "method": "sha256-nfkc-collapsed-whitespace",
+    "train_documents": 975,
+    "validation_documents": 107
+  },
+  "data_manifest_sha256": "8126c6a8008ea39fa9db138078c5b0f15becf510eebf6160053807d665149a76",
+  "evaluation": {
+    "batches": 20,
+    "checkpoint_step": 4885,
+    "data_manifest_sha256": "8126c6a8008ea39fa9db138078c5b0f15becf510eebf6160053807d665149a76",
+    "documents": 107,
+    "loss": 3.1572088837623595,
+    "parameter_count": 1895808,
+    "perplexity": 23.504899382039035,
+    "split": "validation",
+    "tokens": 29360
+  },
+  "generations": [
+    {
+      "prompt": "The ",
+      "sha256": "e895bba7659281b7ebf6654d8fbff2e3e82dcffa32a10dfdb87cdf26ad93a743",
+      "text": "The and it cal on a that gor not g and fice of the in "
+    },
+    {
+      "prompt": "Don ",
+      "sha256": "d52279697303c4c94aa44bcdf66d3f41ec18fff5b21e0329ab8e499bf2780200",
+      "text": "Don and her\ncal on a gy and not g and fice of the in "
+    },
+    {
+      "prompt": "Il ",
+      "sha256": "c8c4c07b9fcd60bb04ae938c450fd5b8d086dea9ca21a8c9cf035a61ae0f40c2",
+      "text": "Il mit lui vit en\ndes et pas la f les fitous de la le "
+    }
+  ],
+  "primary_metric": {
+    "lower_is_better": true,
+    "name": "validation_loss",
+    "value": 3.1572088837623595
+  },
+  "suite_sha256": "e63ccb9a8ea41c030a6bbbbeb41332c5a53c983cc1bf9d7ea466a9862dfc5bb7",
+  "suite_version": "m3-v1"
+}
