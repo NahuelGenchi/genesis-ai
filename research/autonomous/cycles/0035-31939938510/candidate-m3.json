@@ -1,0 +1,47 @@
+{
+  "checkpoint_sha256": "586f48f2da5412f9bd26ff0e365af4c468c419282e119e02d485adad2d212de7",
+  "contamination": {
+    "blocking": false,
+    "exact_overlap_count": 0,
+    "examples": [],
+    "method": "sha256-nfkc-collapsed-whitespace",
+    "train_documents": 975,
+    "validation_documents": 107
+  },
+  "data_manifest_sha256": "8126c6a8008ea39fa9db138078c5b0f15becf510eebf6160053807d665149a76",
+  "evaluation": {
+    "batches": 20,
+    "checkpoint_step": 4885,
+    "data_manifest_sha256": "8126c6a8008ea39fa9db138078c5b0f15becf510eebf6160053807d665149a76",
+    "documents": 107,
+    "loss": 3.2211494565010073,
+    "parameter_count": 1895808,
+    "perplexity": 25.05690545733017,
+    "split": "validation",
+    "tokens": 29360
+  },
+  "generations": [
+    {
+      "prompt": "The ",
+      "sha256": "6c1e3310488e222c3e570a3f269d2b1df3ffd1842f1eb79c25fefadd41e3d8b1",
+      "text": "The and it\ncalal the with asgle not g and fter, of the in "
+    },
+    {
+      "prompt": "Don ",
+      "sha256": "9642a1d22ed3539d92672dc2dc7bc7b42544a2da6bc0d8631055b3178e4e9816",
+      "text": "Don and her caling his\nwith asgle not g and fat recin\nhim f"
+    },
+    {
+      "prompt": "Il ",
+      "sha256": "f96b84ba7fb26fe1a8198f56aa2e3fef3fe5b450bcc7de208d90d311b926876d",
+      "text": "Il édit cals ent un le ée f la\nfatues fes le "
+    }
+  ],
+  "primary_metric": {
+    "lower_is_better": true,
+    "name": "validation_loss",
+    "value": 3.2211494565010073
+  },
+  "suite_sha256": "e63ccb9a8ea41c030a6bbbbeb41332c5a53c983cc1bf9d7ea466a9862dfc5bb7",
+  "suite_version": "m3-v1"
+}
