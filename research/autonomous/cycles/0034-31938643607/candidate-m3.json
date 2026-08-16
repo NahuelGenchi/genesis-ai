@@ -1,0 +1,47 @@
+{
+  "checkpoint_sha256": "ba90ae3ff92467207c2d24e4417a1c65123dca679888b45316df0a83c7bc4a84",
+  "contamination": {
+    "blocking": false,
+    "exact_overlap_count": 0,
+    "examples": [],
+    "method": "sha256-nfkc-collapsed-whitespace",
+    "train_documents": 975,
+    "validation_documents": 107
+  },
+  "data_manifest_sha256": "8126c6a8008ea39fa9db138078c5b0f15becf510eebf6160053807d665149a76",
+  "evaluation": {
+    "batches": 20,
+    "checkpoint_step": 4885,
+    "data_manifest_sha256": "8126c6a8008ea39fa9db138078c5b0f15becf510eebf6160053807d665149a76",
+    "documents": 107,
+    "loss": 3.2300875425338744,
+    "parameter_count": 1895808,
+    "perplexity": 25.281870113060226,
+    "split": "validation",
+    "tokens": 29360
+  },
+  "generations": [
+    {
+      "prompt": "The ",
+      "sha256": "5f4ca3c1fc825b51ebd6b0fa8342b2c211cb3111e436af66b63410167fe848df",
+      "text": "The and it\ncaling the with asgle not g and flat of the fould"
+    },
+    {
+      "prompt": "Don ",
+      "sha256": "616bf12cd86e7ff4e28d6aa163b97209755994c6a068643e9cfa94598a422b4f",
+      "text": "Don andit inival the\nfity and not g and flat of the fould"
+    },
+    {
+      "prompt": "Il ",
+      "sha256": "f25cbd1eff8b3a0dcf3bce8f6ee7d76ff579ac88613b1e1392ff80596e871fe6",
+      "text": "Il éit qui valien\ndes et se la féient la les fla le "
+    }
+  ],
+  "primary_metric": {
+    "lower_is_better": true,
+    "name": "validation_loss",
+    "value": 3.2300875425338744
+  },
+  "suite_sha256": "e63ccb9a8ea41c030a6bbbbeb41332c5a53c983cc1bf9d7ea466a9862dfc5bb7",
+  "suite_version": "m3-v1"
+}
