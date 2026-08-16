@@ -1,0 +1,47 @@
+{
+  "checkpoint_sha256": "d06e05cccb13d35367239065bf205c20af686417dc97ea13bbca88ed844a89a8",
+  "contamination": {
+    "blocking": false,
+    "exact_overlap_count": 0,
+    "examples": [],
+    "method": "sha256-nfkc-collapsed-whitespace",
+    "train_documents": 975,
+    "validation_documents": 107
+  },
+  "data_manifest_sha256": "8126c6a8008ea39fa9db138078c5b0f15becf510eebf6160053807d665149a76",
+  "evaluation": {
+    "batches": 20,
+    "checkpoint_step": 4885,
+    "data_manifest_sha256": "8126c6a8008ea39fa9db138078c5b0f15becf510eebf6160053807d665149a76",
+    "documents": 107,
+    "loss": 3.2115091919898986,
+    "parameter_count": 1895808,
+    "perplexity": 24.81651085640875,
+    "split": "validation",
+    "tokens": 29360
+  },
+  "generations": [
+    {
+      "prompt": "The ",
+      "sha256": "6bd8ba0f1e0e83d8c404a0d97399273b397b3afb7b8af40cb4cbce4092e7ec57",
+      "text": "The and it\ncalify with ingl not g and fious of the in "
+    },
+    {
+      "prompt": "Don ",
+      "sha256": "45c6ada815620d17f5dc52816ee12e9b45434b57eacfdbc9520ae8c889d2b581",
+      "text": "Don and it\ncalify with ingl not w and fious of the in "
+    },
+    {
+      "prompt": "Il ",
+      "sha256": "3be4128e952c0567967536923a6b23b4a9ea6d3c2cf471464a222c9f9823d4e4",
+      "text": "Il mit lui vit d'airegait! Il de vait\n--Il les fla le "
+    }
+  ],
+  "primary_metric": {
+    "lower_is_better": true,
+    "name": "validation_loss",
+    "value": 3.2115091919898986
+  },
+  "suite_sha256": "e63ccb9a8ea41c030a6bbbbeb41332c5a53c983cc1bf9d7ea466a9862dfc5bb7",
+  "suite_version": "m3-v1"
+}

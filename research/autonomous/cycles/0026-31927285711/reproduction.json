@@ -1,0 +1,14 @@
+{
+  "checkpoint_bytes_equal": false,
+  "config_equal": true,
+  "format_version": "1.0",
+  "metadata_equal": true,
+  "primary_checkpoint_sha256": "d06e05cccb13d35367239065bf205c20af686417dc97ea13bbca88ed844a89a8",
+  "replica_checkpoint_sha256": "adfe8604c576d888ed41d527c5298ca311778ee64ced8f3b4d152fabd08ee76b",
+  "repro_version": "m6-repro-v1",
+  "reproducible": true,
+  "state_keys_equal": true,
+  "step_equal": true,
+  "tokenizer_equal": true,
+  "weights_equal": true
+}
