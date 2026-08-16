@@ -1,0 +1,47 @@
+{
+  "checkpoint_sha256": "4cbe3defdd1dd7c38257f11933bdb8899199dc0e0a925eea216c961af0eeff6c",
+  "contamination": {
+    "blocking": false,
+    "exact_overlap_count": 0,
+    "examples": [],
+    "method": "sha256-nfkc-collapsed-whitespace",
+    "train_documents": 975,
+    "validation_documents": 107
+  },
+  "data_manifest_sha256": "8126c6a8008ea39fa9db138078c5b0f15becf510eebf6160053807d665149a76",
+  "evaluation": {
+    "batches": 20,
+    "checkpoint_step": 4885,
+    "data_manifest_sha256": "8126c6a8008ea39fa9db138078c5b0f15becf510eebf6160053807d665149a76",
+    "documents": 107,
+    "loss": 3.2153674244880674,
+    "parameter_count": 1895808,
+    "perplexity": 24.912443671634488,
+    "split": "validation",
+    "tokens": 29360
+  },
+  "generations": [
+    {
+      "prompt": "The ",
+      "sha256": "0e9f0d9885e9442f452518d2ecdbfc837edf705e6a972ee95fa35b079df69481",
+      "text": "The and it\ncal wend gy and not g and flat of the in "
+    },
+    {
+      "prompt": "Don ",
+      "sha256": "b0e93d8f78f4e4c7ff3550325fb54eabb9910830e284ec8c0a97984496397ef5",
+      "text": "Don mit inialieute\nCa le méde vait flaues fla le "
+    },
+    {
+      "prompt": "Il ",
+      "sha256": "fdb0005dab9b22fb9df55c32db46c849fc896feb7266b66382745f5ded1b7c9d",
+      "text": "Il édit\ncalieute des et se la f la flaues fla fant"
+    }
+  ],
+  "primary_metric": {
+    "lower_is_better": true,
+    "name": "validation_loss",
+    "value": 3.2153674244880674
+  },
+  "suite_sha256": "e63ccb9a8ea41c030a6bbbbeb41332c5a53c983cc1bf9d7ea466a9862dfc5bb7",
+  "suite_version": "m3-v1"
+}
