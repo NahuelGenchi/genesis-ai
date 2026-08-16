@@ -1,0 +1,47 @@
+{
+  "checkpoint_sha256": "6ec5dbdc15e44ecb7b44dd0b80f8620c7f32e1928b8979d20556ed29b2792ad8",
+  "contamination": {
+    "blocking": false,
+    "exact_overlap_count": 0,
+    "examples": [],
+    "method": "sha256-nfkc-collapsed-whitespace",
+    "train_documents": 975,
+    "validation_documents": 107
+  },
+  "data_manifest_sha256": "8126c6a8008ea39fa9db138078c5b0f15becf510eebf6160053807d665149a76",
+  "evaluation": {
+    "batches": 20,
+    "checkpoint_step": 4885,
+    "data_manifest_sha256": "8126c6a8008ea39fa9db138078c5b0f15becf510eebf6160053807d665149a76",
+    "documents": 107,
+    "loss": 3.2050403356552124,
+    "parameter_count": 1895808,
+    "perplexity": 24.65649453226109,
+    "split": "validation",
+    "tokens": 29360
+  },
+  "generations": [
+    {
+      "prompt": "The ",
+      "sha256": "200f00b79af43fe08b150cb6ddf86bc507806923752c119cb1fd60d0300af88d",
+      "text": "The and itteriving his\nfity and not g and fice of the in "
+    },
+    {
+      "prompt": "Don ",
+      "sha256": "b354049c9a38a83e7a7a125e5cbda5b2badc762f3b414a0a3db36f203a44489e",
+      "text": "Don mit inival the\nfity and not g mettice of the in "
+    },
+    {
+      "prompt": "Il ",
+      "sha256": "b975ddda69c12c0ba050f08181f24b837aa6f9ec1322682331a1433b4e8c2fd4",
+      "text": "Il mitit\ncalieu che et! Il de vait fime de la le "
+    }
+  ],
+  "primary_metric": {
+    "lower_is_better": true,
+    "name": "validation_loss",
+    "value": 3.2050403356552124
+  },
+  "suite_sha256": "e63ccb9a8ea41c030a6bbbbeb41332c5a53c983cc1bf9d7ea466a9862dfc5bb7",
+  "suite_version": "m3-v1"
+}
