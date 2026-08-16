@@ -1,0 +1,47 @@
+{
+  "checkpoint_sha256": "bba3635da880959198d90897c6baa8e9cc4082ed15ccd2b32aac97709f8421b8",
+  "contamination": {
+    "blocking": false,
+    "exact_overlap_count": 0,
+    "examples": [],
+    "method": "sha256-nfkc-collapsed-whitespace",
+    "train_documents": 975,
+    "validation_documents": 107
+  },
+  "data_manifest_sha256": "8126c6a8008ea39fa9db138078c5b0f15becf510eebf6160053807d665149a76",
+  "evaluation": {
+    "batches": 20,
+    "checkpoint_step": 4885,
+    "data_manifest_sha256": "8126c6a8008ea39fa9db138078c5b0f15becf510eebf6160053807d665149a76",
+    "documents": 107,
+    "loss": 3.2223055005073546,
+    "parameter_count": 1895808,
+    "perplexity": 25.085889092652778,
+    "split": "validation",
+    "tokens": 29360
+  },
+  "generations": [
+    {
+      "prompt": "The ",
+      "sha256": "6df362a39841b7912f2ab5cc69eab3ed436939482967bdc2401fffd11504cebc",
+      "text": "The and it\ncaling the with ingle not g and fice of the in "
+    },
+    {
+      "prompt": "Don ",
+      "sha256": "e6e83d02c69d6d46eed9b257799e351e911111f491e135fb3fb0de5d81a083e6",
+      "text": "Don and it\ncal con a sey andabor me and fice of the in "
+    },
+    {
+      "prompt": "Il ",
+      "sha256": "8b6b4eae33388b13b51c4ba8684c8f90525a24a526a1f43c5421e858ab96ecff",
+      "text": "Il mit lui valt changait\nse la f les flau cos le f"
+    }
+  ],
+  "primary_metric": {
+    "lower_is_better": true,
+    "name": "validation_loss",
+    "value": 3.2223055005073546
+  },
+  "suite_sha256": "e63ccb9a8ea41c030a6bbbbeb41332c5a53c983cc1bf9d7ea466a9862dfc5bb7",
+  "suite_version": "m3-v1"
+}
