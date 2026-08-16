@@ -1,0 +1,47 @@
+{
+  "checkpoint_sha256": "8536303eb9216135c3d8b6ccacf8a7805d5b872f1b299eb1b04818176a8310ca",
+  "contamination": {
+    "blocking": false,
+    "exact_overlap_count": 0,
+    "examples": [],
+    "method": "sha256-nfkc-collapsed-whitespace",
+    "train_documents": 975,
+    "validation_documents": 107
+  },
+  "data_manifest_sha256": "8126c6a8008ea39fa9db138078c5b0f15becf510eebf6160053807d665149a76",
+  "evaluation": {
+    "batches": 20,
+    "checkpoint_step": 4885,
+    "data_manifest_sha256": "8126c6a8008ea39fa9db138078c5b0f15becf510eebf6160053807d665149a76",
+    "documents": 107,
+    "loss": 3.1740625977516173,
+    "parameter_count": 1895808,
+    "perplexity": 23.90440132287299,
+    "split": "validation",
+    "tokens": 29360
+  },
+  "generations": [
+    {
+      "prompt": "The ",
+      "sha256": "c8b5d558ff74d3e950246d9c8f6932e8dc73971865d9d007ef88c61c40a53c91",
+      "text": "The and it\ncalime a gy and not g and fice of the in "
+    },
+    {
+      "prompt": "Don ",
+      "sha256": "eb3051e37ec1c0a25c931bb822f098481f965379c77c93a6487fcfa8825ff104",
+      "text": "Don mit inivit en\nCayle of her for a at recos\nI of"
+    },
+    {
+      "prompt": "Il ",
+      "sha256": "f6b5e5d2abc184a3b2ab95b8338425d73fcbfa31c2c6fcc99a492eac35943fce",
+      "text": "Il mit lui vit end un le la de vait\n--et les fla le "
+    }
+  ],
+  "primary_metric": {
+    "lower_is_better": true,
+    "name": "validation_loss",
+    "value": 3.1740625977516173
+  },
+  "suite_sha256": "e63ccb9a8ea41c030a6bbbbeb41332c5a53c983cc1bf9d7ea466a9862dfc5bb7",
+  "suite_version": "m3-v1"
+}
