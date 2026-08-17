@@ -1,0 +1,11 @@
+{
+  "adopted": false,
+  "adoption_version": "m6-scale-5m-adoption-v1",
+  "baseline_checkpoint_sha256": "0ba16a931451ffbdc369aa685845b0ddb9b6ed03910ac773b50e837fd9886d7e",
+  "cash_compute_cost_usd": 0.0,
+  "current_incumbent_checkpoint_sha256": "0ba16a931451ffbdc369aa685845b0ddb9b6ed03910ac773b50e837fd9886d7e",
+  "format_version": "1.0",
+  "gate_promoted": false,
+  "incumbent_unchanged_since_training_started": true,
+  "reason": "frozen capability gate rejected candidate"
+}

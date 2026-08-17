@@ -1,0 +1,61 @@
+{
+  "architecture_finalist_sha256": "0462d684538684b77aa43b4757fc70d51c75e8e8f7dbdc5a1c808b7662789e03",
+  "cash_compute_cost_usd": 0.0,
+  "context_length": 128,
+  "curriculum_version": "m6-scale-5m-curriculum-v1",
+  "difficulty": 1,
+  "expected_parameter_count": 4954624,
+  "experiment_sha256": "0dbcf006aff5d908f4d0e0527135af35f89d0b39880c09e5249cc5f794fd0cbc",
+  "format_version": "1.0",
+  "ladder_separation": {
+    "exact_training_prompt_overlap_count": 0,
+    "excluded_prompt_count": 899,
+    "excluded_prompt_set_sha256": "e5d49c7dd5fc3b622317568ee41eab8df3a1f6763a41ae5f8488b14e06e7c40f",
+    "suite_sha256": {
+      "evals/m6-domain-ladder-d2-v1.json": "2d6ab58015c8bfa5affc6d604d836d730d67ba0e96fa35872a50a9525982bcc2",
+      "evals/m6-domain-ladder-d3-v1.json": "36b89372dc1e470e25b007cf6fc5f2ac4d52cc66fa14e588b35642dd2eb2501c",
+      "evals/m6-domain-ladder-d4-v1.json": "b9e5524bd818f1a689c0fcddbd78d49b998739eeeafc8ca785d1621801e2cfa1",
+      "evals/m6-domain-ladder-d5-v1.json": "0107f0c8f61eca3ea055781be98099ac660931a63ee6afa0ed1427291ad2965d",
+      "evals/m6-domain-selection-v2.json": "e04f1298d1705c5d00a43170f01e79f129fce53da26dead637b7b74d79d83afc"
+    }
+  },
+  "mandatory_first_and_terminator_coverage": true,
+  "procedural": {
+    "domains": {
+      "code": {
+        "attempts": 16262,
+        "examples": 8192,
+        "terminated_response_tokens": 131279
+      },
+      "math": {
+        "attempts": 9163,
+        "examples": 8192,
+        "terminated_response_tokens": 30046
+      },
+      "structured": {
+        "attempts": 8192,
+        "examples": 8192,
+        "terminated_response_tokens": 178847
+      }
+    },
+    "exact_ladder_prompt_overlap_count": 0,
+    "examples": 24576,
+    "examples_per_domain": 8192,
+    "excluded_ladder_prompt_count": 899,
+    "prompt_set_sha256": "597493da33679f7dc19b551808ebd8527799e44e3bdf0b3a6f8154be1609ba2e",
+    "record_set_sha256": "85b09f680e2d504459d7880eafd1e96f5d5d3b5fac9503027b66ec16df6ed4ae",
+    "records_file_sha256": "cf68e5ebd1522883b66dba28493b1c15ea6b11715008542c9b1025eec3e1f5c8",
+    "records_file_size_bytes": 11793488
+  },
+  "procedural_step_fraction": 0.4,
+  "public_step_fraction": 0.6,
+  "public_text": {
+    "manifest_sha256": "8126c6a8008ea39fa9db138078c5b0f15becf510eebf6160053807d665149a76"
+  },
+  "scale_preflight_sha256": "b64e1eb3b20255db2098d0b39757bad508fb10c817ff1c6704f460e5e7b6e9f6",
+  "target_tokens_per_step": 1024,
+  "target_training_tokens": 20000000,
+  "tokenizer_sha256": "6f66eba7d552fd22e4c35ba23c1998bbc549ab26ad89a1e0d245524bc802d398",
+  "training_seed": 211001,
+  "unique_target_contexts_only": true
+}

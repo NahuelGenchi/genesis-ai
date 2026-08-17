@@ -1,0 +1,77 @@
+{
+  "architecture_finalist_sha256": "0462d684538684b77aa43b4757fc70d51c75e8e8f7dbdc5a1c808b7662789e03",
+  "batch_size": 8,
+  "cash_compute_cost_usd": 0.0,
+  "config": {
+    "context_length": 128,
+    "d_ff": 1056,
+    "d_model": 256,
+    "dense_activation": "gelu",
+    "dropout": 0.0,
+    "ffn_type": "dense",
+    "moe_aux_loss_weight": 0.01,
+    "moe_experts": 4,
+    "moe_top_k": 2,
+    "n_heads": 8,
+    "n_layers": 6,
+    "norm_type": "layernorm",
+    "position_encoding": "rotary",
+    "vocab_size": 512
+  },
+  "curriculum_sha256": "948ea76a5b3cb0d0e5a0b82767c5f7b6f6c46e3dfea01500f3a24cbe08bbf77d",
+  "determinism": {
+    "adamw_foreach": false,
+    "adamw_fused": false,
+    "deterministic_algorithms": true,
+    "device": "cpu",
+    "torch_threads": 4
+  },
+  "experiment_sha256": "0dbcf006aff5d908f4d0e0527135af35f89d0b39880c09e5249cc5f794fd0cbc",
+  "format_version": "1.0",
+  "inference_checkpoint_sha256": "d9b1ee8668fab3694622f6996cd568058dcd927d1ec1715bc22ae481f44035b4",
+  "initialization": "genesis-random-from-scratch",
+  "mean_procedural_training_loss": 0.6666393796408885,
+  "mean_public_training_loss": 1.3231650666578385,
+  "parameter_count": 4954624,
+  "procedural_steps": 7814,
+  "procedural_updates": 62512,
+  "processed_tokens": 20003840,
+  "public_manifest_sha256": "8126c6a8008ea39fa9db138078c5b0f15becf510eebf6160053807d665149a76",
+  "public_steps": 11721,
+  "records_sha256": "cf68e5ebd1522883b66dba28493b1c15ea6b11715008542c9b1025eec3e1f5c8",
+  "scale_preflight_sha256": "b64e1eb3b20255db2098d0b39757bad508fb10c817ff1c6704f460e5e7b6e9f6",
+  "schedule_accounting": {
+    "anchor_updates_by_domain": {
+      "code": 16384,
+      "math": 16384,
+      "structured": 16384
+    },
+    "continuation_available_by_domain": {
+      "code": 114895,
+      "math": 13662,
+      "structured": 162463
+    },
+    "continuation_updates_by_domain": {
+      "code": 4454,
+      "math": 4453,
+      "structured": 4453
+    },
+    "total_anchor_updates": 49152,
+    "total_continuation_updates": 13360,
+    "total_updates": 62512,
+    "total_updates_by_domain": {
+      "code": 20838,
+      "math": 20837,
+      "structured": 20837
+    }
+  },
+  "schedule_sha256": "64903e5ebd87df9353f533cefbb64f3acbdd05f4e68eb105ee81bedd2299cd54",
+  "schedule_unique_updates": 62512,
+  "seed": 211001,
+  "steps": 19535,
+  "target_training_tokens": 20000000,
+  "tokenizer_sha256": "6f66eba7d552fd22e4c35ba23c1998bbc549ab26ad89a1e0d245524bc802d398",
+  "training_policy": "m6-scale-5m-rope-training-v1",
+  "training_tokens_per_second": 3405.856436915452,
+  "wall_seconds": 5873.365589689
+}

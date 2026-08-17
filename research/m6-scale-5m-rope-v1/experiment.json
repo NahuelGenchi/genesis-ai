@@ -1,0 +1,54 @@
+{
+  "format_version": "1.0",
+  "name": "m6-scale-5m-rope-v1",
+  "architecture_evidence": {
+    "finalist_version": "m6-architecture-finalist-v1",
+    "accepted_architecture": "rope-only",
+    "preflight_version": "m6-scale-5m-rope-preflight-v1",
+    "preflight_cpu_required": true
+  },
+  "model": {
+    "expected_parameter_count": 4954624,
+    "config": {
+      "vocab_size": 512,
+      "context_length": 128,
+      "d_model": 256,
+      "n_heads": 8,
+      "n_layers": 6,
+      "d_ff": 1056,
+      "dropout": 0.0,
+      "position_encoding": "rotary",
+      "ffn_type": "dense",
+      "norm_type": "layernorm",
+      "dense_activation": "gelu"
+    }
+  },
+  "training": {
+    "initialization": "genesis-random-from-scratch",
+    "seed": 211001,
+    "target_training_tokens": 20000000,
+    "target_tokens_per_step": 1024,
+    "examples_per_domain": 8192,
+    "difficulty": 1,
+    "procedural_step_fraction": 0.4,
+    "public_step_fraction": 0.6,
+    "learning_rate": 0.001,
+    "minimum_learning_rate": 0.0001,
+    "warmup_steps": 100,
+    "gradient_clip": 1.0,
+    "torch_threads": 4,
+    "mandatory_first_and_terminator_coverage": true,
+    "unique_target_contexts_only": true
+  },
+  "promotion_gate": {
+    "minimum_gci_absolute_gain": 3.0,
+    "minimum_code_exact_accuracy": 0.9,
+    "minimum_math_exact_accuracy": 0.016666666666666666,
+    "minimum_structured_exact_accuracy": 0.016666666666666666,
+    "maximum_m3_loss_regression_fraction": 0.02,
+    "zero_ladder_prompt_overlap_required": true,
+    "semantic_reproduction_required": true,
+    "zero_cash_compute_required": true
+  },
+  "cash_compute_cost_usd": 0.0
+}

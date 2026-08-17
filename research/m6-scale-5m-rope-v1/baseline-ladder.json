@@ -1,0 +1,21 @@
+{
+  "checkpoint_sha256": "0ba16a931451ffbdc369aa685845b0ddb9b6ed03910ac773b50e837fd9886d7e",
+  "difficulty_gci": {
+    "1": 31.666666666666668,
+    "2": 33.333333333333336,
+    "3": 0.0,
+    "4": 0.0,
+    "5": 0.0
+  },
+  "difficulty_suite_sha256": {
+    "1": "e04f1298d1705c5d00a43170f01e79f129fce53da26dead637b7b74d79d83afc",
+    "2": "2d6ab58015c8bfa5affc6d604d836d730d67ba0e96fa35872a50a9525982bcc2",
+    "3": "36b89372dc1e470e25b007cf6fc5f2ac4d52cc66fa14e588b35642dd2eb2501c",
+    "4": "b9e5524bd818f1a689c0fcddbd78d49b998739eeeafc8ca785d1621801e2cfa1",
+    "5": "0107f0c8f61eca3ea055781be98099ac660931a63ee6afa0ed1427291ad2965d"
+  },
+  "format_version": "1.0",
+  "ladder_score": 0.0,
+  "metric_version": "gci-ladder-v1",
+  "worst_domain_exact_percent": 0.0
+}
