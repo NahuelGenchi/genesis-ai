@@ -1,0 +1,170 @@
+{
+  "baseline": "baseline-learned-layernorm-gelu",
+  "cash_compute_cost_usd": 0.0,
+  "definition_sha256": "600d5b9e896a64dd10d3723d8a1f8ad2dea13b989667ce3103b2f32848edd0e5",
+  "determinism": {
+    "deterministic_algorithms": true,
+    "device": "cpu",
+    "torch_threads": 1
+  },
+  "format_version": "1.0",
+  "public_manifest_sha256": "8126c6a8008ea39fa9db138078c5b0f15becf510eebf6160053807d665149a76",
+  "result_provenance": {
+    "source_commit": "044f50e77af87fd8329d3b2c95d54256086b8ee7",
+    "workflow_run_id": "31985057699"
+  },
+  "results": [
+    {
+      "config": {
+        "context_length": 128,
+        "d_ff": 768,
+        "d_model": 192,
+        "dense_activation": "gelu",
+        "dropout": 0.0,
+        "ffn_type": "dense",
+        "moe_aux_loss_weight": 0.01,
+        "moe_experts": 4,
+        "moe_top_k": 2,
+        "n_heads": 6,
+        "n_layers": 4,
+        "norm_type": "layernorm",
+        "position_encoding": "learned",
+        "vocab_size": 512
+      },
+      "final_validation_loss": 3.9546201705932615,
+      "initial_validation_loss": 6.383435797691345,
+      "mean_training_loss": 4.187657448283413,
+      "name": "baseline-learned-layernorm-gelu",
+      "plan": {
+        "active_flops_per_token": 11374848,
+        "active_parameters": 1895808,
+        "estimated_training_flops": 1991781384192,
+        "processed_tokens": 175104,
+        "steps": 171,
+        "total_parameters": 1895808,
+        "unused_flop_budget": 8218615808
+      },
+      "quality_gain_per_1e12_flops": 1.2194187807832004,
+      "training_tokens_per_second": 5698.803260590671,
+      "validation_loss_delta_vs_baseline": 0.0,
+      "validation_loss_improvement": 2.428815627098084,
+      "validation_loss_relative_vs_baseline": 0.0,
+      "wall_seconds": 30.726451150000003
+    },
+    {
+      "config": {
+        "context_length": 128,
+        "d_ff": 768,
+        "d_model": 192,
+        "dense_activation": "gelu",
+        "dropout": 0.0,
+        "ffn_type": "dense",
+        "moe_aux_loss_weight": 0.01,
+        "moe_experts": 4,
+        "moe_top_k": 2,
+        "n_heads": 6,
+        "n_layers": 4,
+        "norm_type": "layernorm",
+        "position_encoding": "rotary",
+        "vocab_size": 512
+      },
+      "final_validation_loss": 3.892745554447174,
+      "initial_validation_loss": 6.303996157646179,
+      "mean_training_loss": 4.168856677292399,
+      "name": "rope-only",
+      "plan": {
+        "active_flops_per_token": 11227392,
+        "active_parameters": 1871232,
+        "estimated_training_flops": 1988954947584,
+        "processed_tokens": 177152,
+        "steps": 173,
+        "total_parameters": 1871232,
+        "unused_flop_budget": 11045052416
+      },
+      "quality_gain_per_1e12_flops": 1.2123203726298433,
+      "training_tokens_per_second": 5417.309834803369,
+      "validation_loss_delta_vs_baseline": -0.06187461614608747,
+      "validation_loss_improvement": 2.4112506031990053,
+      "validation_loss_relative_vs_baseline": -0.015646159043589014,
+      "wall_seconds": 32.701101728000026
+    },
+    {
+      "config": {
+        "context_length": 128,
+        "d_ff": 768,
+        "d_model": 192,
+        "dense_activation": "gelu",
+        "dropout": 0.0,
+        "ffn_type": "dense",
+        "moe_aux_loss_weight": 0.01,
+        "moe_experts": 4,
+        "moe_top_k": 2,
+        "n_heads": 6,
+        "n_layers": 4,
+        "norm_type": "rmsnorm",
+        "position_encoding": "learned",
+        "vocab_size": 512
+      },
+      "final_validation_loss": 3.958465886116028,
+      "initial_validation_loss": 6.3817743301391605,
+      "mean_training_loss": 4.184346395626402,
+      "name": "rmsnorm-only",
+      "plan": {
+        "active_flops_per_token": 11364480,
+        "active_parameters": 1894080,
+        "estimated_training_flops": 1989965905920,
+        "processed_tokens": 175104,
+        "steps": 171,
+        "total_parameters": 1894080,
+        "unused_flop_budget": 10034094080
+      },
+      "quality_gain_per_1e12_flops": 1.2177638002811861,
+      "training_tokens_per_second": 5656.066535954747,
+      "validation_loss_delta_vs_baseline": 0.0038457155227664686,
+      "validation_loss_improvement": 2.4233084440231325,
+      "validation_loss_relative_vs_baseline": 0.0009724614139592358,
+      "wall_seconds": 30.95861742200003
+    },
+    {
+      "config": {
+        "context_length": 128,
+        "d_ff": 512,
+        "d_model": 192,
+        "dense_activation": "swiglu",
+        "dropout": 0.0,
+        "ffn_type": "dense",
+        "moe_aux_loss_weight": 0.01,
+        "moe_experts": 4,
+        "moe_top_k": 2,
+        "n_heads": 6,
+        "n_layers": 4,
+        "norm_type": "layernorm",
+        "position_encoding": "learned",
+        "vocab_size": 512
+      },
+      "final_validation_loss": 3.957128870487213,
+      "initial_validation_loss": 6.247327733039856,
+      "mean_training_loss": 4.1863210215206035,
+      "name": "swiglu-only-parameter-matched",
+      "plan": {
+        "active_flops_per_token": 11374848,
+        "active_parameters": 1895808,
+        "estimated_training_flops": 1991781384192,
+        "processed_tokens": 175104,
+        "steps": 171,
+        "total_parameters": 1895808,
+        "unused_flop_budget": 8218615808
+      },
+      "quality_gain_per_1e12_flops": 1.149824413828278,
+      "training_tokens_per_second": 5842.896764201417,
+      "validation_loss_delta_vs_baseline": 0.002508699893951416,
+      "validation_loss_improvement": 2.290198862552643,
+      "validation_loss_relative_vs_baseline": 0.0006343718955883482,
+      "wall_seconds": 29.968696533000013
+    }
+  ],
+  "selection_rule": "lowest_final_validation_loss_at_fixed_training_flop_budget",
+  "tokenizer_sha256": "6f66eba7d552fd22e4c35ba23c1998bbc549ab26ad89a1e0d245524bc802d398",
+  "tournament_version": "m6-architecture-tournament-v1",
+  "winner": "rope-only"
+}
