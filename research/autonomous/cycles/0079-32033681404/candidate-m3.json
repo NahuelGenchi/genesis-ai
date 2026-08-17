@@ -1,0 +1,47 @@
+{
+  "checkpoint_sha256": "d4b6a05b6fa8bc685b4196f5763b3f0c8237ed8b0b8f7df8534d64427a68e109",
+  "contamination": {
+    "blocking": false,
+    "exact_overlap_count": 0,
+    "examples": [],
+    "method": "sha256-nfkc-collapsed-whitespace",
+    "train_documents": 975,
+    "validation_documents": 107
+  },
+  "data_manifest_sha256": "8126c6a8008ea39fa9db138078c5b0f15becf510eebf6160053807d665149a76",
+  "evaluation": {
+    "batches": 20,
+    "checkpoint_step": 4885,
+    "data_manifest_sha256": "8126c6a8008ea39fa9db138078c5b0f15becf510eebf6160053807d665149a76",
+    "documents": 107,
+    "loss": 3.1934674978256226,
+    "parameter_count": 1895808,
+    "perplexity": 24.372793697811925,
+    "split": "validation",
+    "tokens": 29360
+  },
+  "generations": [
+    {
+      "prompt": "The ",
+      "sha256": "3602cf3a5f74e8784869697502dc9a4a70c3eb9e7579e263c9129cf99a145841",
+      "text": "The and it\ncalgar a ay and not be and fat regos\nhim of"
+    },
+    {
+      "prompt": "Don ",
+      "sha256": "456c98b78785974e21f756619dd14ab9221f8006186950979867cce22d4e6e46",
+      "text": "Don mit inival y\nCay se la me la falce de la que "
+    },
+    {
+      "prompt": "Il ",
+      "sha256": "2fe3fae20703cc65465f5c277940cc7f6fb385be4c0c3bd54eaae2662c9c1397",
+      "text": "Il é que\ncalieu che vole morses la fit, de la le "
+    }
+  ],
+  "primary_metric": {
+    "lower_is_better": true,
+    "name": "validation_loss",
+    "value": 3.1934674978256226
+  },
+  "suite_sha256": "e63ccb9a8ea41c030a6bbbbeb41332c5a53c983cc1bf9d7ea466a9862dfc5bb7",
+  "suite_version": "m3-v1"
+}
