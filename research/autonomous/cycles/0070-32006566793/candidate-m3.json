@@ -1,0 +1,47 @@
+{
+  "checkpoint_sha256": "b4fe16e92c6ac5c1d605ece4e8b23d74afd9ac84db8ad6627a226d31f0be9f01",
+  "contamination": {
+    "blocking": false,
+    "exact_overlap_count": 0,
+    "examples": [],
+    "method": "sha256-nfkc-collapsed-whitespace",
+    "train_documents": 975,
+    "validation_documents": 107
+  },
+  "data_manifest_sha256": "8126c6a8008ea39fa9db138078c5b0f15becf510eebf6160053807d665149a76",
+  "evaluation": {
+    "batches": 20,
+    "checkpoint_step": 4885,
+    "data_manifest_sha256": "8126c6a8008ea39fa9db138078c5b0f15becf510eebf6160053807d665149a76",
+    "documents": 107,
+    "loss": 3.2148630380630494,
+    "parameter_count": 1895808,
+    "perplexity": 24.899881341633176,
+    "split": "validation",
+    "tokens": 29360
+  },
+  "generations": [
+    {
+      "prompt": "The ",
+      "sha256": "8a84b5b6eb6dfd984dbfb9fa9fb8506734e6155fc93244a1afcad105b7ee07ae",
+      "text": "The and it\ncalalar a sey and d me and tomuesced se su"
+    },
+    {
+      "prompt": "Don ",
+      "sha256": "a10aa8f62391b60d3d91ecd271c637fe2a35c67788784b54d5b256c45dffa0ea",
+      "text": "Don mit inival the\nbity and not g and flat of the in "
+    },
+    {
+      "prompt": "Il ",
+      "sha256": "7775eecaac8ed7d29f903aaa7ba954023415ece0bbf6712b003a6cc16b0534da",
+      "text": "Il qu'elle qui v[ d'aire et\nqui la f la fla les fla le "
+    }
+  ],
+  "primary_metric": {
+    "lower_is_better": true,
+    "name": "validation_loss",
+    "value": 3.2148630380630494
+  },
+  "suite_sha256": "e63ccb9a8ea41c030a6bbbbeb41332c5a53c983cc1bf9d7ea466a9862dfc5bb7",
+  "suite_version": "m3-v1"
+}
