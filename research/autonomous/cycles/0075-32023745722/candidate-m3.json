@@ -1,0 +1,47 @@
+{
+  "checkpoint_sha256": "00b40557869decd10e719eb750320a3a311d4c035a235c396e411ae9c35c6028",
+  "contamination": {
+    "blocking": false,
+    "exact_overlap_count": 0,
+    "examples": [],
+    "method": "sha256-nfkc-collapsed-whitespace",
+    "train_documents": 975,
+    "validation_documents": 107
+  },
+  "data_manifest_sha256": "8126c6a8008ea39fa9db138078c5b0f15becf510eebf6160053807d665149a76",
+  "evaluation": {
+    "batches": 20,
+    "checkpoint_step": 4885,
+    "data_manifest_sha256": "8126c6a8008ea39fa9db138078c5b0f15becf510eebf6160053807d665149a76",
+    "documents": 107,
+    "loss": 3.2218517422676087,
+    "parameter_count": 1895808,
+    "perplexity": 25.074508745933947,
+    "split": "validation",
+    "tokens": 29360
+  },
+  "generations": [
+    {
+      "prompt": "The ",
+      "sha256": "c54080b94762b4f2de25bd35d43e841579c3d0ab02b5767307ef8bd728301a31",
+      "text": "The and it\ncal on a ay and not g and flat of the in "
+    },
+    {
+      "prompt": "Don ",
+      "sha256": "d72482a4d649930e4724d0d28c9faa94602802c4ac072f05fc94de62ed04987d",
+      "text": "Don mit inival the\nbity and not g maflat of the in "
+    },
+    {
+      "prompt": "Il ",
+      "sha256": "eb51df1f3de989aede4db857eb11b190809a1f05e84f0495b5eaa68812f579ed",
+      "text": "Il mit quiiès en\nCé le morsigéient lau cfes le "
+    }
+  ],
+  "primary_metric": {
+    "lower_is_better": true,
+    "name": "validation_loss",
+    "value": 3.2218517422676087
+  },
+  "suite_sha256": "e63ccb9a8ea41c030a6bbbbeb41332c5a53c983cc1bf9d7ea466a9862dfc5bb7",
+  "suite_version": "m3-v1"
+}
