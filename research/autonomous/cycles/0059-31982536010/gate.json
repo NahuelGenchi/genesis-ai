@@ -1,0 +1,137 @@
+{
+  "baseline_checkpoint_sha256": "0ba16a931451ffbdc369aa685845b0ddb9b6ed03910ac773b50e837fd9886d7e",
+  "candidate_checkpoint_sha256": "d1e787a8bb4860132f43c3501cf087c07a80310abc50075618943d649a4554ff",
+  "decision": "reject",
+  "focus_absolute_gain": 0.0,
+  "focus_domain": "structured",
+  "format_version": "1.0",
+  "gate_version": "autonomous-promotion-gate-v1",
+  "gates": [
+    {
+      "name": "focus_absolute_gain",
+      "observed": 0.0,
+      "passed": false,
+      "requirement": 0.1
+    },
+    {
+      "name": "gci_absolute_gain",
+      "observed": -11.11111111111111,
+      "passed": false,
+      "requirement": 3.0
+    },
+    {
+      "name": "nonfocus_regressions",
+      "observed": {
+        "code": -0.33333333333333326,
+        "math": 0.0
+      },
+      "passed": false,
+      "requirement": {
+        "minimum_delta_each": -0.05
+      }
+    },
+    {
+      "name": "m3_validation_loss",
+      "observed": {
+        "baseline": 3.3551116466522215,
+        "candidate": 3.179840016365051,
+        "regression_fraction": -0.0522401781955778
+      },
+      "passed": true,
+      "requirement": {
+        "max_regression_fraction": 0.02
+      }
+    },
+    {
+      "name": "m3_exact_contamination",
+      "observed": {
+        "blocking": false,
+        "exact_overlap_count": 0,
+        "examples": [],
+        "method": "sha256-nfkc-collapsed-whitespace",
+        "train_documents": 975,
+        "validation_documents": 107
+      },
+      "passed": true,
+      "requirement": {
+        "blocking": false,
+        "exact_overlap_count": 0
+      }
+    },
+    {
+      "name": "semantic_reproduction",
+      "observed": {
+        "checkpoint_bytes_equal": false,
+        "config_equal": true,
+        "format_version": "1.0",
+        "metadata_equal": true,
+        "primary_checkpoint_sha256": "d1e787a8bb4860132f43c3501cf087c07a80310abc50075618943d649a4554ff",
+        "replica_checkpoint_sha256": "ab4fdaaf2c2279ab516e1f401ed94ea0ace16ae8d08ac78057f4ad677742e51b",
+        "repro_version": "m6-repro-v1",
+        "reproducible": true,
+        "state_keys_equal": true,
+        "step_equal": true,
+        "tokenizer_equal": true,
+        "weights_equal": true
+      },
+      "passed": true,
+      "requirement": true
+    },
+    {
+      "name": "holdout_overlap",
+      "observed": 0,
+      "passed": true,
+      "requirement": 0
+    },
+    {
+      "name": "zero_cash_compute",
+      "observed": {
+        "curriculum": 0.0,
+        "training": 0.0
+      },
+      "passed": true,
+      "requirement": 0.0
+    }
+  ],
+  "gci_v1": {
+    "absolute_point_change": -11.11111111111111,
+    "baseline": {
+      "checkpoint_sha256": "0ba16a931451ffbdc369aa685845b0ddb9b6ed03910ac773b50e837fd9886d7e",
+      "domain_exact_accuracy": {
+        "code": 0.95,
+        "math": 0.0,
+        "structured": 0.0
+      },
+      "metric_version": "gci-v1",
+      "score": 31.666666666666668,
+      "suite_sha256": "e04f1298d1705c5d00a43170f01e79f129fce53da26dead637b7b74d79d83afc",
+      "suite_version": "m6-domain-selection-v2"
+    },
+    "candidate": {
+      "checkpoint_sha256": "d1e787a8bb4860132f43c3501cf087c07a80310abc50075618943d649a4554ff",
+      "domain_exact_accuracy": {
+        "code": 0.6166666666666667,
+        "math": 0.0,
+        "structured": 0.0
+      },
+      "metric_version": "gci-v1",
+      "score": 20.555555555555557,
+      "suite_sha256": "e04f1298d1705c5d00a43170f01e79f129fce53da26dead637b7b74d79d83afc",
+      "suite_version": "m6-domain-selection-v2"
+    },
+    "format_version": "1.0",
+    "metric_version": "gci-v1",
+    "relative_percent_change": -35.08771929824561,
+    "relative_percent_note": null
+  },
+  "nonfocus_deltas": {
+    "code": -0.33333333333333326,
+    "math": 0.0
+  },
+  "plan_sha256": "bfffbc10bdb929b0bbe914ccae1d5c5411453beff37051dba5c437030de4d3d9",
+  "promoted": false,
+  "result_provenance": {
+    "source_commit": "7a4f2d576a03330bbd11a89962199b8d6a933cfe",
+    "workflow_run_id": "31982536010"
+  }
+}

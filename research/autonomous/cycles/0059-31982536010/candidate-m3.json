@@ -1,0 +1,47 @@
+{
+  "checkpoint_sha256": "d1e787a8bb4860132f43c3501cf087c07a80310abc50075618943d649a4554ff",
+  "contamination": {
+    "blocking": false,
+    "exact_overlap_count": 0,
+    "examples": [],
+    "method": "sha256-nfkc-collapsed-whitespace",
+    "train_documents": 975,
+    "validation_documents": 107
+  },
+  "data_manifest_sha256": "8126c6a8008ea39fa9db138078c5b0f15becf510eebf6160053807d665149a76",
+  "evaluation": {
+    "batches": 20,
+    "checkpoint_step": 4885,
+    "data_manifest_sha256": "8126c6a8008ea39fa9db138078c5b0f15becf510eebf6160053807d665149a76",
+    "documents": 107,
+    "loss": 3.179840016365051,
+    "parameter_count": 1895808,
+    "perplexity": 24.04290677274159,
+    "split": "validation",
+    "tokens": 29360
+  },
+  "generations": [
+    {
+      "prompt": "The ",
+      "sha256": "1613dd4ea3393ab1c0eb10b2f533710f9ded46da942fe4b0ab4e8f8f3c9e8b49",
+      "text": "The and it\ncaling the with ingle not g and fouce of the in "
+    },
+    {
+      "prompt": "Don ",
+      "sha256": "b8d62b0e9390995315823608e5d784d12797ce92dff0dce8ef4ddae9f0a406cb",
+      "text": "Don andit inival the\nwith inges not g and flat of the in "
+    },
+    {
+      "prompt": "Il ",
+      "sha256": "e22c9a9384023237eb1913b87c7ef8c97de7b1c3262f38a99a8d935a9f9ca830",
+      "text": "Il édit\ncalieute des et! Il de vait foume coubour f"
+    }
+  ],
+  "primary_metric": {
+    "lower_is_better": true,
+    "name": "validation_loss",
+    "value": 3.179840016365051
+  },
+  "suite_sha256": "e63ccb9a8ea41c030a6bbbbeb41332c5a53c983cc1bf9d7ea466a9862dfc5bb7",
+  "suite_version": "m3-v1"
+}
