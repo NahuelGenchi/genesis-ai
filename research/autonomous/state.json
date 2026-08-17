@@ -1,6 +1,6 @@
 {
   "cash_compute_cost_usd": 0.0,
-  "cycle_index": 79,
+  "cycle_index": 80,
   "difficulty": 1,
   "format_version": "1.0",
   "incumbent_checkpoint": "checkpoints/genesis-micro-2m-v1.pt",
@@ -10,11 +10,11 @@
     "gci_after": 31.11111111111111,
     "gci_before": 31.666666666666668,
     "gci_change_points": -0.5555555555555571,
-    "plan_sha256": "1c9b5502df42220d22a17c18c750c1ff79a3141e4e5f81c61614ae32234a4f99",
+    "plan_sha256": "97cebd202bd8fae329ae722c17f23b1aac0bcd5239d01c00ff1c0faa1abf6bc4",
     "processed_tokens": 3000320,
     "research_escalation": true,
     "research_strategy": "broad-conservative-v1",
-    "result_dir": "research/autonomous/cycles/0079-32033681404",
+    "result_dir": "research/autonomous/cycles/0080-32037227299",
     "retired_research_hints": [
       {
         "end_to_end_zero_gain_rejections": 56,
@@ -24,9 +24,9 @@
         "variant": "min-chars-80"
       }
     ],
-    "source_commit": "d9bd9b5dddb080b54ad3bab9fd3037b2e136f22e",
+    "source_commit": "919221d836fd102379fd25014fb0c43e23f658a7",
     "target_suite": "evals/m6-domain-selection-v2.json",
-    "workflow_run_id": "32033681404"
+    "workflow_run_id": "32037227299"
   },
   "state_version": "autonomous-state-v1"
 }

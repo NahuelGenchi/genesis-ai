@@ -1,0 +1,47 @@
+{
+  "checkpoint_sha256": "7067a7566bc437252c34b412fdfdf58a368842e2867f6c0004e6484da98e2988",
+  "contamination": {
+    "blocking": false,
+    "exact_overlap_count": 0,
+    "examples": [],
+    "method": "sha256-nfkc-collapsed-whitespace",
+    "train_documents": 975,
+    "validation_documents": 107
+  },
+  "data_manifest_sha256": "8126c6a8008ea39fa9db138078c5b0f15becf510eebf6160053807d665149a76",
+  "evaluation": {
+    "batches": 20,
+    "checkpoint_step": 4885,
+    "data_manifest_sha256": "8126c6a8008ea39fa9db138078c5b0f15becf510eebf6160053807d665149a76",
+    "documents": 107,
+    "loss": 3.188783824443817,
+    "parameter_count": 1895808,
+    "perplexity": 24.25890640636045,
+    "split": "validation",
+    "tokens": 29360
+  },
+  "generations": [
+    {
+      "prompt": "The ",
+      "sha256": "639f3c2026fa012b38537dfdc22cb89e166d010a2cd1c8db3c57bba60f86d550",
+      "text": "The and it\ncaling thed gy and not g and flat of the in "
+    },
+    {
+      "prompt": "Don ",
+      "sha256": "29d989f76f95544c6fb17f9da93d99d550b17cc9af696e33114a0c2c983635b0",
+      "text": "Don and it\ncalime a gy and d, for a at recos\nhim f"
+    },
+    {
+      "prompt": "Il ",
+      "sha256": "c0298cafa0d8414f8090d3a0d3297ba308b609dd137bcbe59aa4f5eedb171f63",
+      "text": "Il é que\ncalieu chargingor la féient la les fes le "
+    }
+  ],
+  "primary_metric": {
+    "lower_is_better": true,
+    "name": "validation_loss",
+    "value": 3.188783824443817
+  },
+  "suite_sha256": "e63ccb9a8ea41c030a6bbbbeb41332c5a53c983cc1bf9d7ea466a9862dfc5bb7",
+  "suite_version": "m3-v1"
+}
