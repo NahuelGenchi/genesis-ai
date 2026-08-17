@@ -1,0 +1,47 @@
+{
+  "checkpoint_sha256": "854f73305ffb5bc16002a4051e5f7cb7a34277ccc80623c6c7029c71086924a1",
+  "contamination": {
+    "blocking": false,
+    "exact_overlap_count": 0,
+    "examples": [],
+    "method": "sha256-nfkc-collapsed-whitespace",
+    "train_documents": 975,
+    "validation_documents": 107
+  },
+  "data_manifest_sha256": "8126c6a8008ea39fa9db138078c5b0f15becf510eebf6160053807d665149a76",
+  "evaluation": {
+    "batches": 20,
+    "checkpoint_step": 4885,
+    "data_manifest_sha256": "8126c6a8008ea39fa9db138078c5b0f15becf510eebf6160053807d665149a76",
+    "documents": 107,
+    "loss": 3.1848938703536986,
+    "parameter_count": 1895808,
+    "perplexity": 24.164723676173853,
+    "split": "validation",
+    "tokens": 29360
+  },
+  "generations": [
+    {
+      "prompt": "The ",
+      "sha256": "ab76838c9e0a19fc9c819d3c8eba76c04d6efc14d9c5cb87ad45b558949bf0a0",
+      "text": "The and it\ncalal his; that gl not gis a mues in\nthat f"
+    },
+    {
+      "prompt": "Don ",
+      "sha256": "94632afc99874194a383daa349d119328032714228de38c38ae2c977a1c1dc3d",
+      "text": "Don mit inival y\nCa me ofor me and fla recos le f"
+    },
+    {
+      "prompt": "Il ",
+      "sha256": "b6117c39420492627e1d1cc5e7950e5549d0ab806ba69dc66336d5df524c89c3",
+      "text": "Il éit quiiès plus un le mor, vait\n--Il les fla le "
+    }
+  ],
+  "primary_metric": {
+    "lower_is_better": true,
+    "name": "validation_loss",
+    "value": 3.1848938703536986
+  },
+  "suite_sha256": "e63ccb9a8ea41c030a6bbbbeb41332c5a53c983cc1bf9d7ea466a9862dfc5bb7",
+  "suite_version": "m3-v1"
+}
