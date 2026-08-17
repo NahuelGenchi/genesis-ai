@@ -1,20 +1,20 @@
 {
   "cash_compute_cost_usd": 0.0,
-  "cycle_index": 63,
+  "cycle_index": 64,
   "difficulty": 1,
   "format_version": "1.0",
   "incumbent_checkpoint": "checkpoints/genesis-micro-2m-v1.pt",
   "last_cycle": {
     "decision": "reject",
     "focus_domain": "structured",
-    "gci_after": 34.44444444444445,
+    "gci_after": 33.333333333333336,
     "gci_before": 31.666666666666668,
-    "gci_change_points": 2.777777777777782,
-    "plan_sha256": "a9c3b383ec4a91c36baff66a7d03ce19a31b570d150f401167d9e0c727f72060",
+    "gci_change_points": 1.6666666666666679,
+    "plan_sha256": "955101677cbc2e63a8f1eb0960c2f75cec3c34195398601a74b28996850e83ff",
     "processed_tokens": 3000320,
-    "research_escalation": true,
+    "research_escalation": false,
     "research_strategy": "anti-forgetting-v1",
-    "result_dir": "research/autonomous/cycles/0063-31986844411",
+    "result_dir": "research/autonomous/cycles/0064-31987862401",
     "retired_research_hints": [
       {
         "end_to_end_zero_gain_rejections": 56,
@@ -24,9 +24,9 @@
         "variant": "min-chars-80"
       }
     ],
-    "source_commit": "6ee507941d830508b449e87345fe841b1b9f2004",
+    "source_commit": "334d9deb56c31dab9764dbc1f5161671cc55bbd2",
     "target_suite": "evals/m6-domain-selection-v2.json",
-    "workflow_run_id": "31986844411"
+    "workflow_run_id": "31987862401"
   },
   "state_version": "autonomous-state-v1"
 }
