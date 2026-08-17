@@ -21,8 +21,38 @@ jobs:
     env:
       GH_TOKEN: ${{ github.token }}
       REPOSITORY: ${{ github.repository }}
+      PYTHONPATH: src
     steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Sync policy to latest main
+        run: |
+          git fetch origin main
+          git reset --hard origin/main
+
+      - name: Decide whether canonical training still has an unexhausted strategy
+        id: policy
+        run: |
+          python -m genesis_ai.autonomy_dispatch_policy \
+            --state research/autonomous/state.json \
+            --history-root research/autonomous/cycles \
+            --output /tmp/autonomy-dispatch-policy.json
+          ALLOWED=$(python - <<'PY'
+          import json
+          from pathlib import Path
+          decision = json.loads(Path("/tmp/autonomy-dispatch-policy.json").read_text(encoding="utf-8"))
+          print(str(bool(decision["canonical_training_allowed"])).lower())
+          PY
+          )
+          echo "allowed=$ALLOWED" >> "$GITHUB_OUTPUT"
+          if [ "$ALLOWED" != "true" ]; then
+            echo "canonical candidate lane paused: all same-incumbent research strategies are exhausted"
+          fi
+
       - name: Dispatch the next canonical cycle
+        if: steps.policy.outputs.allowed == 'true'
         shell: bash
         run: |
           python - <<'PY'
