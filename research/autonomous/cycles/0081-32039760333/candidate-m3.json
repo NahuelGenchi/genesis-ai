@@ -1,0 +1,47 @@
+{
+  "checkpoint_sha256": "45215cf561fc3913f7b3a381e0516cce2063ecae7aab37ea858fa999e334cd0c",
+  "contamination": {
+    "blocking": false,
+    "exact_overlap_count": 0,
+    "examples": [],
+    "method": "sha256-nfkc-collapsed-whitespace",
+    "train_documents": 975,
+    "validation_documents": 107
+  },
+  "data_manifest_sha256": "8126c6a8008ea39fa9db138078c5b0f15becf510eebf6160053807d665149a76",
+  "evaluation": {
+    "batches": 20,
+    "checkpoint_step": 4885,
+    "data_manifest_sha256": "8126c6a8008ea39fa9db138078c5b0f15becf510eebf6160053807d665149a76",
+    "documents": 107,
+    "loss": 3.2041173934936524,
+    "parameter_count": 1895808,
+    "perplexity": 24.633748512146106,
+    "split": "validation",
+    "tokens": 29360
+  },
+  "generations": [
+    {
+      "prompt": "The ",
+      "sha256": "42b3a1aa8f4f8d0d5dc473201a68e98f030213ed59ba0678f55dbba60396b522",
+      "text": "The and it\ncalal the bity and not gis a mues fes ini"
+    },
+    {
+      "prompt": "Don ",
+      "sha256": "bac56decdf3a89ef6e0a5417bda3aa397487a7cf472ab20d0c0d099bd82c4b5d",
+      "text": "Don mit inials the\nwith asgle not g and fit, of the in "
+    },
+    {
+      "prompt": "Il ",
+      "sha256": "1964e7939db0ba4bcf5ebe7b842d5e5acdfb78364a4746a4f66d9bb612fb1bd2",
+      "text": "Il mit inivalient que le elle de vait fit, cin\nle f"
+    }
+  ],
+  "primary_metric": {
+    "lower_is_better": true,
+    "name": "validation_loss",
+    "value": 3.2041173934936524
+  },
+  "suite_sha256": "e63ccb9a8ea41c030a6bbbbeb41332c5a53c983cc1bf9d7ea466a9862dfc5bb7",
+  "suite_version": "m3-v1"
+}
