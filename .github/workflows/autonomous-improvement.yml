@@ -150,7 +150,7 @@ jobs:
           echo "strategy=$STRATEGY" >> "$GITHUB_OUTPUT"
 
           if [ "$ESCALATE" = "true" ]; then
-            BODY="Cycle $CYCLE selected research strategy \`$STRATEGY\` after committed stagnation evidence. Retired hints: \`$RETIRED\`. Frozen promotion gates remain unchanged; cash compute remains \`$0\`."
+            BODY=$(printf 'Cycle %s selected research strategy `%s` after committed stagnation evidence. Retired hints: `%s`. Frozen promotion gates remain unchanged; cash compute remains `$0`.' "$CYCLE" "$STRATEGY" "$RETIRED")
             if gh issue view 203 --repo "$GITHUB_REPOSITORY" --json state --jq '.state' 2>/dev/null | grep -q OPEN; then
               gh issue comment 203 --repo "$GITHUB_REPOSITORY" --body "$BODY"
             else
