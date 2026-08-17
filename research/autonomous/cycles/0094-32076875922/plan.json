@@ -1,0 +1,132 @@
+{
+  "controller_version": "autonomous-improvement-controller-v1.4",
+  "decision": {
+    "cash_compute_cost_usd": 0.0,
+    "continuation_update_weights": {
+      "code": 0.35,
+      "math": 0.09999999999999998,
+      "structured": 0.55
+    },
+    "focus_domain": "structured",
+    "focus_examples": 4096,
+    "mandatory_first_and_terminator_coverage": true,
+    "mode": "research-repair",
+    "procedural_fraction": 0.8,
+    "public_fraction": 0.2,
+    "public_min_chars": 0,
+    "replay_domains": [
+      "code",
+      "math"
+    ],
+    "replay_examples_per_domain": 1024,
+    "target_difficulty": 1,
+    "target_training_tokens": 3000000,
+    "unique_target_contexts_only": true
+  },
+  "evaluation_transition": {
+    "cross_difficulty_improvement_comparison_forbidden": true,
+    "incumbent_must_be_scored_on_target_suite_before_training": false,
+    "new_suite_required": false,
+    "target_difficulty": 1
+  },
+  "format_version": "1.0",
+  "history_summary": {
+    "consecutive_rejections": 93,
+    "cycles_considered": 93,
+    "hint_failures": {
+      "data-filtering/min-chars-80": 56
+    },
+    "last_strategy": "broad-conservative-v1",
+    "strategy_attempts": {
+      "anti-forgetting-v1": 3,
+      "balanced-transfer-v1": 3,
+      "broad-conservative-v1": 25,
+      "legacy-focus-heavy-v1": 59,
+      "sequence-depth-v1": 3
+    },
+    "strategy_zero_focus_gain": {
+      "anti-forgetting-v1": 3,
+      "balanced-transfer-v1": 3,
+      "broad-conservative-v1": 25,
+      "legacy-focus-heavy-v1": 59,
+      "sequence-depth-v1": 3
+    }
+  },
+  "input": {
+    "aggregate_domain_metrics": {
+      "code": {
+        "exact_accuracy": 0.95,
+        "terminated_oracle_loss": 0.011801337934193764,
+        "termination_rate": 1.0
+      },
+      "math": {
+        "exact_accuracy": 0.0,
+        "terminated_oracle_loss": 5.083774229435459,
+        "termination_rate": 0.9333333333333333
+      },
+      "structured": {
+        "exact_accuracy": 0.0,
+        "terminated_oracle_loss": 7.511311422689967,
+        "termination_rate": 1.0
+      }
+    },
+    "cycle_index": 94,
+    "difficulty": 1,
+    "gci_v1": 31.666666666666668,
+    "incumbent_checkpoint_sha256": "0ba16a931451ffbdc369aa685845b0ddb9b6ed03910ac773b50e837fd9886d7e",
+    "suite_sha256": "e04f1298d1705c5d00a43170f01e79f129fce53da26dead637b7b74d79d83afc",
+    "suite_version": "m6-domain-selection-v2"
+  },
+  "plan_sha256": "03d70040d275dabf40891358b1f1c2a6afdcb1d121c5c0464e29aa0cefe4accb",
+  "promotion_contract": {
+    "live_incumbent_weight_mutation_forbidden": true,
+    "maximum_m3_loss_regression_fraction": 0.02,
+    "maximum_nonfocus_absolute_regression": 0.05,
+    "minimum_focus_absolute_gain": 0.1,
+    "minimum_gci_absolute_gain": 3.0,
+    "same_suite_comparison_required": true,
+    "semantic_reproduction_required": true,
+    "zero_cash_compute_required": true,
+    "zero_holdout_overlap_required": true
+  },
+  "research_escalation": {
+    "actions": [
+      "architecture-tournament",
+      "tracked-research-issue"
+    ],
+    "all_predeclared_strategies_exhausted": true,
+    "reason": "all predeclared repair strategies exhausted",
+    "required": true
+  },
+  "research_evidence": {
+    "applied_hint": null,
+    "evidence_sha256": "dda224bf169bbcb6039fa1f666e13b2300ef29bf335b71fd383d7c6142f5542e",
+    "farm_version": "cpu-screen-v1",
+    "ignored_eligible_hints": [],
+    "promotion_authority": false,
+    "retired_eligible_hints": [
+      {
+        "end_to_end_zero_gain_rejections": 56,
+        "improvement_fraction": 0.10000000000000003,
+        "lane": "data-filtering",
+        "retirement_threshold": 5,
+        "variant": "min-chars-80"
+      }
+    ],
+    "source_commit": "c81f1d1f8eb7e16c47c6655883ce0e688f8d520a",
+    "workflow_run_id": 32072641501
+  },
+  "research_strategy": {
+    "continuation_update_weights": {
+      "code": 0.35,
+      "math": 0.09999999999999998,
+      "structured": 0.55
+    },
+    "focus_examples": 4096,
+    "id": "broad-conservative-v1",
+    "max_zero_gain_attempts": 3,
+    "prior_attempts_same_incumbent": 25,
+    "prior_zero_focus_gain_rejections": 25,
+    "strongest_replay_domain": "code"
+  }
+}
