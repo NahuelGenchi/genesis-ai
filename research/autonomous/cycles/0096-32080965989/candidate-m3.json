@@ -1,0 +1,47 @@
+{
+  "checkpoint_sha256": "7f13f661ccf1210855630a207da407b2802b02c2c8191abe68b81dd130b87ccd",
+  "contamination": {
+    "blocking": false,
+    "exact_overlap_count": 0,
+    "examples": [],
+    "method": "sha256-nfkc-collapsed-whitespace",
+    "train_documents": 975,
+    "validation_documents": 107
+  },
+  "data_manifest_sha256": "8126c6a8008ea39fa9db138078c5b0f15becf510eebf6160053807d665149a76",
+  "evaluation": {
+    "batches": 20,
+    "checkpoint_step": 4885,
+    "data_manifest_sha256": "8126c6a8008ea39fa9db138078c5b0f15becf510eebf6160053807d665149a76",
+    "documents": 107,
+    "loss": 3.175579249858856,
+    "parameter_count": 1895808,
+    "perplexity": 23.94068349026964,
+    "split": "validation",
+    "tokens": 29360
+  },
+  "generations": [
+    {
+      "prompt": "The ",
+      "sha256": "6dfda12e903d12ecaa599629312dc44421b32cea96d98f94a5bd8b7ebb6c6cd3",
+      "text": "The and it\ncalal the negy and not g and flat of the in "
+    },
+    {
+      "prompt": "Don ",
+      "sha256": "a6bcc6f0eb42a9dedadd771afedd10580ef8fbc91ff4d1b92beb959d60d04bce",
+      "text": "Don and her\ncalpar a gy and not gen a at recos that f"
+    },
+    {
+      "prompt": "Il ",
+      "sha256": "eacad992f8d0859b42b88a4a3ae7f9e3da8dd10979cf52c08dc4b4085b909bae",
+      "text": "Il é que\ncalieu cha et pas la féient la les fes le "
+    }
+  ],
+  "primary_metric": {
+    "lower_is_better": true,
+    "name": "validation_loss",
+    "value": 3.175579249858856
+  },
+  "suite_sha256": "e63ccb9a8ea41c030a6bbbbeb41332c5a53c983cc1bf9d7ea466a9862dfc5bb7",
+  "suite_version": "m3-v1"
+}
