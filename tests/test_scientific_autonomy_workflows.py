@@ -11,8 +11,16 @@ def test_canonical_cycle_consumes_history_and_can_route_research_escalation() ->
     assert 'gh issue view 203 --repo "$GITHUB_REPOSITORY"' in workflow
     assert "m6-architecture-tournament.yml" in workflow
     assert "research/m6-architecture-tournament-v1.json" in workflow
-    assert 'research_strategy' in workflow
-    assert 'retired_research_hints' in workflow
+    assert "research_strategy" in workflow
+    assert "retired_research_hints" in workflow
+
+
+def test_research_escalation_keeps_zero_cash_literal() -> None:
+    workflow = Path(".github/workflows/autonomous-improvement.yml").read_text(encoding="utf-8")
+
+    assert "BODY=$(printf 'Cycle %s selected research strategy" in workflow
+    assert "cash compute remains `$0`." in workflow
+    assert 'BODY="Cycle $CYCLE selected research strategy' not in workflow
 
 
 def test_architecture_tournament_is_public_zero_cash_research_only() -> None:
