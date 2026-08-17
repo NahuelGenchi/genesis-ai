@@ -1,0 +1,47 @@
+{
+  "checkpoint_sha256": "14b3e0f1e23c536edb66dc873132842001e70a89badbf29f09f868a8b932464f",
+  "contamination": {
+    "blocking": false,
+    "exact_overlap_count": 0,
+    "examples": [],
+    "method": "sha256-nfkc-collapsed-whitespace",
+    "train_documents": 975,
+    "validation_documents": 107
+  },
+  "data_manifest_sha256": "8126c6a8008ea39fa9db138078c5b0f15becf510eebf6160053807d665149a76",
+  "evaluation": {
+    "batches": 20,
+    "checkpoint_step": 4885,
+    "data_manifest_sha256": "8126c6a8008ea39fa9db138078c5b0f15becf510eebf6160053807d665149a76",
+    "documents": 107,
+    "loss": 3.2132471084594725,
+    "parameter_count": 1895808,
+    "perplexity": 24.859677378383353,
+    "split": "validation",
+    "tokens": 29360
+  },
+  "generations": [
+    {
+      "prompt": "The ",
+      "sha256": "04689a1e154c4281620fb18ebfe90c82be3d06f93239e20d8e0ce42c53518f44",
+      "text": "The and her\ncal me a gy and not g and flawere in that f"
+    },
+    {
+      "prompt": "Don ",
+      "sha256": "5f49e07b6d6c3a83d743c2652040a0044d1ee7d2b9356b8641a2b3941ebb3407",
+      "text": "Don and it\ncal on a sey andabor me ma mues a y su"
+    },
+    {
+      "prompt": "Il ",
+      "sha256": "d157b470aa3c368fe80b041a423390b4c44f8795b67ca5eccc5befd3af3f118d",
+      "text": "Il mit cal un plaire ne\nse la f la fla les fla le "
+    }
+  ],
+  "primary_metric": {
+    "lower_is_better": true,
+    "name": "validation_loss",
+    "value": 3.2132471084594725
+  },
+  "suite_sha256": "e63ccb9a8ea41c030a6bbbbeb41332c5a53c983cc1bf9d7ea466a9862dfc5bb7",
+  "suite_version": "m3-v1"
+}
