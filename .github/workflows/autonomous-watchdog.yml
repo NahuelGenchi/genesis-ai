@@ -9,10 +9,11 @@ on:
     paths:
       - ".github/workflows/autonomous-watchdog.yml"
       - ".github/workflows/autonomous-continuation.yml"
+      - "src/genesis_ai/autonomy_dispatch_policy.py"
 
 permissions:
   actions: write
-  contents: read
+  contents: write
 
 concurrency:
   group: autonomous-continuity-watchdog
@@ -22,43 +23,140 @@ jobs:
   ensure-continuity:
     if: github.event.repository.private == false
     runs-on: ubuntu-slim
-    timeout-minutes: 5
+    timeout-minutes: 10
     env:
       GH_TOKEN: ${{ github.token }}
       REPOSITORY: ${{ github.repository }}
+      PYTHONPATH: src
+      DISPATCH_POLICY: /tmp/autonomy-dispatch-policy.json
+      PAUSE_MARKER: research/autonomous/research-pause.json
     steps:
-      - name: Restart autonomous chain only when idle
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Sync policy and state to latest main
+        run: |
+          git fetch origin main
+          git reset --hard origin/main
+
+      - name: Evaluate canonical research capacity
+        id: policy
+        run: |
+          python -m genesis_ai.autonomy_dispatch_policy \
+            --state research/autonomous/state.json \
+            --history-root research/autonomous/cycles \
+            --output "$DISPATCH_POLICY"
+          readarray -t VALUES < <(python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+          decision = json.loads(Path(os.environ["DISPATCH_POLICY"]).read_text(encoding="utf-8"))
+          print(str(bool(decision["canonical_training_allowed"])).lower())
+          print(str(bool(decision["all_predeclared_strategies_exhausted"])).lower())
+          PY
+          )
+          echo "allowed=${VALUES[0]}" >> "$GITHUB_OUTPUT"
+          echo "exhausted=${VALUES[1]}" >> "$GITHUB_OUTPUT"
+
+      - name: Persist or clear authoritative research-pause marker
+        env:
+          ALLOWED: ${{ steps.policy.outputs.allowed }}
+          EXHAUSTED: ${{ steps.policy.outputs.exhausted }}
+        run: |
+          CHANGED=false
+          if [ "$EXHAUSTED" = "true" ]; then
+            mkdir -p "$(dirname "$PAUSE_MARKER")"
+            if [ ! -f "$PAUSE_MARKER" ] || ! cmp -s "$DISPATCH_POLICY" "$PAUSE_MARKER"; then
+              cp "$DISPATCH_POLICY" "$PAUSE_MARKER"
+              CHANGED=true
+            fi
+          elif [ -f "$PAUSE_MARKER" ]; then
+            rm "$PAUSE_MARKER"
+            CHANGED=true
+          fi
+
+          if [ "$CHANGED" = "true" ]; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add -A "$PAUSE_MARKER"
+            if ! git diff --cached --quiet; then
+              if [ "$EXHAUSTED" = "true" ]; then
+                git commit -m "M6: pause exhausted canonical research lane (#212)"
+              else
+                git commit -m "M6: resume canonical research lane (#212)"
+              fi
+              git fetch origin main
+              git rebase origin/main
+              git push origin HEAD:main
+            fi
+          fi
+
+      - name: Keep canonical and CPU-research queues healthy
+        env:
+          CANONICAL_ALLOWED: ${{ steps.policy.outputs.allowed }}
         shell: bash
         run: |
           python - <<'PY'
+          import datetime as dt
           import json
           import os
           import urllib.request
 
           repo = os.environ["REPOSITORY"]
           token = os.environ["GH_TOKEN"]
+          canonical_allowed = os.environ["CANONICAL_ALLOWED"] == "true"
           headers = {
               "Accept": "application/vnd.github+json",
               "Authorization": f"Bearer {token}",
               "X-GitHub-Api-Version": "2022-11-28",
           }
-          url = f"https://api.github.com/repos/{repo}/actions/workflows/autonomous-improvement.yml/runs?per_page=20"
-          request = urllib.request.Request(url, headers=headers)
-          with urllib.request.urlopen(request) as response:
-              runs = json.load(response)["workflow_runs"]
-          active = [run for run in runs if run["status"] in {"queued", "in_progress", "waiting", "pending", "requested"}]
-          if active:
-              print(f"autonomous chain healthy: {len(active)} active/pending run(s)")
-              raise SystemExit(0)
 
-          dispatch = urllib.request.Request(
-              f"https://api.github.com/repos/{repo}/actions/workflows/autonomous-improvement.yml/dispatches",
-              data=json.dumps({"ref": "main"}).encode("utf-8"),
-              headers={**headers, "Content-Type": "application/json"},
-              method="POST",
-          )
-          with urllib.request.urlopen(dispatch) as response:
-              if response.status != 204:
-                  raise RuntimeError(f"unexpected dispatch status: {response.status}")
-          print("autonomous chain was idle; dispatched a recovery cycle")
+          def get_runs(workflow: str) -> list[dict]:
+              request = urllib.request.Request(
+                  f"https://api.github.com/repos/{repo}/actions/workflows/{workflow}/runs?per_page=20",
+                  headers=headers,
+              )
+              with urllib.request.urlopen(request) as response:
+                  return json.load(response)["workflow_runs"]
+
+          def dispatch(workflow: str) -> None:
+              request = urllib.request.Request(
+                  f"https://api.github.com/repos/{repo}/actions/workflows/{workflow}/dispatches",
+                  data=json.dumps({"ref": "main"}).encode("utf-8"),
+                  headers={**headers, "Content-Type": "application/json"},
+                  method="POST",
+              )
+              with urllib.request.urlopen(request) as response:
+                  if response.status != 204:
+                      raise RuntimeError(f"unexpected dispatch status for {workflow}: {response.status}")
+
+          active_states = {"queued", "in_progress", "waiting", "pending", "requested"}
+          canonical_runs = get_runs("autonomous-improvement.yml")
+          canonical_active = [run for run in canonical_runs if run["status"] in active_states]
+          if canonical_active:
+              print(f"canonical chain healthy: {len(canonical_active)} active/pending run(s)")
+          elif canonical_allowed:
+              dispatch("autonomous-improvement.yml")
+              print("canonical chain idle with unexhausted strategy; dispatched recovery cycle")
+          else:
+              print("canonical candidate lane intentionally paused: all same-incumbent strategies exhausted")
+
+          farm_runs = get_runs("cpu-research-farm.yml")
+          farm_active = [run for run in farm_runs if run["status"] in active_states]
+          if farm_active:
+              print(f"CPU research farm healthy: {len(farm_active)} active/pending run(s)")
+          else:
+              successful = [run for run in farm_runs if run.get("conclusion") == "success" and run.get("updated_at")]
+              stale = True
+              if successful:
+                  latest = max(successful, key=lambda run: run["updated_at"])
+                  updated = dt.datetime.fromisoformat(latest["updated_at"].replace("Z", "+00:00"))
+                  stale = dt.datetime.now(dt.timezone.utc) - updated > dt.timedelta(hours=4)
+                  print(f"latest successful CPU farm run={latest['id']} updated={latest['updated_at']} stale={stale}")
+              if stale:
+                  dispatch("cpu-research-farm.yml")
+                  print("CPU research farm stale/idle; dispatched cpu-research-farm.yml")
+              else:
+                  print("CPU research farm is fresh")
           PY
