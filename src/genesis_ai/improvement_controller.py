@@ -9,13 +9,26 @@ from typing import Any
 
 from .capability_index import GCI_DOMAINS, score_result
 
-CONTROLLER_VERSION = "autonomous-improvement-controller-v1.3"
+CONTROLLER_VERSION = "autonomous-improvement-controller-v1.4"
+LEGACY_STRATEGY_ID = "legacy-focus-heavy-v1"
+MAX_ZERO_GAIN_ATTEMPTS_PER_STRATEGY = 3
+HINT_END_TO_END_FAILURE_LIMIT = 5
 FORBIDDEN_CONTENT_KEYS = {"task", "tasks", "prompt", "prompts", "response", "responses", "answer", "answers", "oracle", "oracles", "text", "texts"}
 PUBLIC_MIN_CHARS_VARIANTS = {
     "min-chars-20": 20,
     "min-chars-40": 40,
     "min-chars-80": 80,
 }
+
+# These interventions deliberately change high-level training behavior rather than
+# merely changing a random seed. The strongest non-focus domain receives explicit
+# anti-forgetting protection and the focus-example count changes sequence coverage.
+RESEARCH_STRATEGIES = (
+    {"id": "sequence-depth-v1", "focus_examples": 1_024, "focus_weight": 0.65, "strongest_replay_weight": 0.25},
+    {"id": "anti-forgetting-v1", "focus_examples": 1_536, "focus_weight": 0.50, "strongest_replay_weight": 0.40},
+    {"id": "balanced-transfer-v1", "focus_examples": 2_048, "focus_weight": 0.60, "strongest_replay_weight": 0.30},
+    {"id": "broad-conservative-v1", "focus_examples": 4_096, "focus_weight": 0.55, "strongest_replay_weight": 0.35},
+)
 
 
 def _canonical(value: object) -> str:
@@ -79,7 +92,140 @@ def _replay_examples(target_training_tokens: int) -> int:
         raise ValueError("unsupported autonomous training budget") from exc
 
 
-def _research_policy(evidence: dict[str, Any] | None) -> tuple[int, dict[str, Any] | None]:
+def _load_history(history_root: str | Path | None, incumbent_sha256: str) -> dict[str, Any]:
+    empty = {
+        "cycles_considered": 0,
+        "consecutive_rejections": 0,
+        "strategy_attempts": {},
+        "strategy_zero_focus_gain": {},
+        "hint_failures": {},
+        "last_strategy": None,
+    }
+    if history_root is None:
+        return empty
+    root = Path(history_root)
+    if not root.exists():
+        return empty
+    if not root.is_dir():
+        raise ValueError("autonomous history root must be a directory")
+
+    records: list[dict[str, Any]] = []
+    for cycle_dir in sorted(path for path in root.iterdir() if path.is_dir()):
+        plan_path = cycle_dir / "plan.json"
+        gate_path = cycle_dir / "gate.json"
+        if not plan_path.is_file() or not gate_path.is_file():
+            continue
+        try:
+            plan = json.loads(plan_path.read_text(encoding="utf-8"))
+            gate = json.loads(gate_path.read_text(encoding="utf-8"))
+        except (json.JSONDecodeError, OSError) as exc:
+            raise ValueError(f"invalid committed autonomous history: {cycle_dir}") from exc
+        if not isinstance(plan, dict) or not isinstance(gate, dict):
+            raise ValueError(f"invalid committed autonomous history object: {cycle_dir}")
+        if gate.get("baseline_checkpoint_sha256") != incumbent_sha256:
+            continue
+        strategy = plan.get("research_strategy")
+        strategy_id = LEGACY_STRATEGY_ID
+        if isinstance(strategy, dict) and isinstance(strategy.get("id"), str):
+            strategy_id = str(strategy["id"])
+        hint_key = None
+        evidence = plan.get("research_evidence")
+        if isinstance(evidence, dict):
+            hint = evidence.get("applied_hint")
+            if isinstance(hint, dict) and isinstance(hint.get("lane"), str) and isinstance(hint.get("variant"), str):
+                hint_key = f"{hint['lane']}/{hint['variant']}"
+        focus_gain = gate.get("focus_absolute_gain", 0.0)
+        if not isinstance(focus_gain, (int, float)) or isinstance(focus_gain, bool):
+            raise ValueError(f"invalid focus gain in committed autonomous history: {cycle_dir}")
+        records.append(
+            {
+                "strategy": strategy_id,
+                "decision": str(gate.get("decision", "")),
+                "focus_gain": float(focus_gain),
+                "hint_key": hint_key,
+            }
+        )
+
+    if not records:
+        return empty
+    strategy_attempts: dict[str, int] = {}
+    strategy_zero_focus_gain: dict[str, int] = {}
+    hint_failures: dict[str, int] = {}
+    for record in records:
+        strategy = record["strategy"]
+        strategy_attempts[strategy] = strategy_attempts.get(strategy, 0) + 1
+        if record["decision"] == "reject" and record["focus_gain"] <= 0.0:
+            strategy_zero_focus_gain[strategy] = strategy_zero_focus_gain.get(strategy, 0) + 1
+            if record["hint_key"] is not None:
+                key = str(record["hint_key"])
+                hint_failures[key] = hint_failures.get(key, 0) + 1
+
+    consecutive_rejections = 0
+    for record in reversed(records):
+        if record["decision"] != "reject":
+            break
+        consecutive_rejections += 1
+    return {
+        "cycles_considered": len(records),
+        "consecutive_rejections": consecutive_rejections,
+        "strategy_attempts": dict(sorted(strategy_attempts.items())),
+        "strategy_zero_focus_gain": dict(sorted(strategy_zero_focus_gain.items())),
+        "hint_failures": dict(sorted(hint_failures.items())),
+        "last_strategy": records[-1]["strategy"],
+    }
+
+
+def _choose_strategy(history: dict[str, Any], metrics: dict[str, dict[str, float]], focus: str) -> tuple[dict[str, Any] | None, dict[str, Any] | None]:
+    if int(history.get("cycles_considered", 0)) == 0:
+        return None, None
+    attempts = history.get("strategy_attempts", {})
+    zero_gain = history.get("strategy_zero_focus_gain", {})
+    if not isinstance(attempts, dict) or not isinstance(zero_gain, dict):
+        raise ValueError("invalid autonomous strategy history")
+
+    legacy_zero_gain = int(zero_gain.get(LEGACY_STRATEGY_ID, 0))
+    if legacy_zero_gain < MAX_ZERO_GAIN_ATTEMPTS_PER_STRATEGY:
+        return None, None
+
+    selected = RESEARCH_STRATEGIES[-1]
+    all_exhausted = True
+    for strategy in RESEARCH_STRATEGIES:
+        failures = int(zero_gain.get(strategy["id"], 0))
+        if failures < MAX_ZERO_GAIN_ATTEMPTS_PER_STRATEGY:
+            selected = strategy
+            all_exhausted = False
+            break
+
+    replay = [domain for domain in GCI_DOMAINS if domain != focus]
+    strongest = max(replay, key=lambda domain: (metrics[domain]["exact_accuracy"], -metrics[domain]["terminated_oracle_loss"], domain))
+    other = next(domain for domain in replay if domain != strongest)
+    other_weight = 1.0 - float(selected["focus_weight"]) - float(selected["strongest_replay_weight"])
+    weights = {
+        focus: float(selected["focus_weight"]),
+        strongest: float(selected["strongest_replay_weight"]),
+        other: other_weight,
+    }
+    prior_attempts = int(attempts.get(selected["id"], 0))
+    prior_zero_gain = int(zero_gain.get(selected["id"], 0))
+    strategy_block = {
+        "id": selected["id"],
+        "focus_examples": int(selected["focus_examples"]),
+        "continuation_update_weights": weights,
+        "strongest_replay_domain": strongest,
+        "prior_attempts_same_incumbent": prior_attempts,
+        "prior_zero_focus_gain_rejections": prior_zero_gain,
+        "max_zero_gain_attempts": MAX_ZERO_GAIN_ATTEMPTS_PER_STRATEGY,
+    }
+    escalation = {
+        "required": prior_attempts == 0 or all_exhausted,
+        "reason": "legacy/high-level strategy exhausted" if prior_attempts == 0 else "all predeclared repair strategies exhausted",
+        "actions": ["architecture-tournament", "tracked-research-issue"],
+        "all_predeclared_strategies_exhausted": all_exhausted,
+    }
+    return strategy_block, escalation
+
+
+def _research_policy(evidence: dict[str, Any] | None, history: dict[str, Any] | None = None) -> tuple[int, dict[str, Any] | None]:
     if evidence is None:
         return 0, None
     _reject_holdout_content(evidence, "research")
@@ -110,8 +256,12 @@ def _research_policy(evidence: dict[str, Any] | None) -> tuple[int, dict[str, An
     if not isinstance(eligible, list):
         raise ValueError("CPU research evidence eligible list is invalid")
 
+    failures = {} if history is None else history.get("hint_failures", {})
+    if not isinstance(failures, dict):
+        raise ValueError("invalid autonomous hint history")
     applied: dict[str, Any] | None = None
     ignored: list[dict[str, Any]] = []
+    retired: list[dict[str, Any]] = []
     public_min_chars = 0
     for raw in eligible:
         if not isinstance(raw, dict):
@@ -124,6 +274,11 @@ def _research_policy(evidence: dict[str, Any] | None) -> tuple[int, dict[str, An
         if not isinstance(improvement, (int, float)) or isinstance(improvement, bool) or float(improvement) < 0.0:
             raise ValueError("CPU research eligible hint improvement is invalid")
         hint = {"lane": lane, "variant": variant, "improvement_fraction": float(improvement)}
+        hint_key = f"{lane}/{variant}"
+        failure_count = int(failures.get(hint_key, 0))
+        if failure_count >= HINT_END_TO_END_FAILURE_LIMIT:
+            retired.append({**hint, "end_to_end_zero_gain_rejections": failure_count, "retirement_threshold": HINT_END_TO_END_FAILURE_LIMIT})
+            continue
         if lane == "data-filtering":
             if variant not in PUBLIC_MIN_CHARS_VARIANTS:
                 raise ValueError(f"unsupported screened data-filtering hint: {variant}")
@@ -141,6 +296,7 @@ def _research_policy(evidence: dict[str, Any] | None) -> tuple[int, dict[str, An
         "source_commit": source_commit,
         "applied_hint": applied,
         "ignored_eligible_hints": ignored,
+        "retired_eligible_hints": retired,
         "promotion_authority": False,
     }
     return public_min_chars, summary
@@ -153,6 +309,7 @@ def plan_next_cycle(
     cycle_index: int = 1,
     max_difficulty: int = 5,
     research_evidence: dict[str, Any] | None = None,
+    history_root: str | Path | None = None,
 ) -> dict[str, Any]:
     if not incumbent_checkpoint_sha256 or len(incumbent_checkpoint_sha256) != 64:
         raise ValueError("incumbent checkpoint SHA-256 is required")
@@ -162,7 +319,8 @@ def plan_next_cycle(
         raise ValueError("max_difficulty must be positive")
     _reject_holdout_content(evaluation)
     metrics = _domain_metrics(evaluation)
-    public_min_chars, research = _research_policy(research_evidence)
+    history = _load_history(history_root, incumbent_checkpoint_sha256)
+    public_min_chars, research = _research_policy(research_evidence, history)
     difficulty = evaluation.get("difficulty")
     if not isinstance(difficulty, int) or isinstance(difficulty, bool) or not 1 <= difficulty <= max_difficulty:
         raise ValueError("evaluation difficulty is invalid")
@@ -182,6 +340,14 @@ def plan_next_cycle(
     replay = [domain for domain in GCI_DOMAINS if domain != focus]
     gci = score_result(evaluation)
     target_training_tokens = _cycle_budget(focus_accuracy)
+    strategy, escalation = _choose_strategy(history, metrics, focus)
+
+    focus_examples = 4_096
+    continuation_weights: dict[str, float] | dict[str, Any] = {"focus": 0.70, "each_replay_domain": 0.15}
+    if strategy is not None and not requires_new_suite:
+        focus_examples = int(strategy["focus_examples"])
+        continuation_weights = dict(strategy["continuation_update_weights"])
+        mode = "research-repair"
 
     plan = {
         "format_version": "1.0",
@@ -206,10 +372,10 @@ def plan_next_cycle(
             "focus_domain": focus,
             "target_difficulty": target_difficulty,
             "target_training_tokens": target_training_tokens,
-            "focus_examples": 4_096,
+            "focus_examples": focus_examples,
             "replay_domains": replay,
             "replay_examples_per_domain": _replay_examples(target_training_tokens),
-            "continuation_update_weights": {"focus": 0.70, "each_replay_domain": 0.15},
+            "continuation_update_weights": continuation_weights,
             "mandatory_first_and_terminator_coverage": True,
             "unique_target_contexts_only": True,
             "procedural_fraction": 0.80,
@@ -229,6 +395,12 @@ def plan_next_cycle(
             "live_incumbent_weight_mutation_forbidden": True,
         },
     }
+    if history_root is not None:
+        plan["history_summary"] = history
+    if strategy is not None:
+        plan["research_strategy"] = strategy
+    if escalation is not None:
+        plan["research_escalation"] = escalation
     if research is not None:
         plan["research_evidence"] = research
     plan["plan_sha256"] = _sha256_object(plan)
@@ -256,6 +428,7 @@ def main() -> None:
     parser.add_argument("--incumbent-sha256", required=True)
     parser.add_argument("--cycle-index", type=int)
     parser.add_argument("--research-evidence", type=Path)
+    parser.add_argument("--history-root", type=Path)
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
     evaluation = json.loads(args.evaluation.read_text(encoding="utf-8"))
@@ -271,6 +444,7 @@ def main() -> None:
         incumbent_checkpoint_sha256=args.incumbent_sha256,
         cycle_index=_scheduled_cycle_index(args.cycle_index),
         research_evidence=research_evidence,
+        history_root=args.history_root,
     )
     args.output.parent.mkdir(parents=True, exist_ok=True)
     rendered = json.dumps(result, indent=2, sort_keys=True) + "\n"

@@ -17,6 +17,8 @@ on:
 
 permissions:
   contents: write
+  actions: write
+  issues: write
 
 concurrency:
   group: autonomous-verified-improvement
@@ -99,7 +101,7 @@ jobs:
               handle.write(f"cycle={cycle}\n")
           PY
 
-      - name: Evaluate incumbent and let controller plan
+      - name: Evaluate incumbent and let history-aware controller plan
         run: |
           rm -rf "$WORK"
           mkdir -p "$WORK"
@@ -116,8 +118,55 @@ jobs:
           python -m genesis_ai.improvement_controller \
             --evaluation "$WORK/incumbent-current-domain.json" \
             --incumbent-sha256 "$INCUMBENT_SHA" \
+            --history-root "$RESULT_ROOT" \
             "${RESEARCH_ARGS[@]}" \
             --output "$WORK/plan.json"
+
+      - name: Track and route research escalation
+        id: research
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CYCLE: ${{ steps.state.outputs.cycle }}
+          EVENT_NAME: ${{ github.event_name }}
+        run: |
+          readarray -t VALUES < <(python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+          plan = json.loads(Path(os.environ["WORK"], "plan.json").read_text(encoding="utf-8"))
+          escalation = plan.get("research_escalation") or {}
+          strategy = plan.get("research_strategy") or {}
+          evidence = plan.get("research_evidence") or {}
+          retired = evidence.get("retired_eligible_hints") or []
+          print(str(bool(escalation.get("required", False))).lower())
+          print(strategy.get("id", "legacy-focus-heavy-v1"))
+          print(json.dumps(retired, sort_keys=True, separators=(",", ":")))
+          PY
+          )
+          ESCALATE="${VALUES[0]}"
+          STRATEGY="${VALUES[1]}"
+          RETIRED="${VALUES[2]}"
+          echo "escalate=$ESCALATE" >> "$GITHUB_OUTPUT"
+          echo "strategy=$STRATEGY" >> "$GITHUB_OUTPUT"
+
+          if [ "$ESCALATE" = "true" ]; then
+            BODY="Cycle $CYCLE selected research strategy \`$STRATEGY\` after committed stagnation evidence. Retired hints: \`$RETIRED\`. Frozen promotion gates remain unchanged; cash compute remains \`$0\`."
+            if gh issue view 203 --repo "$GITHUB_REPOSITORY" --json state --jq '.state' 2>/dev/null | grep -q OPEN; then
+              gh issue comment 203 --repo "$GITHUB_REPOSITORY" --body "$BODY"
+            else
+              gh issue create --repo "$GITHUB_REPOSITORY" \
+                --title "Autonomy research escalation from cycle $CYCLE" \
+                --body "$BODY" \
+                --label "area:research" --label "area:model" \
+                --milestone "M6 — Scale Useful Capability"
+            fi
+
+            # Do not duplicate the merge-triggered first tournament. Later
+            # watchdog/continuation cycles may dispatch it if no immutable result exists.
+            if [ "$EVENT_NAME" != "push" ] && [ ! -f research/m6-architecture-tournament-v1.json ] && [ -f .github/workflows/m6-architecture-tournament.yml ]; then
+              gh workflow run m6-architecture-tournament.yml --repo "$GITHUB_REPOSITORY" --ref main
+            fi
+          fi
 
       - name: Resolve target frozen suite
         id: target
@@ -315,6 +364,8 @@ jobs:
           state["difficulty"] = int(os.environ["TARGET_DIFFICULTY"])
           if promoted:
               state["incumbent_checkpoint"] = "checkpoints/genesis-autonomous-incumbent.pt"
+          strategy = (plan.get("research_strategy") or {}).get("id", "legacy-focus-heavy-v1")
+          evidence = plan.get("research_evidence") or {}
           state["last_cycle"] = {
               "decision": gate["decision"],
               "focus_domain": gate["focus_domain"],
@@ -323,6 +374,9 @@ jobs:
               "gci_change_points": gci["absolute_point_change"],
               "plan_sha256": plan["plan_sha256"],
               "processed_tokens": training["processed_tokens"],
+              "research_strategy": strategy,
+              "research_escalation": bool((plan.get("research_escalation") or {}).get("required", False)),
+              "retired_research_hints": evidence.get("retired_eligible_hints", []),
               "result_dir": result_dir.as_posix(),
               "source_commit": os.environ["SOURCE_COMMIT"],
               "target_suite": os.environ["TARGET_SUITE"],
@@ -335,6 +389,7 @@ jobs:
               "",
               f"- Decision: **{gate['decision']}**",
               f"- Focus: `{gate['focus_domain']}`",
+              f"- Research strategy: `{strategy}`",
               f"- GCI-v1: `{gci['baseline']['score']:.4f} -> {gci['candidate']['score']:.4f}` ({gci['absolute_point_change']:+.4f} points)",
               f"- Processed tokens: `{training['processed_tokens']}`",
               f"- Cash compute: `$0`",
@@ -343,7 +398,11 @@ jobs:
           ]
           if "research_evidence" in plan:
               hint = plan["research_evidence"].get("applied_hint")
+              retired = plan["research_evidence"].get("retired_eligible_hints", [])
               summary.append(f"- Research hint: `{hint}`")
+              summary.append(f"- Retired research hints: `{retired}`")
+          if "history_summary" in plan:
+              summary.append(f"- Same-incumbent rejection streak before this cycle: `{plan['history_summary']['consecutive_rejections']}`")
           (result_dir / "README.md").write_text("\n".join(summary) + "\n", encoding="utf-8", newline="\n")
 
           if promoted:
@@ -356,6 +415,7 @@ jobs:
                   "",
                   f"- Cycle: `{state['cycle_index']}`",
                   f"- Focus domain: `{gate['focus_domain']}`",
+                  f"- Research strategy: `{strategy}`",
                   f"- GCI-v1: `{gci['candidate']['score']:.4f}`",
                   f"- Previous GCI-v1: `{gci['baseline']['score']:.4f}`",
                   f"- Checkpoint SHA-256: `{gate['candidate_checkpoint_sha256']}`",
@@ -372,6 +432,7 @@ jobs:
                   "gate": gate["gate_version"],
                   "gci_v1": gci["candidate"]["score"],
                   "plan_sha256": plan["plan_sha256"],
+                  "research_strategy": strategy,
                   "result_dir": result_dir.as_posix(),
               }
               (model_dir / "metadata.json").write_text(json.dumps(metadata, indent=2, sort_keys=True) + "\n", encoding="utf-8", newline="\n")
@@ -391,7 +452,7 @@ jobs:
           print(json.loads(Path(os.environ["WORK"], "gate.json").read_text(encoding="utf-8"))["decision"])
           PY
           )
-          git commit -m "M6: autonomous cycle $CYCLE $DECISION (#142)"
+          git commit -m "M6: autonomous cycle $CYCLE $DECISION (#142, #203)"
           git fetch origin main
           git rebase origin/main
           git push origin HEAD:main

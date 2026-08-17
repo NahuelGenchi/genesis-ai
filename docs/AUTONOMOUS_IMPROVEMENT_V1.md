@@ -1,130 +1,93 @@
-# Autonomous Improvement Controller v1
+# Autonomous Improvement Controller
+
+Issues: #142 and #203.
 
 ## Purpose
 
-Choose and execute the next Genesis training target automatically from aggregate capability measurements while keeping private holdout content, incumbent weights, and promotion authority outside the controller.
+Genesis must do more than keep a training queue busy. The autonomous loop has two separate responsibilities:
 
-## Input boundary
+1. **execution autonomy** — run, reproduce, evaluate, reject/promote, persist, and continue without a personal computer;
+2. **scientific autonomy** — notice when a high-level intervention is exhausted, stop retrying it with new seeds, choose a materially different bounded intervention, retire downstream-failing research hints, and route independent research work.
 
-The controller may consume only:
+The immutable promotion gate remains outside the planner and is unchanged by scientific autonomy.
 
-- frozen suite identity/version;
-- current difficulty;
-- aggregate per-domain exact accuracy;
-- aggregate per-domain terminated oracle loss;
-- aggregate termination rate;
-- incumbent checkpoint SHA-256;
-- the monotonic persisted autonomous cycle index.
+## Planner input boundary
 
-Prompt text, task bodies, oracle answers, generated responses, and other holdout content are rejected by the controller API.
+The controller may consume only frozen suite identity/version, current difficulty, aggregate per-domain exact accuracy/loss/termination, incumbent checkpoint SHA-256, the monotonic cycle index, committed aggregate CPU-farm evidence, and committed autonomous cycle **metadata**. It never consumes private holdout prompt/task/answer/oracle/response/text content; those field names are rejected recursively.
 
-## Decision
+Committed history is read from `research/autonomous/cycles/`. Only cycles whose gate baseline SHA-256 matches the current incumbent contribute to stagnation accounting, so a promotion resets the relevant research history naturally.
 
-The controller deterministically chooses the weakest domain by:
+## Weakness selection
 
-1. lowest exact accuracy;
-2. highest aggregate oracle loss when accuracy ties;
-3. domain name as the final deterministic tie-breaker.
+The weakest domain is still selected deterministically by lowest exact accuracy, then highest aggregate terminated-oracle loss, then domain name. When every domain reaches at least 80% exact accuracy, the controller moves to the next frozen GCI-Ladder difficulty and requires an incumbent baseline on that suite before training.
 
-When all domains reach at least 80% strict exact accuracy, the controller raises difficulty instead of repeatedly polishing the same easy suite. Difficulty escalation requires a new frozen target suite and an incumbent baseline on that suite **before** training; cross-difficulty before/after comparisons are forbidden.
+## Stagnation is a first-class failure mode
 
-## Fresh deterministic cycles
+Changing only `cycle_index`, generated examples, or training seed is not considered a new high-level hypothesis.
 
-The persisted `cycle_index` is included in the controller input and therefore in `plan_sha256`. This is an exploration nonce, not a quality signal or promotion input.
+Historical cycles without an explicit research strategy are classified as `legacy-focus-heavy-v1`. After **3 reject decisions with zero focus-domain gain** under the same strategy and incumbent, that strategy is exhausted. The controller then selects a materially different predeclared intervention. Each later intervention is also capped at 3 zero-focus-gain rejections before rotation.
 
-- Replaying the same incumbent, evaluation, and cycle index reconstructs the exact same plan.
-- Advancing only the cycle index produces a new plan SHA-256.
-- Curriculum domain seeds and the training seed are already derived from the plan SHA-256, so a rejected cycle automatically leads to fresh verifier-backed examples and a fresh deterministic candidate on the next scheduled attempt.
-- Promotion gates, benchmark content, compute budget, and holdout boundaries are unchanged.
+Current bounded intervention catalog:
 
-This prevents a rejected deterministic candidate from being retrained forever while preserving exact per-cycle reproducibility.
+| Strategy | Focus records | Continuation allocation |
+|---|---:|---|
+| `sequence-depth-v1` | 1,024 | 65% focus / 25% strongest replay / 10% other replay |
+| `anti-forgetting-v1` | 1,536 | 50% focus / 40% strongest replay / 10% other replay |
+| `balanced-transfer-v1` | 2,048 | 60% focus / 30% strongest replay / 10% other replay |
+| `broad-conservative-v1` | 4,096 | 55% focus / 35% strongest replay / 10% other replay |
 
-## Replay-safe adaptive compute
+The strongest replay domain is chosen from aggregate incumbent metrics. This makes interventions change sequence coverage and anti-forgetting pressure instead of merely changing randomness.
 
-Each cycle uses:
+`history_summary`, `research_strategy`, and any `research_escalation` are included in `plan_sha256`, so every scientific decision remains exactly replayable from committed evidence.
 
-- 4,096 fresh focus-domain verifier-oracle examples;
-- budget-aware replay examples from each non-focus domain: 1,024 for a 3M-token cycle, 768 for 2.5M, and 512 for 2M;
-- mandatory first-answer and terminator coverage for every generated record;
+## Research-hint retirement
+
+CPU-farm screening is evidence, not authority. A screening winner cannot stay enabled forever merely because it keeps winning its fixture.
+
+The controller tracks end-to-end canonical outcomes for each applied hint. After **5 reject decisions with zero focus gain** under the current incumbent, the hint is retired from canonical application. The retirement and count are written into `research_evidence.retired_eligible_hints` and hash-bound into the plan.
+
+For example, a retired `data-filtering/min-chars-80` hint no longer changes public sampling; `public_min_chars` returns to the unfiltered canonical value while the negative evidence remains visible.
+
+## Curriculum and candidate training
+
+The curriculum remains verifier-backed, deterministic, hash-bound, and holdout-separated. Replay records continue to scale with the 3M/2.5M/2M token budget. Focus record count and continuation allocation now come from the research strategy instead of being frozen forever at 4,096 and 70/15/15.
+
+`autonomous_training.py` accepts either the legacy focus/replay allocation or exact per-domain weights. It still requires:
+
+- mandatory first-answer and terminator anchors;
 - unique target contexts only;
-- continuation capacity weighted 70% to the focus skill and 15% to each replay skill;
-- an 80/20 procedural/public-data step mix.
+- sufficient continuation capacity before training starts;
+- the exact incumbent checkpoint and tokenizer;
+- deterministic CPU training for the canonical micro-model path;
+- the existing 80/20 procedural/public step mix;
+- `$0` cash compute.
 
-The total training budget is bounded by observed focus capability:
+Primary and independent replica use the identical plan-bound policy.
 
-- <50% exact: 3M tokens;
-- 50–80% exact: 2.5M;
-- >=80% exact: 2M.
+## Independent architecture research escalation
 
-Replay records scale with that budget because short-response domains such as math expose fewer unique continuation contexts per example. The trainer derives mandatory anchor accounting from the plan-bound record counts and still fails closed if any domain cannot satisfy its continuation quota without duplication.
+Entering a new strategy creates a research escalation event. The canonical workflow records it in tracked Issue #203 (or creates a new M6 research Issue if that issue is closed) and can dispatch the fixed-FLOP architecture tournament when no immutable tournament result exists.
 
-The 2M floor remains intentional. At the minimum budget, 4,096 focus records plus two 512-record replay sets already require 10,240 mandatory first-answer/terminator target updates. Smaller budgets could recreate the anchor-starvation failure measured in #136.
+`M6 architecture tournament v1` runs on public GitHub-hosted `ubuntu-latest` at `$0`, comparing the frozen baseline against RoPE-only, RMSNorm-only, and parameter-matched SwiGLU under identical training FLOPs. Its result cannot promote weights.
 
-## Curriculum execution boundary
+A successful tournament automatically triggers `M6 architecture finalist v1`, which reruns the baseline and initial winner on two fresh deterministic seeds. A challenger is accepted as research evidence only if mean validation loss improves by at least 0.5% and no fresh seed regresses by more than 1%. This result also has no checkpoint-promotion authority.
 
-`autonomous_curriculum.py` consumes the hash-bound plan in a separate layer from the controller. It may reconstruct target-suite prompts only to create exclusion hashes; it never sends task bodies or answers back into the planner.
-
-It generates fresh deterministic verifier-oracle records for the focus and replay domains, verifies zero target-holdout prompt overlap, and binds the corpus to:
-
-- plan SHA-256;
-- incumbent checkpoint SHA-256;
-- target suite hash/difficulty;
-- tokenizer hash;
-- public-corpus manifest;
-- $0 cash compute.
-
-## Candidate training boundary
-
-`autonomous_training.py` continues from the exact incumbent checkpoint. It builds a unique generation-aligned target schedule, covers every first-answer and terminator anchor, then allocates remaining continuation targets 70/15/15 across focus/replay domains. If any domain lacks enough unique continuation contexts, the cycle fails **before** training rather than silently duplicating targets.
-
-The incumbent is never edited in place. Primary and independent replica candidates are separate checkpoints.
+Architecture evidence is intended to feed later scale work such as #160; it does not bypass canonical frozen evaluation.
 
 ## Promotion boundary
 
-`autonomous_gate.py` is external to the planner/trainer. A candidate is promoted only when every hash/lineage check and every plan-declared gate passes:
+`autonomous_gate.py` remains external and unchanged. Promotion still requires all declared gates, including same-suite comparison, positive focus gain, minimum GCI gain, bounded non-focus regression, M3 boundary, zero contamination/holdout overlap, independent semantic reproduction, and `$0` cash compute.
 
-- same-suite comparison;
-- minimum focus-domain gain;
-- minimum GCI gain;
-- bounded non-focus regressions;
-- <=2% M3 validation-loss regression;
-- zero M3 exact contamination;
-- zero target-holdout overlap;
-- independent semantic reproduction;
-- exact controller training budget;
-- $0 cash compute.
+Repeated rejection is therefore safe, but it is no longer allowed to be scientifically inert: repeated zero-gain rejection changes the next research strategy.
 
-Only this immutable promotion decision may replace the incumbent.
+## Remote execution and persistence
 
-## Remote autonomous execution
+`.github/workflows/autonomous-improvement.yml` runs only on GitHub-hosted `ubuntu-latest`, synchronizes serialized runs to current `main`, evaluates the incumbent, plans from aggregate metrics plus committed history, trains primary + replica, applies immutable evaluation/gates, and persists authoritative results.
 
-`.github/workflows/autonomous-improvement.yml` turns the controller into a persistent remote loop.
+Each completed cycle records its strategy, prior same-incumbent rejection streak, applied/retired research hints, schedule accounting, and gate result under `research/autonomous/cycles/`. `research/autonomous/state.json` records the latest strategy/escalation metadata in addition to the incumbent/difficulty/cycle pointer.
 
-- Runs only on GitHub-hosted `ubuntu-latest`; `self-hosted` is forbidden.
-- Runs automatically every Tuesday and Friday at 05:17 UTC.
-- Also runs once when autonomy/controller/evaluator wiring changes on `main`.
-- Uses serialized concurrency and a five-hour hard job timeout.
-- Rebuilds the provenance-locked public corpus from source each cycle.
-- Evaluates the current incumbent before planning.
-- The controller reads the next cycle index from `research/autonomous/state.json` through the workflow's existing `STATE` environment binding.
-- Creates a plan-bound curriculum and trains a primary candidate plus independent deterministic replica.
-- Evaluates incumbent and candidate on the same frozen target suite and on the M3 regression boundary.
-- Commits immutable cycle measurements on both rejection and promotion.
-- Commits checkpoint weights and updates the incumbent pointer only after every external promotion gate passes.
-- Uses `research/autonomous/state.json` as the minimal persistent state needed for the next scheduled run.
-
-The routine loop therefore has no dependency on a personal computer or a manual workflow dispatch. A machine owned by the user may remain offline indefinitely without stopping scheduled attempts.
-
-## Difficulty escalation
-
-Difficulty 1 uses `evals/m6-domain-selection-v2.json`. Difficulties 2–5 are resolved to the frozen GCI-Ladder suite files. If the controller requests a difficulty whose frozen suite is not present on `main`, the workflow fails closed before curriculum generation or training. Adding the frozen ladder suite later automatically unlocks the next level without changing controller semantics.
-
-## Persistence rules
-
-Rejected candidate weights remain ephemeral and are never committed. Each completed cycle records plan, curriculum lock, training accounting, reproduction evidence, identical-suite evaluations, M3 evaluations, gate output, and a concise summary under `research/autonomous/cycles/`.
-
-A passing candidate is copied to `checkpoints/genesis-autonomous-incumbent.pt`, documented under `models/genesis-autonomous-incumbent/`, and becomes the parent of the next scheduled cycle. Git history remains the immutable audit trail for promoted incumbent changes.
+Rejected candidate weights remain ephemeral. A passing candidate alone may be copied to `checkpoints/genesis-autonomous-incumbent.pt` after the immutable gate passes.
 
 ## Anti-reward-hacking boundary
 
-The planner cannot inspect or modify private holdout answers or graders. Curriculum generation, model training, and promotion evaluation remain separate code/data surfaces. This prevents the self-improvement controller from directly optimizing against private evaluation content or rewriting its own success criterion.
+The planner cannot inspect or rewrite private holdout answers, graders, or the promotion gate. Research escalation chooses only among versioned repository implementations that are reviewed by CI and committed to `main`. Screening, tournament, Kaggle, and Colab outputs have no direct promotion authority.

@@ -20,7 +20,7 @@ from .scale_training import BASE_LR, CPU_THREADS, GRAD_CLIP, _lr
 from .terminated_training import TerminatedGenerationAlignedDataset
 from .tokenizer import ByteBPETokenizer
 
-TRAINING_POLICY_VERSION = "autonomous-continuation-v1.2"
+TRAINING_POLICY_VERSION = "autonomous-continuation-v1.3"
 TARGET_TOKENS_PER_STEP = 1024
 EXPECTED_PARAMETERS = 1_895_808
 DOMAINS = ("code", "math", "structured")
@@ -55,6 +55,29 @@ def _read_records(path: str | Path, *, plan_sha256: str) -> list[dict[str, Any]]
     if not records:
         raise ValueError("autonomous records are empty")
     return records
+
+
+def _resolve_continuation_weights(raw: object, *, focus_domain: str) -> dict[str, float]:
+    if not isinstance(raw, dict):
+        raise ValueError("autonomous continuation weights must be an object")
+    replay = [domain for domain in DOMAINS if domain != focus_domain]
+    if set(raw) == {"focus", "each_replay_domain"}:
+        weights = {
+            focus_domain: float(raw["focus"]),
+            replay[0]: float(raw["each_replay_domain"]),
+            replay[1]: float(raw["each_replay_domain"]),
+        }
+    elif set(raw) == set(DOMAINS):
+        weights = {domain: float(raw[domain]) for domain in DOMAINS}
+    else:
+        raise ValueError("autonomous continuation weights must be legacy focus/replay or exact per-domain weights")
+    if any(not math.isfinite(value) or value < 0.0 or value > 1.0 for value in weights.values()):
+        raise ValueError("autonomous continuation weights are outside [0,1]")
+    if not math.isclose(sum(weights.values()), 1.0, abs_tol=1e-9):
+        raise ValueError("autonomous continuation weights must sum to 1")
+    if weights[focus_domain] <= 0.0:
+        raise ValueError("autonomous focus domain must receive continuation weight")
+    return weights
 
 
 def validate_inputs(
@@ -112,13 +135,19 @@ def validate_inputs(
     target_training_tokens = int(curriculum["target_training_tokens"])
     if target_training_tokens not in REPLAY_EXAMPLES_BY_BUDGET:
         raise ValueError("autonomous v1 training budget is outside controller contract")
-    expected_replay_records = REPLAY_EXAMPLES_BY_BUDGET[target_training_tokens]
+    expected_replay_records = int(curriculum.get("replay_examples_per_domain", REPLAY_EXAMPLES_BY_BUDGET[target_training_tokens]))
+    if expected_replay_records != REPLAY_EXAMPLES_BY_BUDGET[target_training_tokens]:
+        raise ValueError("autonomous replay example count is outside budget contract")
+    expected_focus_records = int(curriculum.get("focus_examples", 4096))
+    if expected_focus_records <= 0 or expected_focus_records > 4096:
+        raise ValueError("autonomous focus example count is outside bounded research contract")
+    continuation_weights = _resolve_continuation_weights(curriculum.get("continuation_update_weights"), focus_domain=focus)
 
     role_counts = {domain: {"focus": 0, "replay": 0} for domain in DOMAINS}
     for record in records:
         role_counts[str(record["domain"])][str(record["role"])] += 1
-    if role_counts[focus]["focus"] != 4096:
-        raise ValueError("autonomous focus domain must contain 4096 focus records")
+    if role_counts[focus]["focus"] != expected_focus_records:
+        raise ValueError(f"autonomous focus domain must contain exactly {expected_focus_records} focus records")
     for domain in DOMAINS:
         if domain == focus:
             if role_counts[domain]["replay"] != 0:
@@ -151,6 +180,9 @@ def validate_inputs(
         "public_fraction": float(curriculum["public_fraction"]),
         "public_min_chars": public_min_chars,
         "focus_domain": focus,
+        "focus_examples": expected_focus_records,
+        "replay_examples_per_domain": expected_replay_records,
+        "continuation_update_weights": continuation_weights,
         "role_counts": role_counts,
         "plan_sha256": plan_sha256,
     }
@@ -171,6 +203,7 @@ def build_focus_schedule(
     focus_domain: str,
     total_samples: int,
     seed: int,
+    continuation_weights: dict[str, float] | None = None,
 ) -> tuple[torch.Tensor, dict[str, Any]]:
     if focus_domain not in DOMAINS:
         raise ValueError("invalid autonomous focus domain")
@@ -204,12 +237,13 @@ def build_focus_schedule(
         continuation_by_domain[domain_by_record[record_ordinal]].append(int(index))
 
     remaining = total_samples - len(anchors)
-    replay = [domain for domain in DOMAINS if domain != focus_domain]
-    focus_quota = int(remaining * 0.70)
-    replay_quota = int(remaining * 0.15)
-    quotas = {focus_domain: focus_quota, replay[0]: replay_quota, replay[1]: replay_quota}
-    unassigned = remaining - sum(quotas.values())
-    quotas[focus_domain] += unassigned
+    if continuation_weights is None:
+        replay = [domain for domain in DOMAINS if domain != focus_domain]
+        continuation_weights = {focus_domain: 0.70, replay[0]: 0.15, replay[1]: 0.15}
+    else:
+        continuation_weights = _resolve_continuation_weights(continuation_weights, focus_domain=focus_domain)
+    quotas = {domain: int(remaining * continuation_weights[domain]) for domain in DOMAINS}
+    quotas[focus_domain] += remaining - sum(quotas.values())
 
     rng = random.Random(seed)
     selected_extra: list[int] = []
@@ -230,6 +264,7 @@ def build_focus_schedule(
         "record_counts_by_domain": record_counts,
         "anchor_updates_by_domain": anchor_by_domain,
         "continuation_available_by_domain": available,
+        "continuation_weights": continuation_weights,
         "continuation_updates_by_domain": quotas,
         "total_updates_by_domain": {domain: anchor_by_domain[domain] + quotas[domain] for domain in DOMAINS},
         "total_anchor_updates": len(anchors),
@@ -292,6 +327,7 @@ def train_continuation(
         focus_domain=policy["focus_domain"],
         total_samples=procedural_updates,
         seed=seed + 10,
+        continuation_weights=policy["continuation_update_weights"],
     )
     public_generator = torch.Generator(device="cpu").manual_seed(seed + 20)
 
@@ -353,6 +389,9 @@ def train_continuation(
         "plan_sha256": policy["plan_sha256"],
         "seed": seed,
         "focus_domain": policy["focus_domain"],
+        "focus_examples": policy["focus_examples"],
+        "replay_examples_per_domain": policy["replay_examples_per_domain"],
+        "continuation_update_weights": policy["continuation_update_weights"],
         "parent_checkpoint_sha256": policy["parent_checkpoint_sha256"],
         "parent_step": parent_step,
         "final_step": final_step,

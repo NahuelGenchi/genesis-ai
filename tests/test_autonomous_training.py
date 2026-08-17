@@ -15,12 +15,12 @@ class FakeDataset:
         return len(self.record_ordinals)
 
 
-def fixture(focus_domain: str, continuation_quotas: dict[str, int], *, replay_records: int):
+def fixture(focus_domain: str, continuation_quotas: dict[str, int], *, replay_records: int, focus_records: int = 4096):
     domains = ("code", "math", "structured")
     records = []
     ordinals = {domain: [] for domain in domains}
     for domain in domains:
-        count = 4096 if domain == focus_domain else replay_records
+        count = focus_records if domain == focus_domain else replay_records
         role = "focus" if domain == focus_domain else "replay"
         for _ in range(count):
             ordinals[domain].append(len(records))
@@ -79,9 +79,6 @@ class AutonomousTrainingTest(unittest.TestCase):
         self.assertEqual(accounting["continuation_updates_by_domain"], expected_continuation)
 
     def test_short_math_pool_regression_has_capacity_after_adaptive_replay(self):
-        # The failed remote cycle had only 846 math continuations from 512 replay
-        # records while it needed 1,276. Doubling replay records makes the anchor
-        # budget larger and lowers the 3M replay continuation quota to 969.
         available = {"structured": 4526, "code": 1500, "math": 1000}
         dataset, records = fixture("structured", available, replay_records=1024)
         _, accounting = build_focus_schedule(
@@ -93,6 +90,31 @@ class AutonomousTrainingTest(unittest.TestCase):
         )
         self.assertEqual(accounting["continuation_updates_by_domain"]["math"], 969)
         self.assertEqual(accounting["continuation_available_by_domain"]["math"], 1000)
+
+    def test_research_strategy_can_trade_breadth_for_sequence_depth_and_code_protection(self):
+        # 1,024 focus + 1,024 replay/domain -> 6,144 mandatory anchors.
+        # Remaining 12,608 uses the sequence-depth policy 65% structured,
+        # 25% code protection, 10% math replay.
+        expected = {"structured": 8196, "code": 3152, "math": 1260}
+        dataset, records = fixture(
+            "structured",
+            expected,
+            replay_records=1024,
+            focus_records=1024,
+        )
+        selected, accounting = build_focus_schedule(
+            dataset,
+            records,
+            focus_domain="structured",
+            total_samples=18_752,
+            seed=101,
+            continuation_weights={"structured": 0.65, "code": 0.25, "math": 0.10},
+        )
+        self.assertEqual(len(selected), 18_752)
+        self.assertEqual(accounting["total_anchor_updates"], 6144)
+        self.assertEqual(accounting["record_counts_by_domain"], {"code": 1024, "math": 1024, "structured": 1024})
+        self.assertEqual(accounting["continuation_updates_by_domain"], expected)
+        self.assertEqual(accounting["continuation_weights"], {"structured": 0.65, "code": 0.25, "math": 0.10})
 
     def test_insufficient_continuation_pool_still_fails_before_training(self):
         dataset, records = fixture(
