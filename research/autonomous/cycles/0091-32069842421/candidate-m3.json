@@ -1,0 +1,47 @@
+{
+  "checkpoint_sha256": "3bfb85e45cc5d7464faebf45d1a9f7f67187b118e28b5cae975211d71ea4e881",
+  "contamination": {
+    "blocking": false,
+    "exact_overlap_count": 0,
+    "examples": [],
+    "method": "sha256-nfkc-collapsed-whitespace",
+    "train_documents": 975,
+    "validation_documents": 107
+  },
+  "data_manifest_sha256": "8126c6a8008ea39fa9db138078c5b0f15becf510eebf6160053807d665149a76",
+  "evaluation": {
+    "batches": 20,
+    "checkpoint_step": 4885,
+    "data_manifest_sha256": "8126c6a8008ea39fa9db138078c5b0f15becf510eebf6160053807d665149a76",
+    "documents": 107,
+    "loss": 3.2038618445396425,
+    "parameter_count": 1895808,
+    "perplexity": 24.627454187768745,
+    "split": "validation",
+    "tokens": 29360
+  },
+  "generations": [
+    {
+      "prompt": "The ",
+      "sha256": "fb768834ac4f8b100c4a95b5824f471e3821f65208c0d257f8db0a86052df488",
+      "text": "The and it\ncalal the bely and not g and flat of the in "
+    },
+    {
+      "prompt": "Don ",
+      "sha256": "756c713ab76571a33732b3d2f2dfba39bf48d9fac948bf695cb285d7e6b723ea",
+      "text": "Don and it\ncalal the bely and not g and flat of the in "
+    },
+    {
+      "prompt": "Il ",
+      "sha256": "592efefaf01cb66581e2b90a39ab4c271310caf59c8ba49955bf2e864317732f",
+      "text": "Il éit trie que chégait\nqui la féient laux fla le "
+    }
+  ],
+  "primary_metric": {
+    "lower_is_better": true,
+    "name": "validation_loss",
+    "value": 3.2038618445396425
+  },
+  "suite_sha256": "e63ccb9a8ea41c030a6bbbbeb41332c5a53c983cc1bf9d7ea466a9862dfc5bb7",
+  "suite_version": "m3-v1"
+}
