@@ -341,49 +341,49 @@ jobs:
             cp "$WORK/primary.pt" checkpoints/genesis-scale-5m-rope-v1.pt
             mkdir -p models/genesis-scale-5m-rope-v1
             python - <<'PY'
-            import json
-            import os
-            from pathlib import Path
+          import json
+          import os
+          from pathlib import Path
 
-            state_path = Path(os.environ["STATE"])
-            state = json.loads(state_path.read_text(encoding="utf-8"))
-            result_dir = Path(os.environ["RESULT_DIR"])
-            gate = json.loads((result_dir / "gate.json").read_text(encoding="utf-8"))
-            state["incumbent_checkpoint"] = "checkpoints/genesis-scale-5m-rope-v1.pt"
-            state["difficulty"] = 1
-            state["last_scale_promotion"] = {
-                "checkpoint_sha256": gate["candidate_checkpoint_sha256"],
-                "gci_v1": gate["gci_v1"]["candidate"]["score"],
-                "result_dir": result_dir.as_posix(),
-                "source_commit": os.environ["SOURCE_COMMIT"],
-                "workflow_run_id": os.environ["GITHUB_RUN_ID"],
-            }
-            state_path.write_text(json.dumps(state, indent=2, sort_keys=True) + "\n", encoding="utf-8", newline="\n")
-            model_dir = Path("models/genesis-scale-5m-rope-v1")
-            metadata = {
-                "checkpoint": "checkpoints/genesis-scale-5m-rope-v1.pt",
-                "checkpoint_sha256": gate["candidate_checkpoint_sha256"],
-                "parameter_count": 4_954_624,
-                "architecture": "rope-only",
-                "gci_v1": gate["gci_v1"]["candidate"]["score"],
-                "result_dir": result_dir.as_posix(),
-                "cash_compute_cost_usd": 0.0,
-            }
-            (model_dir / "metadata.json").write_text(json.dumps(metadata, indent=2, sort_keys=True) + "\n", encoding="utf-8", newline="\n")
-            card = [
-                "# Genesis scale 5M RoPE v1",
-                "",
-                "First promoted ~5M Genesis checkpoint, if and only if the frozen scale gate and incumbent-freshness gate both passed.",
-                "",
-                "- Parameters: `4,954,624`",
-                "- Architecture: `rope-only`",
-                f"- GCI-v1: `{gate['gci_v1']['candidate']['score']:.4f}`",
-                f"- Checkpoint SHA-256: `{gate['candidate_checkpoint_sha256']}`",
-                "- Independent semantic reproduction: required",
-                "- Cash compute: `$0`",
-            ]
-            (model_dir / "README.md").write_text("\n".join(card) + "\n", encoding="utf-8", newline="\n")
-            PY
+          state_path = Path(os.environ["STATE"])
+          state = json.loads(state_path.read_text(encoding="utf-8"))
+          result_dir = Path(os.environ["RESULT_DIR"])
+          gate = json.loads((result_dir / "gate.json").read_text(encoding="utf-8"))
+          state["incumbent_checkpoint"] = "checkpoints/genesis-scale-5m-rope-v1.pt"
+          state["difficulty"] = 1
+          state["last_scale_promotion"] = {
+              "checkpoint_sha256": gate["candidate_checkpoint_sha256"],
+              "gci_v1": gate["gci_v1"]["candidate"]["score"],
+              "result_dir": result_dir.as_posix(),
+              "source_commit": os.environ["SOURCE_COMMIT"],
+              "workflow_run_id": os.environ["GITHUB_RUN_ID"],
+          }
+          state_path.write_text(json.dumps(state, indent=2, sort_keys=True) + "\n", encoding="utf-8", newline="\n")
+          model_dir = Path("models/genesis-scale-5m-rope-v1")
+          metadata = {
+              "checkpoint": "checkpoints/genesis-scale-5m-rope-v1.pt",
+              "checkpoint_sha256": gate["candidate_checkpoint_sha256"],
+              "parameter_count": 4_954_624,
+              "architecture": "rope-only",
+              "gci_v1": gate["gci_v1"]["candidate"]["score"],
+              "result_dir": result_dir.as_posix(),
+              "cash_compute_cost_usd": 0.0,
+          }
+          (model_dir / "metadata.json").write_text(json.dumps(metadata, indent=2, sort_keys=True) + "\n", encoding="utf-8", newline="\n")
+          card = [
+              "# Genesis scale 5M RoPE v1",
+              "",
+              "First promoted ~5M Genesis checkpoint, if and only if the frozen scale gate and incumbent-freshness gate both passed.",
+              "",
+              "- Parameters: `4,954,624`",
+              "- Architecture: `rope-only`",
+              f"- GCI-v1: `{gate['gci_v1']['candidate']['score']:.4f}`",
+              f"- Checkpoint SHA-256: `{gate['candidate_checkpoint_sha256']}`",
+              "- Independent semantic reproduction: required",
+              "- Cash compute: `$0`",
+          ]
+          (model_dir / "README.md").write_text("\n".join(card) + "\n", encoding="utf-8", newline="\n")
+          PY
           fi
 
           git config user.name "github-actions[bot]"
