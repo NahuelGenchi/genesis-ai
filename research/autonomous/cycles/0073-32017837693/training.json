@@ -1,0 +1,81 @@
+{
+  "batch_size": 8,
+  "cash_compute_cost_usd": 0.0,
+  "continuation_update_weights": {
+    "code": 0.35,
+    "math": 0.09999999999999998,
+    "structured": 0.55
+  },
+  "curriculum_lock_sha256": "d1f12e5b4834df57ff4a2e6fabb3560e74746f2ba55fadfb7ef6e2cc5408861b",
+  "determinism": {
+    "adamw_foreach": false,
+    "adamw_fused": false,
+    "deterministic_algorithms": true,
+    "device": "cpu",
+    "torch_threads": 1
+  },
+  "final_step": 4885,
+  "focus_domain": "structured",
+  "focus_examples": 4096,
+  "format_version": "1.0",
+  "inference_checkpoint_sha256": "cd17fd191ea360ec8e2778b5dfa7f4990962f2161a32e5d4ffc6b3eccfc00da8",
+  "mean_procedural_training_loss": 0.6330242385592327,
+  "mean_public_training_loss": 3.5455044361511594,
+  "parameter_count": 1895808,
+  "parent_checkpoint_sha256": "0ba16a931451ffbdc369aa685845b0ddb9b6ed03910ac773b50e837fd9886d7e",
+  "parent_parameter_count": 1895808,
+  "parent_step": 1955,
+  "plan_sha256": "cd4686377ec1d923a069d3df6276105b2c172bd5c3f4722eaa2f9b69dc5d1359",
+  "procedural_steps": 2344,
+  "procedural_updates": 18752,
+  "processed_tokens": 3000320,
+  "public_document_count": 975,
+  "public_manifest_sha256": "8126c6a8008ea39fa9db138078c5b0f15becf510eebf6160053807d665149a76",
+  "public_min_chars": 0,
+  "public_steps": 586,
+  "public_token_count": 247453,
+  "records_sha256": "8e9fe577c0aba418fb21b1725fbe21587fded391521647c75188845bea0c8dee",
+  "replay_examples_per_domain": 1024,
+  "schedule_accounting": {
+    "anchor_updates_by_domain": {
+      "code": 2048,
+      "math": 2048,
+      "structured": 8192
+    },
+    "continuation_available_by_domain": {
+      "code": 14313,
+      "math": 1745,
+      "structured": 81375
+    },
+    "continuation_updates_by_domain": {
+      "code": 2262,
+      "math": 646,
+      "structured": 3556
+    },
+    "continuation_weights": {
+      "code": 0.35,
+      "math": 0.09999999999999998,
+      "structured": 0.55
+    },
+    "record_counts_by_domain": {
+      "code": 1024,
+      "math": 1024,
+      "structured": 4096
+    },
+    "total_anchor_updates": 12288,
+    "total_continuation_updates": 6464,
+    "total_updates": 18752,
+    "total_updates_by_domain": {
+      "code": 4310,
+      "math": 2694,
+      "structured": 11748
+    }
+  },
+  "schedule_sha256": "18ba8a2e77cb1eba73d4dcd243473827ce2f37e150baec3727215cbf3fbccbdd",
+  "schedule_unique_updates": 18752,
+  "seed": 1052929315,
+  "steps": 2930,
+  "target_training_tokens": 3000000,
+  "tokenizer_sha256": "6f66eba7d552fd22e4c35ba23c1998bbc549ab26ad89a1e0d245524bc802d398",
+  "training_policy": "autonomous-continuation-v1.4"
+}
