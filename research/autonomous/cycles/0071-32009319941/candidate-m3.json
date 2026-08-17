@@ -1,0 +1,47 @@
+{
+  "checkpoint_sha256": "290ced7d9e345a0d0200c7b1eaf49c16f72fc498692a550a446074f55e5629f8",
+  "contamination": {
+    "blocking": false,
+    "exact_overlap_count": 0,
+    "examples": [],
+    "method": "sha256-nfkc-collapsed-whitespace",
+    "train_documents": 975,
+    "validation_documents": 107
+  },
+  "data_manifest_sha256": "8126c6a8008ea39fa9db138078c5b0f15becf510eebf6160053807d665149a76",
+  "evaluation": {
+    "batches": 20,
+    "checkpoint_step": 4885,
+    "data_manifest_sha256": "8126c6a8008ea39fa9db138078c5b0f15becf510eebf6160053807d665149a76",
+    "documents": 107,
+    "loss": 3.1938685536384583,
+    "parameter_count": 1895808,
+    "perplexity": 24.382570508791872,
+    "split": "validation",
+    "tokens": 29360
+  },
+  "generations": [
+    {
+      "prompt": "The ",
+      "sha256": "83e209817b2b6b8d25d7078fc1a314be96196928f82030b993aedb8178224a84",
+      "text": "The and her\ncalal the; gy and not g and fat, of the fould"
+    },
+    {
+      "prompt": "Don ",
+      "sha256": "aaf6c7e7e5a2f4084bdc526d55b3500cbd8f93a2a17a45e82eb350b7f3f8f1b5",
+      "text": "Don and her\ncalal the; gy and not g and fat, of the fould"
+    },
+    {
+      "prompt": "Il ",
+      "sha256": "88ddd66b53d6ecf0721efc1a92ff7d5bd21c20df09806c3c2c9f9129e9f51f74",
+      "text": "Il é que\ncalalien; que le la de valtéice de la le "
+    }
+  ],
+  "primary_metric": {
+    "lower_is_better": true,
+    "name": "validation_loss",
+    "value": 3.1938685536384583
+  },
+  "suite_sha256": "e63ccb9a8ea41c030a6bbbbeb41332c5a53c983cc1bf9d7ea466a9862dfc5bb7",
+  "suite_version": "m3-v1"
+}
