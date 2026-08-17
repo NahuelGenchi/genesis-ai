@@ -278,6 +278,7 @@ jobs:
           if [ "$GATE_PROMOTED" = "true" ] && [ "$INCUMBENT_UNCHANGED" = "true" ]; then
             ADOPTED=true
           fi
+          export CURRENT_SHA INCUMBENT_UNCHANGED ADOPTED
           echo "adopted=$ADOPTED" >> "$GITHUB_OUTPUT"
 
           rm -rf "$RESULT_DIR"
@@ -299,7 +300,6 @@ jobs:
           import json
           import os
           from pathlib import Path
-
           result_dir = Path(os.environ["RESULT_DIR"])
           gate = json.loads((result_dir / "gate.json").read_text(encoding="utf-8"))
           adoption = {
@@ -344,7 +344,6 @@ jobs:
             import json
             import os
             from pathlib import Path
-            from genesis_ai.ingest import sha256_file
 
             state_path = Path(os.environ["STATE"])
             state = json.loads(state_path.read_text(encoding="utf-8"))
@@ -376,8 +375,8 @@ jobs:
                 "",
                 "First promoted ~5M Genesis checkpoint, if and only if the frozen scale gate and incumbent-freshness gate both passed.",
                 "",
-                f"- Parameters: `4,954,624`",
-                f"- Architecture: `rope-only`",
+                "- Parameters: `4,954,624`",
+                "- Architecture: `rope-only`",
                 f"- GCI-v1: `{gate['gci_v1']['candidate']['score']:.4f}`",
                 f"- Checkpoint SHA-256: `{gate['candidate_checkpoint_sha256']}`",
                 "- Independent semantic reproduction: required",
