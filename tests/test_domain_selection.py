@@ -55,6 +55,13 @@ class DomainSelectionTest(unittest.TestCase):
                 answer = oracle_response(task)
                 self.assertTrue(verify_task(task, answer).passed, (domain, answer))
 
+    def test_difficulty_five_code_oracles_are_valid_for_frozen_ladder_seed(self):
+        tasks = generate_domain_tasks(domain="code", seed=40003, count=60, difficulty=5)
+        self.assertEqual(len({task["id"] for task in tasks}), 60)
+        for task in tasks:
+            answer = oracle_response(task)
+            self.assertTrue(verify_task(task, answer).passed, (task["id"], answer))
+
     def test_selection_is_reproducible_and_hash_bound(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
