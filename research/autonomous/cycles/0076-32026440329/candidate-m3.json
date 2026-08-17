@@ -1,0 +1,47 @@
+{
+  "checkpoint_sha256": "1e93a1b8e38370ba31fe7c90054683824a410834f8c24a5012daa35f95d7c033",
+  "contamination": {
+    "blocking": false,
+    "exact_overlap_count": 0,
+    "examples": [],
+    "method": "sha256-nfkc-collapsed-whitespace",
+    "train_documents": 975,
+    "validation_documents": 107
+  },
+  "data_manifest_sha256": "8126c6a8008ea39fa9db138078c5b0f15becf510eebf6160053807d665149a76",
+  "evaluation": {
+    "batches": 20,
+    "checkpoint_step": 4885,
+    "data_manifest_sha256": "8126c6a8008ea39fa9db138078c5b0f15becf510eebf6160053807d665149a76",
+    "documents": 107,
+    "loss": 3.1944103717803953,
+    "parameter_count": 1895808,
+    "perplexity": 24.395785007444868,
+    "split": "validation",
+    "tokens": 29360
+  },
+  "generations": [
+    {
+      "prompt": "The ",
+      "sha256": "9d80d751d70acbd8a96f0317a49e79372e7f13458c0ecd2522e9dfe4e29e09ef",
+      "text": "The and it\ncaling the with as and not gis a at recinter in "
+    },
+    {
+      "prompt": "Don ",
+      "sha256": "6243a189e95fa11366192c8ad943b881c25ab625599ad359b1db93bd87d144eb",
+      "text": "Don and it\ncalieutedaba le mor, vait fit, de la le "
+    },
+    {
+      "prompt": "Il ",
+      "sha256": "4be64606fac10a2b086264635baf7fbafaff1254a610ed70b3006875ccfc9931",
+      "text": "Il mititantiès ent un le elle de vait flaues fla le "
+    }
+  ],
+  "primary_metric": {
+    "lower_is_better": true,
+    "name": "validation_loss",
+    "value": 3.1944103717803953
+  },
+  "suite_sha256": "e63ccb9a8ea41c030a6bbbbeb41332c5a53c983cc1bf9d7ea466a9862dfc5bb7",
+  "suite_version": "m3-v1"
+}
