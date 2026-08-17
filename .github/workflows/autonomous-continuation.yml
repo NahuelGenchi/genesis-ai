@@ -4,6 +4,8 @@ on:
   workflow_run:
     workflows: ["Autonomous verified improvement"]
     types: [completed]
+  schedule:
+    - cron: "12,27,42,57 * * * *"
 
 permissions:
   actions: write
@@ -15,14 +17,14 @@ concurrency:
 
 jobs:
   continue:
-    if: github.event.repository.private == false && github.event.workflow_run.conclusion == 'success'
+    if: github.event.repository.private == false && (github.event_name == 'schedule' || github.event.workflow_run.conclusion == 'success')
     runs-on: ubuntu-slim
     timeout-minutes: 5
     env:
       GH_TOKEN: ${{ github.token }}
       REPOSITORY: ${{ github.repository }}
     steps:
-      - name: Dispatch the next canonical cycle
+      - name: Dispatch next canonical cycle only when idle
         shell: bash
         run: |
           python - <<'PY'
@@ -38,6 +40,17 @@ jobs:
               "Content-Type": "application/json",
               "X-GitHub-Api-Version": "2022-11-28",
           }
+          runs_request = urllib.request.Request(
+              f"https://api.github.com/repos/{repo}/actions/workflows/autonomous-improvement.yml/runs?per_page=20",
+              headers=headers,
+          )
+          with urllib.request.urlopen(runs_request) as response:
+              runs = json.load(response)["workflow_runs"]
+          active = [run for run in runs if run["status"] in {"queued", "in_progress", "waiting", "pending", "requested"}]
+          if active:
+              print(f"autonomous chain healthy: {len(active)} active/pending run(s)")
+              raise SystemExit(0)
+
           request = urllib.request.Request(
               f"https://api.github.com/repos/{repo}/actions/workflows/autonomous-improvement.yml/dispatches",
               data=json.dumps({"ref": "main"}).encode("utf-8"),
@@ -47,5 +60,5 @@ jobs:
           with urllib.request.urlopen(request) as response:
               if response.status != 204:
                   raise RuntimeError(f"unexpected dispatch status: {response.status}")
-          print("dispatched next autonomous improvement cycle")
+          print("autonomous chain was idle; dispatched next canonical cycle")
           PY
