@@ -1,0 +1,47 @@
+{
+  "checkpoint_sha256": "02b687f6cd28333c56cb703c3e734a4d2d1a96a3b52632b4bae7cb5dcd8fef12",
+  "contamination": {
+    "blocking": false,
+    "exact_overlap_count": 0,
+    "examples": [],
+    "method": "sha256-nfkc-collapsed-whitespace",
+    "train_documents": 975,
+    "validation_documents": 107
+  },
+  "data_manifest_sha256": "8126c6a8008ea39fa9db138078c5b0f15becf510eebf6160053807d665149a76",
+  "evaluation": {
+    "batches": 20,
+    "checkpoint_step": 4885,
+    "data_manifest_sha256": "8126c6a8008ea39fa9db138078c5b0f15becf510eebf6160053807d665149a76",
+    "documents": 107,
+    "loss": 3.198909866809845,
+    "parameter_count": 1895808,
+    "perplexity": 24.505801043518787,
+    "split": "validation",
+    "tokens": 29360
+  },
+  "generations": [
+    {
+      "prompt": "The ",
+      "sha256": "9cd98fbfc0a4bd9646c581de664fb8ca52e9b8bc5af4f4aafcdcb70da793bff2",
+      "text": "The and her\ncaling his; gy and not g and fat rechan I "
+    },
+    {
+      "prompt": "Don ",
+      "sha256": "ac9e77f877015278d4c6918e667f839618937a0a4f8d682ea66996d69d4a9737",
+      "text": "Don and her\ncalpar a gy and not gis a at rechan I "
+    },
+    {
+      "prompt": "Il ",
+      "sha256": "b1123d4e7bab428ebae7170d6c764862765c206c2cad79a471565aa7eaa6ec98",
+      "text": "Il mit lui vit plaire ne\nqui la f la fit, de la le "
+    }
+  ],
+  "primary_metric": {
+    "lower_is_better": true,
+    "name": "validation_loss",
+    "value": 3.198909866809845
+  },
+  "suite_sha256": "e63ccb9a8ea41c030a6bbbbeb41332c5a53c983cc1bf9d7ea466a9862dfc5bb7",
+  "suite_version": "m3-v1"
+}
