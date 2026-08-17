@@ -1,0 +1,47 @@
+{
+  "checkpoint_sha256": "b38c3023c058382587c1e3f6eb951a719b4281197ef9f81063231dd236cf68d0",
+  "contamination": {
+    "blocking": false,
+    "exact_overlap_count": 0,
+    "examples": [],
+    "method": "sha256-nfkc-collapsed-whitespace",
+    "train_documents": 975,
+    "validation_documents": 107
+  },
+  "data_manifest_sha256": "8126c6a8008ea39fa9db138078c5b0f15becf510eebf6160053807d665149a76",
+  "evaluation": {
+    "batches": 20,
+    "checkpoint_step": 4885,
+    "data_manifest_sha256": "8126c6a8008ea39fa9db138078c5b0f15becf510eebf6160053807d665149a76",
+    "documents": 107,
+    "loss": 3.1676013708114623,
+    "parameter_count": 1895808,
+    "perplexity": 23.75044746207194,
+    "split": "validation",
+    "tokens": 29360
+  },
+  "generations": [
+    {
+      "prompt": "The ",
+      "sha256": "d3b74a6a49117a660c089497b46c1543358ebd781a17148c654b92ba5c80ec07",
+      "text": "The and it\ncaling the\nbely and not w and fitt of the in "
+    },
+    {
+      "prompt": "Don ",
+      "sha256": "153dac82021d2a542525c12f3fc903c3a8f73a12cd8ae1ef7cc4ea5b10987e9d",
+      "text": "Don mit inival y\nCay se la que la fios de la que "
+    },
+    {
+      "prompt": "Il ",
+      "sha256": "1c8c6e4a76a2296df5ec1e6278f3cfa15e039f42707878e645ddb23da378a914",
+      "text": "Il éit qui valien\ndes et pas la fé et laux fes le "
+    }
+  ],
+  "primary_metric": {
+    "lower_is_better": true,
+    "name": "validation_loss",
+    "value": 3.1676013708114623
+  },
+  "suite_sha256": "e63ccb9a8ea41c030a6bbbbeb41332c5a53c983cc1bf9d7ea466a9862dfc5bb7",
+  "suite_version": "m3-v1"
+}
