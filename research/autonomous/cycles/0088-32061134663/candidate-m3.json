@@ -1,0 +1,47 @@
+{
+  "checkpoint_sha256": "d0873195a2926010835b6046fa55018ddb28a5301b437c39683e8803883ebe2e",
+  "contamination": {
+    "blocking": false,
+    "exact_overlap_count": 0,
+    "examples": [],
+    "method": "sha256-nfkc-collapsed-whitespace",
+    "train_documents": 975,
+    "validation_documents": 107
+  },
+  "data_manifest_sha256": "8126c6a8008ea39fa9db138078c5b0f15becf510eebf6160053807d665149a76",
+  "evaluation": {
+    "batches": 20,
+    "checkpoint_step": 4885,
+    "data_manifest_sha256": "8126c6a8008ea39fa9db138078c5b0f15becf510eebf6160053807d665149a76",
+    "documents": 107,
+    "loss": 3.1932282209396363,
+    "parameter_count": 1895808,
+    "perplexity": 24.36696254929048,
+    "split": "validation",
+    "tokens": 29360
+  },
+  "generations": [
+    {
+      "prompt": "The ",
+      "sha256": "43b7b610fedd0043b33df2ecf4e245ab2a926053a6e36ce0b3af770f559b0c2e",
+      "text": "The and it\ncalgar a that gl not g and fice of the in "
+    },
+    {
+      "prompt": "Don ",
+      "sha256": "d2fa52449acc6908183be0978fccc5a5eff1438f84ca29b3c617e3fbf2edcecc",
+      "text": "Don mit inival en\nCun le mor, valt la les fla le "
+    },
+    {
+      "prompt": "Il ",
+      "sha256": "d51d18e6f2c3a8975f7b8875d9119b508a6d2b19bbfd7cb4e05dea6a3559b4df",
+      "text": "Il éit la valt che et\ns la féient la les fes le "
+    }
+  ],
+  "primary_metric": {
+    "lower_is_better": true,
+    "name": "validation_loss",
+    "value": 3.1932282209396363
+  },
+  "suite_sha256": "e63ccb9a8ea41c030a6bbbbeb41332c5a53c983cc1bf9d7ea466a9862dfc5bb7",
+  "suite_version": "m3-v1"
+}
