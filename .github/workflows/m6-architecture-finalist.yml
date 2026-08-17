@@ -1,0 +1,110 @@
+name: M6 architecture finalist v1
+
+on:
+  workflow_dispatch:
+  workflow_run:
+    workflows: ["M6 architecture tournament v1"]
+    types: [completed]
+
+permissions:
+  contents: write
+  issues: write
+
+concurrency:
+  group: m6-architecture-finalist-v1
+  cancel-in-progress: false
+
+jobs:
+  reproduce:
+    if: github.event.repository.private == false && (github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success')
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    env:
+      PYTHONPATH: src
+      WORK: runs/m6-architecture-finalist-v1-${{ github.run_id }}
+      RESULT: research/m6-architecture-finalist-v1.json
+      OMP_NUM_THREADS: "1"
+      MKL_NUM_THREADS: "1"
+      OPENBLAS_NUM_THREADS: "1"
+      NUMEXPR_NUM_THREADS: "1"
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Sync to latest main
+        run: |
+          git fetch origin main
+          git reset --hard origin/main
+          test -f research/m6-architecture-tournament-v1.json
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Enforce free public runner and install CPU PyTorch
+        run: |
+          test "$RUNNER_ENVIRONMENT" = "github-hosted"
+          test "$RUNNER_OS" = "Linux"
+          python -m pip install --disable-pip-version-check --no-input --index-url https://download.pytorch.org/whl/cpu torch
+
+      - name: Rebuild frozen public corpus
+        run: |
+          rm -rf "$WORK"
+          mkdir -p "$WORK" "$(dirname "$RESULT")"
+          cp data/bootstrap-tokenizer-lock.json "$WORK/bootstrap-tokenizer-lock.json"
+          python -m genesis_ai.bootstrap_corpus \
+            --catalog data/bootstrap-tokenizer-sources.json \
+            --workspace "$WORK/public-corpus" \
+            --output "$WORK/rebuilt-tokenizer.json" \
+            --lock "$WORK/bootstrap-tokenizer-lock.json" \
+            --vocab-size 512
+          cmp data/bootstrap-tokenizer-lock.json "$WORK/bootstrap-tokenizer-lock.json"
+          cmp tokenizers/genesis-v0.json "$WORK/rebuilt-tokenizer.json"
+
+      - name: Reproduce finalist on two fresh seeds
+        run: |
+          python -m genesis_ai.architecture_finalist \
+            --tournament research/m6-architecture-tournament-v1.json \
+            --definition experiments/m6-architecture-tournament-v1.json \
+            --public-data "$WORK/public-corpus/filtered" \
+            --tokenizer tokenizers/genesis-v0.json \
+            --output "$RESULT" \
+            --device cpu
+          python -m genesis_ai.result_provenance \
+            "$RESULT" \
+            --source-commit "$(git rev-parse HEAD)" \
+            --workflow-run-id "$GITHUB_RUN_ID"
+
+      - name: Validate repository
+        run: PYTHON_BIN=python ./scripts/test_local.sh
+
+      - name: Commit finalist decision and update tracked research
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add "$RESULT"
+          if ! git diff --cached --quiet; then
+            git commit -m "Research: record architecture finalist (#148, #203)"
+            git fetch origin main
+            git rebase origin/main
+            git push origin HEAD:main
+          fi
+          SUMMARY=$(python - <<'PY'
+          import json
+          from pathlib import Path
+          result = json.loads(Path("research/m6-architecture-finalist-v1.json").read_text(encoding="utf-8"))
+          print(
+              f"Architecture finalist completed on GitHub-hosted $0 CPU. Initial winner: `{result['initial_winner']}`; "
+              f"accepted architecture: `{result['accepted_architecture']}`; fresh-seed gate passed: "
+              f"`{result['decision']['passed']}`. This is research evidence only; no checkpoint promotion authority."
+          )
+          PY
+          )
+          gh issue comment 148 --repo "$GITHUB_REPOSITORY" --body "$SUMMARY"
+          if gh issue view 203 --repo "$GITHUB_REPOSITORY" --json state --jq '.state' 2>/dev/null | grep -q OPEN; then
+            gh issue comment 203 --repo "$GITHUB_REPOSITORY" --body "$SUMMARY"
+          fi
