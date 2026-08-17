@@ -1,0 +1,426 @@
+name: M6 full ~5M RoPE v1
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - experiments/m6-scale-5m-rope-v1.json
+      - src/genesis_ai/scale_5m_contract.py
+      - src/genesis_ai/scale_5m_curriculum.py
+      - src/genesis_ai/scale_5m_training.py
+      - src/genesis_ai/scale_5m_gate.py
+      - src/genesis_ai/autonomous_training.py
+      - tests/test_scale_5m_*.py
+      - .github/workflows/m6-scale-5m-rope.yml
+
+permissions:
+  contents: write
+  issues: write
+
+concurrency:
+  group: m6-full-5m-rope-v1
+  cancel-in-progress: false
+
+jobs:
+  train-reproduce-evaluate-gate:
+    if: github.event.repository.private == false
+    runs-on: ubuntu-latest
+    timeout-minutes: 350
+    env:
+      PYTHONPATH: src
+      WORK: runs/m6-scale-5m-rope-${{ github.run_id }}
+      RESULT_DIR: research/m6-scale-5m-rope-v1
+      EXPERIMENT: experiments/m6-scale-5m-rope-v1.json
+      FINALIST: research/m6-architecture-finalist-v1.json
+      PREFLIGHT: research/m6-scale-5m-rope-preflight-v1.json
+      STATE: research/autonomous/state.json
+      OMP_NUM_THREADS: "4"
+      MKL_NUM_THREADS: "4"
+      OPENBLAS_NUM_THREADS: "4"
+      NUMEXPR_NUM_THREADS: "4"
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Synchronize experiment source to current main
+        id: source
+        run: |
+          git fetch origin main
+          git reset --hard origin/main
+          SOURCE_COMMIT=$(git rev-parse HEAD)
+          echo "commit=$SOURCE_COMMIT" >> "$GITHUB_OUTPUT"
+          test -f "$FINALIST"
+          test -f "$PREFLIGHT"
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Enforce public zero-cash runner and install deterministic CPU PyTorch
+        run: |
+          test "$RUNNER_ENVIRONMENT" = "github-hosted"
+          test "$RUNNER_OS" = "Linux"
+          python -m pip install --disable-pip-version-check --no-input --index-url https://download.pytorch.org/whl/cpu torch
+
+      - name: Resolve promoted baseline before training
+        id: baseline
+        run: |
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+          from genesis_ai.ingest import sha256_file
+
+          state = json.loads(Path(os.environ["STATE"]).read_text(encoding="utf-8"))
+          assert state["state_version"] == "autonomous-state-v1"
+          assert state["cash_compute_cost_usd"] == 0.0
+          checkpoint = Path(state["incumbent_checkpoint"])
+          assert checkpoint.is_file(), checkpoint
+          if int(state["difficulty"]) != 1:
+              raise SystemExit("fail-closed: first ~5M promotion experiment requires difficulty-1 incumbent state")
+          with Path(os.environ["GITHUB_OUTPUT"]).open("a", encoding="utf-8") as handle:
+              handle.write(f"checkpoint={checkpoint.as_posix()}\n")
+              handle.write(f"sha256={sha256_file(checkpoint)}\n")
+              handle.write(f"cycle_index={int(state['cycle_index'])}\n")
+          PY
+
+      - name: Rebuild provenance-locked public corpus
+        run: |
+          rm -rf "$WORK"
+          mkdir -p "$WORK"
+          cp data/bootstrap-tokenizer-lock.json "$WORK/bootstrap-tokenizer-lock.json"
+          python -m genesis_ai.bootstrap_corpus \
+            --catalog data/bootstrap-tokenizer-sources.json \
+            --workspace "$WORK/public-corpus" \
+            --output "$WORK/rebuilt-tokenizer.json" \
+            --lock "$WORK/bootstrap-tokenizer-lock.json" \
+            --vocab-size 512
+          cmp data/bootstrap-tokenizer-lock.json "$WORK/bootstrap-tokenizer-lock.json"
+          cmp tokenizers/genesis-v0.json "$WORK/rebuilt-tokenizer.json"
+
+      - name: Build fresh ladder-separated verifier curriculum
+        run: |
+          python -m genesis_ai.scale_5m_curriculum \
+            --experiment "$EXPERIMENT" \
+            --finalist "$FINALIST" \
+            --preflight "$PREFLIGHT" \
+            --tokenizer tokenizers/genesis-v0.json \
+            --public-data "$WORK/public-corpus/filtered" \
+            --records "$WORK/records.jsonl" \
+            --output "$WORK/curriculum.json"
+
+      - name: Train primary ~5M candidate from scratch
+        run: |
+          python -m genesis_ai.scale_5m_training \
+            --experiment "$EXPERIMENT" \
+            --finalist "$FINALIST" \
+            --preflight "$PREFLIGHT" \
+            --curriculum "$WORK/curriculum.json" \
+            --records "$WORK/records.jsonl" \
+            --public-data "$WORK/public-corpus/filtered" \
+            --tokenizer tokenizers/genesis-v0.json \
+            --checkpoint "$WORK/primary-training.pt" \
+            --export "$WORK/primary.pt" \
+            --run "$WORK/primary-training.json" \
+            --device cpu
+
+      - name: Train independent ~5M replica from scratch
+        run: |
+          python -m genesis_ai.scale_5m_training \
+            --experiment "$EXPERIMENT" \
+            --finalist "$FINALIST" \
+            --preflight "$PREFLIGHT" \
+            --curriculum "$WORK/curriculum.json" \
+            --records "$WORK/records.jsonl" \
+            --public-data "$WORK/public-corpus/filtered" \
+            --tokenizer tokenizers/genesis-v0.json \
+            --checkpoint "$WORK/replica-training.pt" \
+            --export "$WORK/replica.pt" \
+            --run "$WORK/replica-training.json" \
+            --device cpu
+
+      - name: Require independent semantic reproduction
+        run: |
+          python -m genesis_ai.scale_repro \
+            --primary "$WORK/primary.pt" \
+            --replica "$WORK/replica.pt" \
+            --output "$WORK/reproduction.json"
+
+      - name: Evaluate promotion-critical difficulty-1 capability
+        run: |
+          python -m genesis_ai.terminated_eval \
+            --checkpoint "${{ steps.baseline.outputs.checkpoint }}" \
+            --suite evals/m6-domain-selection-v2.json \
+            --output "$WORK/baseline-d1.json" \
+            --device cpu
+          python -m genesis_ai.terminated_eval \
+            --checkpoint "$WORK/primary.pt" \
+            --suite evals/m6-domain-selection-v2.json \
+            --output "$WORK/candidate-d1.json" \
+            --device cpu
+
+      - name: Evaluate M3 regression boundary
+        run: |
+          python -m genesis_ai.eval_lab \
+            --checkpoint "${{ steps.baseline.outputs.checkpoint }}" \
+            --data "$WORK/public-corpus/filtered" \
+            --suite evals/m3-v1.json \
+            --output "$WORK/baseline-m3.json" \
+            --device cpu
+          python -m genesis_ai.eval_lab \
+            --checkpoint "$WORK/primary.pt" \
+            --data "$WORK/public-corpus/filtered" \
+            --suite evals/m3-v1.json \
+            --output "$WORK/candidate-m3.json" \
+            --device cpu
+
+      - name: Report frozen GCI-Ladder generalization
+        run: |
+          cp "$WORK/baseline-d1.json" "$WORK/baseline-d1-ladder.json"
+          cp "$WORK/candidate-d1.json" "$WORK/candidate-d1-ladder.json"
+          for D in 2 3 4 5; do
+            python -m genesis_ai.terminated_eval \
+              --checkpoint "${{ steps.baseline.outputs.checkpoint }}" \
+              --suite "evals/m6-domain-ladder-d${D}-v1.json" \
+              --output "$WORK/baseline-d${D}-ladder.json" \
+              --device cpu
+            python -m genesis_ai.terminated_eval \
+              --checkpoint "$WORK/primary.pt" \
+              --suite "evals/m6-domain-ladder-d${D}-v1.json" \
+              --output "$WORK/candidate-d${D}-ladder.json" \
+              --device cpu
+          done
+          python -m genesis_ai.gci_ladder score \
+            --result "$WORK/baseline-d1-ladder.json" \
+            --result "$WORK/baseline-d2-ladder.json" \
+            --result "$WORK/baseline-d3-ladder.json" \
+            --result "$WORK/baseline-d4-ladder.json" \
+            --result "$WORK/baseline-d5-ladder.json" \
+            --output "$WORK/baseline-ladder.json"
+          python -m genesis_ai.gci_ladder score \
+            --result "$WORK/candidate-d1-ladder.json" \
+            --result "$WORK/candidate-d2-ladder.json" \
+            --result "$WORK/candidate-d3-ladder.json" \
+            --result "$WORK/candidate-d4-ladder.json" \
+            --result "$WORK/candidate-d5-ladder.json" \
+            --output "$WORK/candidate-ladder.json"
+
+      - name: Apply frozen ~5M promotion gate
+        id: gate
+        run: |
+          set +e
+          python -m genesis_ai.scale_5m_gate \
+            --experiment "$EXPERIMENT" \
+            --finalist "$FINALIST" \
+            --preflight "$PREFLIGHT" \
+            --curriculum "$WORK/curriculum.json" \
+            --primary-training "$WORK/primary-training.json" \
+            --replica-training "$WORK/replica-training.json" \
+            --reproduction "$WORK/reproduction.json" \
+            --baseline-domain "$WORK/baseline-d1.json" \
+            --candidate-domain "$WORK/candidate-d1.json" \
+            --baseline-m3 "$WORK/baseline-m3.json" \
+            --candidate-m3 "$WORK/candidate-m3.json" \
+            --candidate-checkpoint "$WORK/primary.pt" \
+            --baseline-ladder "$WORK/baseline-ladder.json" \
+            --candidate-ladder "$WORK/candidate-ladder.json" \
+            --output "$WORK/gate.json"
+          STATUS=$?
+          set -e
+          if [ "$STATUS" -ne 0 ] && [ "$STATUS" -ne 2 ]; then exit "$STATUS"; fi
+          python -m genesis_ai.result_provenance \
+            "$WORK/gate.json" \
+            --source-commit "${{ steps.source.outputs.commit }}" \
+            --workflow-run-id "$GITHUB_RUN_ID"
+          PROMOTED=$(python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+          gate = json.loads(Path(os.environ["WORK"], "gate.json").read_text(encoding="utf-8"))
+          print(str(bool(gate["promoted"])).lower())
+          PY
+          )
+          echo "promoted=$PROMOTED" >> "$GITHUB_OUTPUT"
+
+      - name: Validate repository before persistence
+        run: PYTHON_BIN=python ./scripts/test_local.sh
+
+      - name: Persist result and adopt only against unchanged incumbent
+        id: persist
+        env:
+          GATE_PROMOTED: ${{ steps.gate.outputs.promoted }}
+          BASELINE_SHA: ${{ steps.baseline.outputs.sha256 }}
+          SOURCE_COMMIT: ${{ steps.source.outputs.commit }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          git fetch origin main
+          git rebase origin/main
+
+          readarray -t FRESHNESS < <(python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+          from genesis_ai.ingest import sha256_file
+          state = json.loads(Path(os.environ["STATE"]).read_text(encoding="utf-8"))
+          checkpoint = Path(state["incumbent_checkpoint"])
+          current_sha = sha256_file(checkpoint)
+          expected = os.environ["BASELINE_SHA"]
+          print(current_sha)
+          print(str(current_sha == expected).lower())
+          PY
+          )
+          CURRENT_SHA="${FRESHNESS[0]}"
+          INCUMBENT_UNCHANGED="${FRESHNESS[1]}"
+          ADOPTED=false
+          if [ "$GATE_PROMOTED" = "true" ] && [ "$INCUMBENT_UNCHANGED" = "true" ]; then
+            ADOPTED=true
+          fi
+          echo "adopted=$ADOPTED" >> "$GITHUB_OUTPUT"
+
+          rm -rf "$RESULT_DIR"
+          mkdir -p "$RESULT_DIR"
+          cp "$EXPERIMENT" "$RESULT_DIR/experiment.json"
+          cp "$WORK/curriculum.json" "$RESULT_DIR/curriculum.json"
+          cp "$WORK/primary-training.json" "$RESULT_DIR/primary-training.json"
+          cp "$WORK/replica-training.json" "$RESULT_DIR/replica-training.json"
+          cp "$WORK/reproduction.json" "$RESULT_DIR/reproduction.json"
+          cp "$WORK/baseline-d1.json" "$RESULT_DIR/baseline-d1.json"
+          cp "$WORK/candidate-d1.json" "$RESULT_DIR/candidate-d1.json"
+          cp "$WORK/baseline-m3.json" "$RESULT_DIR/baseline-m3.json"
+          cp "$WORK/candidate-m3.json" "$RESULT_DIR/candidate-m3.json"
+          cp "$WORK/baseline-ladder.json" "$RESULT_DIR/baseline-ladder.json"
+          cp "$WORK/candidate-ladder.json" "$RESULT_DIR/candidate-ladder.json"
+          cp "$WORK/gate.json" "$RESULT_DIR/gate.json"
+
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          result_dir = Path(os.environ["RESULT_DIR"])
+          gate = json.loads((result_dir / "gate.json").read_text(encoding="utf-8"))
+          adoption = {
+              "format_version": "1.0",
+              "adoption_version": "m6-scale-5m-adoption-v1",
+              "gate_promoted": os.environ["GATE_PROMOTED"] == "true",
+              "baseline_checkpoint_sha256": os.environ["BASELINE_SHA"],
+              "current_incumbent_checkpoint_sha256": os.environ["CURRENT_SHA"],
+              "incumbent_unchanged_since_training_started": os.environ["INCUMBENT_UNCHANGED"] == "true",
+              "adopted": os.environ["ADOPTED"] == "true",
+              "reason": (
+                  "frozen gate passed and incumbent unchanged"
+                  if os.environ["ADOPTED"] == "true"
+                  else "frozen capability gate rejected candidate"
+                  if os.environ["GATE_PROMOTED"] != "true"
+                  else "incumbent changed while scale experiment was running; fail closed"
+              ),
+              "cash_compute_cost_usd": 0.0,
+          }
+          (result_dir / "adoption.json").write_text(json.dumps(adoption, indent=2, sort_keys=True) + "\n", encoding="utf-8", newline="\n")
+          gci = gate["gci_v1"]
+          candidate_ladder = gate["ladder_reporting"]["candidate"]
+          summary = [
+              "# First ~5M RoPE scale experiment",
+              "",
+              f"- Frozen gate decision: **{gate['decision']}**",
+              f"- Adopted as incumbent: **{adoption['adopted']}**",
+              f"- GCI-v1: `{gci['baseline']['score']:.4f} -> {gci['candidate']['score']:.4f}` ({gci['absolute_point_change']:+.4f} points)",
+              f"- Candidate domains: `{gci['candidate']['domain_exact_accuracy']}`",
+              f"- Candidate GCI-Ladder: `{candidate_ladder['ladder_score']:.4f}`",
+              f"- Candidate worst domain/difficulty exact: `{candidate_ladder['worst_domain_exact_percent']:.4f}%`",
+              "- Cash compute: `$0`",
+              "- Primary + independent replica required",
+          ]
+          (result_dir / "README.md").write_text("\n".join(summary) + "\n", encoding="utf-8", newline="\n")
+          PY
+
+          if [ "$ADOPTED" = "true" ]; then
+            cp "$WORK/primary.pt" checkpoints/genesis-scale-5m-rope-v1.pt
+            mkdir -p models/genesis-scale-5m-rope-v1
+            python - <<'PY'
+            import json
+            import os
+            from pathlib import Path
+            from genesis_ai.ingest import sha256_file
+
+            state_path = Path(os.environ["STATE"])
+            state = json.loads(state_path.read_text(encoding="utf-8"))
+            result_dir = Path(os.environ["RESULT_DIR"])
+            gate = json.loads((result_dir / "gate.json").read_text(encoding="utf-8"))
+            state["incumbent_checkpoint"] = "checkpoints/genesis-scale-5m-rope-v1.pt"
+            state["difficulty"] = 1
+            state["last_scale_promotion"] = {
+                "checkpoint_sha256": gate["candidate_checkpoint_sha256"],
+                "gci_v1": gate["gci_v1"]["candidate"]["score"],
+                "result_dir": result_dir.as_posix(),
+                "source_commit": os.environ["SOURCE_COMMIT"],
+                "workflow_run_id": os.environ["GITHUB_RUN_ID"],
+            }
+            state_path.write_text(json.dumps(state, indent=2, sort_keys=True) + "\n", encoding="utf-8", newline="\n")
+            model_dir = Path("models/genesis-scale-5m-rope-v1")
+            metadata = {
+                "checkpoint": "checkpoints/genesis-scale-5m-rope-v1.pt",
+                "checkpoint_sha256": gate["candidate_checkpoint_sha256"],
+                "parameter_count": 4_954_624,
+                "architecture": "rope-only",
+                "gci_v1": gate["gci_v1"]["candidate"]["score"],
+                "result_dir": result_dir.as_posix(),
+                "cash_compute_cost_usd": 0.0,
+            }
+            (model_dir / "metadata.json").write_text(json.dumps(metadata, indent=2, sort_keys=True) + "\n", encoding="utf-8", newline="\n")
+            card = [
+                "# Genesis scale 5M RoPE v1",
+                "",
+                "First promoted ~5M Genesis checkpoint, if and only if the frozen scale gate and incumbent-freshness gate both passed.",
+                "",
+                f"- Parameters: `4,954,624`",
+                f"- Architecture: `rope-only`",
+                f"- GCI-v1: `{gate['gci_v1']['candidate']['score']:.4f}`",
+                f"- Checkpoint SHA-256: `{gate['candidate_checkpoint_sha256']}`",
+                "- Independent semantic reproduction: required",
+                "- Cash compute: `$0`",
+            ]
+            (model_dir / "README.md").write_text("\n".join(card) + "\n", encoding="utf-8", newline="\n")
+            PY
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add "$RESULT_DIR"
+          if [ "$ADOPTED" = "true" ]; then
+            git add "$STATE" models/genesis-scale-5m-rope-v1
+            git add -f checkpoints/genesis-scale-5m-rope-v1.pt
+          fi
+          DECISION=$(python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+          adoption = json.loads(Path(os.environ["RESULT_DIR"], "adoption.json").read_text(encoding="utf-8"))
+          print("promote" if adoption["adopted"] else "reject")
+          PY
+          )
+          git commit -m "M6: full ~5M RoPE experiment $DECISION (#160, #210)"
+          git push origin HEAD:main
+
+          SUMMARY=$(python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+          result = Path(os.environ["RESULT_DIR"])
+          gate = json.loads((result / "gate.json").read_text(encoding="utf-8"))
+          adoption = json.loads((result / "adoption.json").read_text(encoding="utf-8"))
+          gci = gate["gci_v1"]
+          domains = gci["candidate"]["domain_exact_accuracy"]
+          print(
+              f"Full ~5M RoPE result committed. Frozen gate: `{gate['decision']}`; adopted: `{adoption['adopted']}`. "
+              f"GCI-v1 `{gci['baseline']['score']:.4f} -> {gci['candidate']['score']:.4f}` "
+              f"(`{gci['absolute_point_change']:+.4f}` points); code `{domains['code']:.4f}`, math `{domains['math']:.4f}`, "
+              f"structured `{domains['structured']:.4f}`. Cash compute `$0`."
+          )
+          PY
+          )
+          gh issue comment 210 --repo "$GITHUB_REPOSITORY" --body "$SUMMARY"
+          gh issue comment 160 --repo "$GITHUB_REPOSITORY" --body "$SUMMARY"
