@@ -1,0 +1,47 @@
+{
+  "checkpoint_sha256": "740c8ebadfceb648b44d29ee0baa1c224b08efc2ffccbe2d312f773eea755008",
+  "contamination": {
+    "blocking": false,
+    "exact_overlap_count": 0,
+    "examples": [],
+    "method": "sha256-nfkc-collapsed-whitespace",
+    "train_documents": 975,
+    "validation_documents": 107
+  },
+  "data_manifest_sha256": "8126c6a8008ea39fa9db138078c5b0f15becf510eebf6160053807d665149a76",
+  "evaluation": {
+    "batches": 20,
+    "checkpoint_step": 4885,
+    "data_manifest_sha256": "8126c6a8008ea39fa9db138078c5b0f15becf510eebf6160053807d665149a76",
+    "documents": 107,
+    "loss": 3.2185500502586364,
+    "parameter_count": 1895808,
+    "perplexity": 24.991856961230546,
+    "split": "validation",
+    "tokens": 29360
+  },
+  "generations": [
+    {
+      "prompt": "The ",
+      "sha256": "0a48d54fcb650b8baf76b588a1c7a45b4ad2c8f5151655f718f53e28d1576c54",
+      "text": "The and it\ncaling the with her and not g and fice of the in "
+    },
+    {
+      "prompt": "Don ",
+      "sha256": "3017bc438e951d33eb1473c0ee4b3a0cd9047c9bc1703a60c5210a08125c6aa9",
+      "text": "Don and her\ncalfary with her! of her for afice of the in "
+    },
+    {
+      "prompt": "Il ",
+      "sha256": "b6a7ca303873b68eb0496f7a857923cd8230801785ba6bde7e33be35cf66b327",
+      "text": "Il éit qui valtout\ndes ne! s'e féient la les fla le "
+    }
+  ],
+  "primary_metric": {
+    "lower_is_better": true,
+    "name": "validation_loss",
+    "value": 3.2185500502586364
+  },
+  "suite_sha256": "e63ccb9a8ea41c030a6bbbbeb41332c5a53c983cc1bf9d7ea466a9862dfc5bb7",
+  "suite_version": "m3-v1"
+}
