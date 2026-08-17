@@ -1,0 +1,104 @@
+{
+  "cash_compute_cost_usd": 0.0,
+  "continuation_update_weights": {
+    "code": 0.25,
+    "math": 0.09999999999999998,
+    "structured": 0.65
+  },
+  "curriculum_version": "autonomous-curriculum-v1",
+  "domain_records": {
+    "code": {
+      "attempts": 1084,
+      "examples": 1024,
+      "role": "replay",
+      "terminated_response_tokens": 16444
+    },
+    "math": {
+      "attempts": 1050,
+      "examples": 1024,
+      "role": "replay",
+      "terminated_response_tokens": 3733
+    },
+    "structured": {
+      "attempts": 1024,
+      "examples": 1024,
+      "role": "focus",
+      "terminated_response_tokens": 22412
+    }
+  },
+  "exact_holdout_prompt_overlap_count": 0,
+  "focus_domain": "structured",
+  "focus_examples": 1024,
+  "format_version": "1.0",
+  "history_summary": {
+    "consecutive_rejections": 60,
+    "cycles_considered": 60,
+    "hint_failures": {
+      "data-filtering/min-chars-80": 56
+    },
+    "last_strategy": "sequence-depth-v1",
+    "strategy_attempts": {
+      "legacy-focus-heavy-v1": 59,
+      "sequence-depth-v1": 1
+    },
+    "strategy_zero_focus_gain": {
+      "legacy-focus-heavy-v1": 59,
+      "sequence-depth-v1": 1
+    }
+  },
+  "incumbent_checkpoint_sha256": "0ba16a931451ffbdc369aa685845b0ddb9b6ed03910ac773b50e837fd9886d7e",
+  "plan_sha256": "1bba4bd5e77c67ed88bf8fc824905376a50a1105a010461fa6f97003a2e0ea73",
+  "procedural_fraction": 0.8,
+  "public_fraction": 0.2,
+  "public_manifest_sha256": "8126c6a8008ea39fa9db138078c5b0f15becf510eebf6160053807d665149a76",
+  "public_min_chars": 0,
+  "record_count": 3072,
+  "record_set_sha256": "23d6f00428463595241e63eee8edba8df41d079e1f68b18cb73a3c2ab080b808",
+  "records_file_sha256": "c0121fcf40c34abdc3a636c92996b3bbde3e937d0db94cd7685b84148dd3d2ca",
+  "replay_examples_per_domain": 1024,
+  "research_escalation": {
+    "actions": [
+      "architecture-tournament",
+      "tracked-research-issue"
+    ],
+    "all_predeclared_strategies_exhausted": false,
+    "reason": "all predeclared repair strategies exhausted",
+    "required": false
+  },
+  "research_evidence": {
+    "applied_hint": null,
+    "evidence_sha256": "4d3fe177d250afa932c72604e7a64fdef9bdd6bf1e9068c4f6002cbfeb7b8ccf",
+    "farm_version": "cpu-screen-v1",
+    "ignored_eligible_hints": [],
+    "promotion_authority": false,
+    "retired_eligible_hints": [
+      {
+        "end_to_end_zero_gain_rejections": 56,
+        "improvement_fraction": 0.10000000000000003,
+        "lane": "data-filtering",
+        "retirement_threshold": 5,
+        "variant": "min-chars-80"
+      }
+    ],
+    "source_commit": "05be81dae3374c46dc071c198aad9c3947e21441",
+    "workflow_run_id": 31974050768
+  },
+  "research_strategy": {
+    "continuation_update_weights": {
+      "code": 0.25,
+      "math": 0.09999999999999998,
+      "structured": 0.65
+    },
+    "focus_examples": 1024,
+    "id": "sequence-depth-v1",
+    "max_zero_gain_attempts": 3,
+    "prior_attempts_same_incumbent": 1,
+    "prior_zero_focus_gain_rejections": 1,
+    "strongest_replay_domain": "code"
+  },
+  "target_difficulty": 1,
+  "target_suite_sha256": "e04f1298d1705c5d00a43170f01e79f129fce53da26dead637b7b74d79d83afc",
+  "target_suite_version": "m6-domain-selection-v2",
+  "target_training_tokens": 3000000,
+  "tokenizer_sha256": "6f66eba7d552fd22e4c35ba23c1998bbc549ab26ad89a1e0d245524bc802d398"
+}

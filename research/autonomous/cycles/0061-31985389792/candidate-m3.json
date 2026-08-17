@@ -1,0 +1,47 @@
+{
+  "checkpoint_sha256": "2107ffecab39b6b8c6791de3c045bd8e9bb3e1be32127e30da3bdd5d6d3e7d26",
+  "contamination": {
+    "blocking": false,
+    "exact_overlap_count": 0,
+    "examples": [],
+    "method": "sha256-nfkc-collapsed-whitespace",
+    "train_documents": 975,
+    "validation_documents": 107
+  },
+  "data_manifest_sha256": "8126c6a8008ea39fa9db138078c5b0f15becf510eebf6160053807d665149a76",
+  "evaluation": {
+    "batches": 20,
+    "checkpoint_step": 4885,
+    "data_manifest_sha256": "8126c6a8008ea39fa9db138078c5b0f15becf510eebf6160053807d665149a76",
+    "documents": 107,
+    "loss": 3.1781076788902283,
+    "parameter_count": 1895808,
+    "perplexity": 24.001292399811394,
+    "split": "validation",
+    "tokens": 29360
+  },
+  "generations": [
+    {
+      "prompt": "The ",
+      "sha256": "3de2f54de234539469fa5679746f511fb0f151afd7a0091c34828cef7b820293",
+      "text": "The and it\ncaling his with ingle not g and fter, of the in "
+    },
+    {
+      "prompt": "Don ",
+      "sha256": "00a5be1c0893ae6386a6bb6973f53913a66017cbd141982adf9d07cfaf564fa0",
+      "text": "Don and it\ncalieudairegingor la f les fla les fla le "
+    },
+    {
+      "prompt": "Il ",
+      "sha256": "ba64c752a81e16d470d64c83ffea0507aa61d7b1e6aafe69a67a470ef46025bb",
+      "text": "Il éit lui vit plus que le la de vait\n--Il les fla le "
+    }
+  ],
+  "primary_metric": {
+    "lower_is_better": true,
+    "name": "validation_loss",
+    "value": 3.1781076788902283
+  },
+  "suite_sha256": "e63ccb9a8ea41c030a6bbbbeb41332c5a53c983cc1bf9d7ea466a9862dfc5bb7",
+  "suite_version": "m3-v1"
+}
