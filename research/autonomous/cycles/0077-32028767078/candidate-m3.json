@@ -1,0 +1,47 @@
+{
+  "checkpoint_sha256": "97daf93015a10567735f132392fa0252a8ce7e19a944e5a62a858ef3e578fbab",
+  "contamination": {
+    "blocking": false,
+    "exact_overlap_count": 0,
+    "examples": [],
+    "method": "sha256-nfkc-collapsed-whitespace",
+    "train_documents": 975,
+    "validation_documents": 107
+  },
+  "data_manifest_sha256": "8126c6a8008ea39fa9db138078c5b0f15becf510eebf6160053807d665149a76",
+  "evaluation": {
+    "batches": 20,
+    "checkpoint_step": 4885,
+    "data_manifest_sha256": "8126c6a8008ea39fa9db138078c5b0f15becf510eebf6160053807d665149a76",
+    "documents": 107,
+    "loss": 3.2144832849502563,
+    "parameter_count": 1895808,
+    "perplexity": 24.890427329394413,
+    "split": "validation",
+    "tokens": 29360
+  },
+  "generations": [
+    {
+      "prompt": "The ",
+      "sha256": "8ceade34a69ee3e91dcc9a98cfc90f0b190b25e82f182d7998bfc1e95e86b4c8",
+      "text": "The and her\ncalfar a that gl not g and flawes fla I "
+    },
+    {
+      "prompt": "Don ",
+      "sha256": "6ff58a65bdfb43e20f7da23f8be13e7d77486951b53e0bcbc8aefb00064b22fa",
+      "text": "Don and her\ncal all a that gl not g and flawessin\nthat f"
+    },
+    {
+      "prompt": "Il ",
+      "sha256": "82fa3bb5d2a72404a00beda3cb4b4b11b25092fc3e7a20eeb4f829c83fc2d62c",
+      "text": "Il mit trivit d'ai un le mla f les flaux fla le "
+    }
+  ],
+  "primary_metric": {
+    "lower_is_better": true,
+    "name": "validation_loss",
+    "value": 3.2144832849502563
+  },
+  "suite_sha256": "e63ccb9a8ea41c030a6bbbbeb41332c5a53c983cc1bf9d7ea466a9862dfc5bb7",
+  "suite_version": "m3-v1"
+}
