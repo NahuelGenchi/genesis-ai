@@ -1,0 +1,27 @@
+{
+  "format_version": "1.0",
+  "name": "m6-scale-5m-rope-preflight-v1",
+  "accepted_architecture": "rope-only",
+  "expected_parameter_count": 4954624,
+  "target_training_tokens_per_replica": 20000000,
+  "target_tokens_per_step": 1024,
+  "warmup_steps": 10,
+  "measured_steps": 100,
+  "learning_rate": 0.001,
+  "seed": 160001,
+  "torch_threads": 4,
+  "maximum_projected_training_seconds_per_replica": 14400,
+  "config": {
+    "vocab_size": 512,
+    "context_length": 128,
+    "d_model": 256,
+    "n_heads": 8,
+    "n_layers": 6,
+    "d_ff": 1056,
+    "dropout": 0.0,
+    "position_encoding": "rotary",
+    "ffn_type": "dense",
+    "norm_type": "layernorm",
+    "dense_activation": "gelu"
+  }
+}

@@ -1,0 +1,120 @@
+name: M6 ~5M RoPE throughput preflight
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - experiments/m6-scale-5m-rope-preflight-v1.json
+      - research/m6-architecture-finalist-v1.json
+      - src/genesis_ai/scale_preflight.py
+      - tests/test_scale_preflight.py
+      - .github/workflows/m6-scale-5m-rope-preflight.yml
+
+permissions:
+  contents: write
+  issues: write
+
+concurrency:
+  group: m6-scale-5m-rope-preflight
+  cancel-in-progress: false
+
+jobs:
+  preflight:
+    if: github.event.repository.private == false
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      PYTHONPATH: src
+      WORK: runs/m6-scale-5m-rope-preflight-${{ github.run_id }}
+      RESULT: research/m6-scale-5m-rope-preflight-v1.json
+      OMP_NUM_THREADS: "4"
+      MKL_NUM_THREADS: "4"
+      OPENBLAS_NUM_THREADS: "4"
+      NUMEXPR_NUM_THREADS: "4"
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Sync to latest main
+        id: source
+        run: |
+          git fetch origin main
+          git reset --hard origin/main
+          echo "commit=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+          test -f research/m6-architecture-finalist-v1.json
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Enforce free public runner and install CPU PyTorch
+        run: |
+          test "$RUNNER_ENVIRONMENT" = "github-hosted"
+          test "$RUNNER_OS" = "Linux"
+          python -m pip install --disable-pip-version-check --no-input --index-url https://download.pytorch.org/whl/cpu torch
+
+      - name: Rebuild frozen public corpus
+        run: |
+          rm -rf "$WORK"
+          mkdir -p "$WORK" "$(dirname "$RESULT")"
+          cp data/bootstrap-tokenizer-lock.json "$WORK/bootstrap-tokenizer-lock.json"
+          python -m genesis_ai.bootstrap_corpus \
+            --catalog data/bootstrap-tokenizer-sources.json \
+            --workspace "$WORK/public-corpus" \
+            --output "$WORK/rebuilt-tokenizer.json" \
+            --lock "$WORK/bootstrap-tokenizer-lock.json" \
+            --vocab-size 512
+          cmp data/bootstrap-tokenizer-lock.json "$WORK/bootstrap-tokenizer-lock.json"
+          cmp tokenizers/genesis-v0.json "$WORK/rebuilt-tokenizer.json"
+
+      - name: Measure exact 4.95M RoPE training throughput
+        run: |
+          python -m genesis_ai.scale_preflight \
+            --definition experiments/m6-scale-5m-rope-preflight-v1.json \
+            --finalist research/m6-architecture-finalist-v1.json \
+            --public-data "$WORK/public-corpus/filtered" \
+            --tokenizer tokenizers/genesis-v0.json \
+            --output "$RESULT" \
+            --device cpu
+          python -m genesis_ai.result_provenance \
+            "$RESULT" \
+            --source-commit "${{ steps.source.outputs.commit }}" \
+            --workflow-run-id "$GITHUB_RUN_ID"
+
+      - name: Validate repository
+        run: PYTHON_BIN=python ./scripts/test_local.sh
+
+      - name: Commit immutable preflight result
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add "$RESULT"
+          if ! git diff --cached --quiet; then
+            git commit -m "Research: record ~5M RoPE throughput preflight (#208, #160)"
+            git fetch origin main
+            git rebase origin/main
+            git push origin HEAD:main
+          fi
+          SUMMARY=$(python - <<'PY'
+          import json
+          from pathlib import Path
+          result = json.loads(Path("research/m6-scale-5m-rope-preflight-v1.json").read_text(encoding="utf-8"))
+          projection = result["projection"]
+          print(
+              f"~5M RoPE preflight completed on GitHub-hosted `$0` CPU: "
+              f"{result['parameter_count']:,} parameters, "
+              f"{result['sample']['tokens_per_second']:.1f} train tokens/s, "
+              f"projected 20M-token replica {projection['training_hours_per_replica']:.2f}h "
+              f"against {projection['maximum_training_hours_per_replica']:.2f}h bound; "
+              f"CPU preflight passed: `{projection['passes_remote_cpu_time_budget']}`. "
+              f"Research/preflight only; no checkpoint promotion authority."
+          )
+          PY
+          )
+          gh issue comment 208 --repo "$GITHUB_REPOSITORY" --body "$SUMMARY"
+          gh issue comment 160 --repo "$GITHUB_REPOSITORY" --body "$SUMMARY"
