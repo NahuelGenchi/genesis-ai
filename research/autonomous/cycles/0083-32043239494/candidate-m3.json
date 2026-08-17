@@ -1,0 +1,47 @@
+{
+  "checkpoint_sha256": "2d83ce9bb58238b8cec9e20059b4dc0570996f236ecec40d9f5db78b4505cb6e",
+  "contamination": {
+    "blocking": false,
+    "exact_overlap_count": 0,
+    "examples": [],
+    "method": "sha256-nfkc-collapsed-whitespace",
+    "train_documents": 975,
+    "validation_documents": 107
+  },
+  "data_manifest_sha256": "8126c6a8008ea39fa9db138078c5b0f15becf510eebf6160053807d665149a76",
+  "evaluation": {
+    "batches": 20,
+    "checkpoint_step": 4885,
+    "data_manifest_sha256": "8126c6a8008ea39fa9db138078c5b0f15becf510eebf6160053807d665149a76",
+    "documents": 107,
+    "loss": 3.218278670310974,
+    "parameter_count": 1895808,
+    "perplexity": 24.985075592601774,
+    "split": "validation",
+    "tokens": 29360
+  },
+  "generations": [
+    {
+      "prompt": "The ",
+      "sha256": "bc0f66c7c9d741e63c66ae747fefe020d66db34d05fcd6f03741b3646a7cf5f1",
+      "text": "The and it\ncalal the\nwith her! of her for afice of the in "
+    },
+    {
+      "prompt": "Don ",
+      "sha256": "d4797c8f000e899e351bcc51d2b3a3d3b6a3b3365073dc9f349311d97370f120",
+      "text": "Don andit inival the\nwith her! of her for a mues han I "
+    },
+    {
+      "prompt": "Il ",
+      "sha256": "662cc1573cf9d455a2187826a691cbf1534a0c1b99a60c05b7fa2d697775ab64",
+      "text": "Il éit la valt che et la la f la fice cin\nle f"
+    }
+  ],
+  "primary_metric": {
+    "lower_is_better": true,
+    "name": "validation_loss",
+    "value": 3.218278670310974
+  },
+  "suite_sha256": "e63ccb9a8ea41c030a6bbbbeb41332c5a53c983cc1bf9d7ea466a9862dfc5bb7",
+  "suite_version": "m3-v1"
+}
