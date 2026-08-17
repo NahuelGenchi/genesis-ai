@@ -1,0 +1,137 @@
+{
+  "baseline_checkpoint_sha256": "0ba16a931451ffbdc369aa685845b0ddb9b6ed03910ac773b50e837fd9886d7e",
+  "candidate_checkpoint_sha256": "6aea943b4b9b06c8f5bf442ca0a555ddeee6fd3d76f300af3c52b914d7f98850",
+  "decision": "reject",
+  "focus_absolute_gain": 0.0,
+  "focus_domain": "structured",
+  "format_version": "1.0",
+  "gate_version": "autonomous-promotion-gate-v1",
+  "gates": [
+    {
+      "name": "focus_absolute_gain",
+      "observed": 0.0,
+      "passed": false,
+      "requirement": 0.1
+    },
+    {
+      "name": "gci_absolute_gain",
+      "observed": 0.0,
+      "passed": false,
+      "requirement": 3.0
+    },
+    {
+      "name": "nonfocus_regressions",
+      "observed": {
+        "code": -0.016666666666666607,
+        "math": 0.016666666666666666
+      },
+      "passed": true,
+      "requirement": {
+        "minimum_delta_each": -0.05
+      }
+    },
+    {
+      "name": "m3_validation_loss",
+      "observed": {
+        "baseline": 3.3551116466522215,
+        "candidate": 3.1740562915802,
+        "regression_fraction": -0.0539640328370834
+      },
+      "passed": true,
+      "requirement": {
+        "max_regression_fraction": 0.02
+      }
+    },
+    {
+      "name": "m3_exact_contamination",
+      "observed": {
+        "blocking": false,
+        "exact_overlap_count": 0,
+        "examples": [],
+        "method": "sha256-nfkc-collapsed-whitespace",
+        "train_documents": 975,
+        "validation_documents": 107
+      },
+      "passed": true,
+      "requirement": {
+        "blocking": false,
+        "exact_overlap_count": 0
+      }
+    },
+    {
+      "name": "semantic_reproduction",
+      "observed": {
+        "checkpoint_bytes_equal": false,
+        "config_equal": true,
+        "format_version": "1.0",
+        "metadata_equal": true,
+        "primary_checkpoint_sha256": "6aea943b4b9b06c8f5bf442ca0a555ddeee6fd3d76f300af3c52b914d7f98850",
+        "replica_checkpoint_sha256": "8aecde7db7d65d2d293b38174235744d837e5cf8260ca68a8713ee36c89b7d4b",
+        "repro_version": "m6-repro-v1",
+        "reproducible": true,
+        "state_keys_equal": true,
+        "step_equal": true,
+        "tokenizer_equal": true,
+        "weights_equal": true
+      },
+      "passed": true,
+      "requirement": true
+    },
+    {
+      "name": "holdout_overlap",
+      "observed": 0,
+      "passed": true,
+      "requirement": 0
+    },
+    {
+      "name": "zero_cash_compute",
+      "observed": {
+        "curriculum": 0.0,
+        "training": 0.0
+      },
+      "passed": true,
+      "requirement": 0.0
+    }
+  ],
+  "gci_v1": {
+    "absolute_point_change": 0.0,
+    "baseline": {
+      "checkpoint_sha256": "0ba16a931451ffbdc369aa685845b0ddb9b6ed03910ac773b50e837fd9886d7e",
+      "domain_exact_accuracy": {
+        "code": 0.95,
+        "math": 0.0,
+        "structured": 0.0
+      },
+      "metric_version": "gci-v1",
+      "score": 31.666666666666668,
+      "suite_sha256": "e04f1298d1705c5d00a43170f01e79f129fce53da26dead637b7b74d79d83afc",
+      "suite_version": "m6-domain-selection-v2"
+    },
+    "candidate": {
+      "checkpoint_sha256": "6aea943b4b9b06c8f5bf442ca0a555ddeee6fd3d76f300af3c52b914d7f98850",
+      "domain_exact_accuracy": {
+        "code": 0.9333333333333333,
+        "math": 0.016666666666666666,
+        "structured": 0.0
+      },
+      "metric_version": "gci-v1",
+      "score": 31.666666666666668,
+      "suite_sha256": "e04f1298d1705c5d00a43170f01e79f129fce53da26dead637b7b74d79d83afc",
+      "suite_version": "m6-domain-selection-v2"
+    },
+    "format_version": "1.0",
+    "metric_version": "gci-v1",
+    "relative_percent_change": 0.0,
+    "relative_percent_note": null
+  },
+  "nonfocus_deltas": {
+    "code": -0.016666666666666607,
+    "math": 0.016666666666666666
+  },
+  "plan_sha256": "b9e11aa97d28275dea376256039803c7ac316ab206f21558e75232ed3f387838",
+  "promoted": false,
+  "result_provenance": {
+    "source_commit": "4d341d64e09ad571057b761223d9f2fe4849f84d",
+    "workflow_run_id": "32047466218"
+  }
+}

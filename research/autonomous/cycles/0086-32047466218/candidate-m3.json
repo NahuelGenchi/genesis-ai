@@ -1,0 +1,47 @@
+{
+  "checkpoint_sha256": "6aea943b4b9b06c8f5bf442ca0a555ddeee6fd3d76f300af3c52b914d7f98850",
+  "contamination": {
+    "blocking": false,
+    "exact_overlap_count": 0,
+    "examples": [],
+    "method": "sha256-nfkc-collapsed-whitespace",
+    "train_documents": 975,
+    "validation_documents": 107
+  },
+  "data_manifest_sha256": "8126c6a8008ea39fa9db138078c5b0f15becf510eebf6160053807d665149a76",
+  "evaluation": {
+    "batches": 20,
+    "checkpoint_step": 4885,
+    "data_manifest_sha256": "8126c6a8008ea39fa9db138078c5b0f15becf510eebf6160053807d665149a76",
+    "documents": 107,
+    "loss": 3.1740562915802,
+    "parameter_count": 1895808,
+    "perplexity": 23.904250578095937,
+    "split": "validation",
+    "tokens": 29360
+  },
+  "generations": [
+    {
+      "prompt": "The ",
+      "sha256": "c156d9ab831661cc57a3a28d8287090e091ce6ebed9f0f8cfacdf1a33c35e568",
+      "text": "The and it\ncalal the bity and not g and flat of the in "
+    },
+    {
+      "prompt": "Don ",
+      "sha256": "8a5b4aaef77b37b9c08d17691c4fce1dce9072fd1e3a5e2484425644785bd1f1",
+      "text": "Don and it\ncal me a that wor not g and fit recin\nthat re"
+    },
+    {
+      "prompt": "Il ",
+      "sha256": "a09cd33dbbf51d4bfbced0a271d41a76a7c51fd6d7070535cb248e0d693fd7f2",
+      "text": "Il mit lui vit en\nCa le morses la flaues fla le "
+    }
+  ],
+  "primary_metric": {
+    "lower_is_better": true,
+    "name": "validation_loss",
+    "value": 3.1740562915802
+  },
+  "suite_sha256": "e63ccb9a8ea41c030a6bbbbeb41332c5a53c983cc1bf9d7ea466a9862dfc5bb7",
+  "suite_version": "m3-v1"
+}
