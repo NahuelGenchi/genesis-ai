@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import math
 import random
 from pathlib import Path
 from typing import Any
@@ -16,6 +17,7 @@ from .terminated_eval import load_terminated_suite
 from .tokenizer import ByteBPETokenizer
 
 CURRICULUM_VERSION = "autonomous-curriculum-v1"
+DOMAINS = {"code", "math", "structured"}
 
 
 def _canonical(value: object) -> str:
@@ -53,6 +55,23 @@ def _validate_plan(plan: dict[str, Any]) -> None:
     allowed = {0, *PUBLIC_MIN_CHARS_VARIANTS.values()}
     if not isinstance(public_min_chars, int) or isinstance(public_min_chars, bool) or public_min_chars not in allowed:
         raise ValueError("autonomous plan public_min_chars is outside the screened allow-list")
+    focus_examples = decision.get("focus_examples")
+    if not isinstance(focus_examples, int) or isinstance(focus_examples, bool) or not 1 <= focus_examples <= 4096:
+        raise ValueError("autonomous focus example count is outside bounded research contract")
+    replay_examples = decision.get("replay_examples_per_domain")
+    if not isinstance(replay_examples, int) or isinstance(replay_examples, bool) or replay_examples <= 0:
+        raise ValueError("autonomous replay example count is invalid")
+    weights = decision.get("continuation_update_weights")
+    if not isinstance(weights, dict):
+        raise ValueError("autonomous continuation weights are required")
+    if set(weights) == {"focus", "each_replay_domain"}:
+        total = float(weights["focus"]) + 2.0 * float(weights["each_replay_domain"])
+    elif set(weights) == DOMAINS:
+        total = sum(float(weights[domain]) for domain in DOMAINS)
+    else:
+        raise ValueError("autonomous continuation weights have an unsupported shape")
+    if not math.isclose(total, 1.0, abs_tol=1e-9):
+        raise ValueError("autonomous continuation weights must sum to 1")
 
 
 def _domain_seed(plan_sha256: str, domain: str) -> int:
@@ -161,7 +180,7 @@ def build_curriculum(
     counts = {focus: int(decision["focus_examples"])}
     for domain in replay_domains:
         counts[str(domain)] = int(decision["replay_examples_per_domain"])
-    if set(counts) != {"code", "math", "structured"}:
+    if set(counts) != DOMAINS:
         raise ValueError("autonomous curriculum must cover all three domains")
 
     all_records: list[dict[str, Any]] = []
@@ -196,6 +215,8 @@ def build_curriculum(
         "plan_sha256": plan["plan_sha256"],
         "incumbent_checkpoint_sha256": plan["input"]["incumbent_checkpoint_sha256"],
         "focus_domain": focus,
+        "focus_examples": int(decision["focus_examples"]),
+        "replay_examples_per_domain": int(decision["replay_examples_per_domain"]),
         "target_difficulty": target_difficulty,
         "target_training_tokens": int(decision["target_training_tokens"]),
         "procedural_fraction": float(decision["procedural_fraction"]),
@@ -213,8 +234,9 @@ def build_curriculum(
         "public_manifest_sha256": sha256_file(public_data / "manifest.json"),
         "cash_compute_cost_usd": 0.0,
     }
-    if "research_evidence" in plan:
-        result["research_evidence"] = plan["research_evidence"]
+    for key in ("research_strategy", "history_summary", "research_escalation", "research_evidence"):
+        if key in plan:
+            result[key] = plan[key]
     return result
 
 
