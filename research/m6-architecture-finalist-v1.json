@@ -1,0 +1,59 @@
+{
+  "accepted_architecture": "rope-only",
+  "baseline": "baseline-learned-layernorm-gelu",
+  "cash_compute_cost_usd": 0.0,
+  "decision": {
+    "mean_relative_improvement": 0.043542763482206204,
+    "passed": true,
+    "per_seed_relative_deltas": [
+      -0.0441584830790831,
+      -0.042932245149671866
+    ],
+    "reason": "fresh-seed reproduction gate",
+    "requirement": {
+      "maximum_per_seed_relative_regression": 0.01,
+      "minimum_mean_relative_improvement": 0.005
+    }
+  },
+  "definition_sha256": "600d5b9e896a64dd10d3723d8a1f8ad2dea13b989667ce3103b2f32848edd0e5",
+  "finalist_version": "m6-architecture-finalist-v1",
+  "format_version": "1.0",
+  "fresh_seeds": [
+    102002,
+    102003
+  ],
+  "initial_winner": "rope-only",
+  "public_manifest_sha256": "8126c6a8008ea39fa9db138078c5b0f15becf510eebf6160053807d665149a76",
+  "result_provenance": {
+    "source_commit": "55aeeb2bedf47ec22db2310b495efb276a42c09b",
+    "workflow_run_id": "31985252307"
+  },
+  "summary": {
+    "baseline-learned-layernorm-gelu": {
+      "final_validation_losses": [
+        3.984592378139496,
+        4.0185388088226315
+      ],
+      "mean_final_validation_loss": 4.001565593481064,
+      "mean_tokens_per_second": 4837.076183697027,
+      "seeds": [
+        102002,
+        102003
+      ]
+    },
+    "rope-only": {
+      "final_validation_losses": [
+        3.8086388230323793,
+        3.846013915538788
+      ],
+      "mean_final_validation_loss": 3.8273263692855837,
+      "mean_tokens_per_second": 4664.67870029825,
+      "seeds": [
+        102002,
+        102003
+      ]
+    }
+  },
+  "tokenizer_sha256": "6f66eba7d552fd22e4c35ba23c1998bbc549ab26ad89a1e0d245524bc802d398",
+  "tournament_sha256": "c89c28a9176830b7494c50a060b14c0458dfe23f41d703779712fd1693c699af"
+}
