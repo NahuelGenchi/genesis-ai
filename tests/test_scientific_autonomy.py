@@ -68,6 +68,12 @@ def write_cycle(root: Path, index: int, *, strategy=None, hint=True, focus_gain=
     (cycle / "gate.json").write_text(json.dumps(gate), encoding="utf-8")
 
 
+def assert_weights(test: unittest.TestCase, actual, expected):
+    test.assertEqual(set(actual), set(expected))
+    for domain, value in expected.items():
+        test.assertAlmostEqual(actual[domain], value, places=12)
+
+
 class ScientificAutonomyTest(unittest.TestCase):
     def test_legacy_stagnation_selects_materially_different_sequence_depth_strategy(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -84,7 +90,8 @@ class ScientificAutonomyTest(unittest.TestCase):
             self.assertEqual(plan["research_strategy"]["id"], "sequence-depth-v1")
             self.assertEqual(plan["decision"]["mode"], "research-repair")
             self.assertEqual(plan["decision"]["focus_examples"], 1024)
-            self.assertEqual(
+            assert_weights(
+                self,
                 plan["decision"]["continuation_update_weights"],
                 {"structured": 0.65, "code": 0.25, "math": 0.10},
             )
@@ -109,7 +116,8 @@ class ScientificAutonomyTest(unittest.TestCase):
             )
             self.assertEqual(plan["research_strategy"]["id"], "anti-forgetting-v1")
             self.assertEqual(plan["decision"]["focus_examples"], 1536)
-            self.assertEqual(
+            assert_weights(
+                self,
                 plan["decision"]["continuation_update_weights"],
                 {"structured": 0.50, "code": 0.40, "math": 0.10},
             )
