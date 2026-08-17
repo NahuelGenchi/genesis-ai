@@ -20,14 +20,14 @@
   "lane_summaries": {
     "architecture": {
       "baseline": "layernorm-gelu",
-      "baseline_metric": 3.8234434127807617,
+      "baseline_metric": 3.8234472274780273,
       "improvement_fraction": 0.0,
       "kind": "candidate",
       "objective": "minimize",
       "survives_cpu_screen": false,
       "threshold_fraction": 0.01,
       "winner": "layernorm-gelu",
-      "winner_metric": 3.8234434127807617
+      "winner_metric": 3.8234472274780273
     },
     "data-filtering": {
       "baseline": "min-chars-40",
@@ -56,14 +56,14 @@
     },
     "optimizer": {
       "baseline": "adamw",
-      "baseline_metric": 3.8234472274780273,
+      "baseline_metric": 3.8234434127807617,
       "improvement_fraction": 0.0,
       "kind": "candidate",
       "objective": "minimize",
       "survives_cpu_screen": false,
       "threshold_fraction": 0.01,
       "winner": "adamw",
-      "winner_metric": 3.8234472274780273
+      "winner_metric": 3.8234434127807617
     },
     "tiny-model": {
       "baseline": "tiny-96x2",
@@ -109,6 +109,6 @@
   "promotion_eligible": false,
   "runner_contract": "ubuntu-latest",
   "screening_only": true,
-  "source_commit": "c9f4bdb44c3195be902c4091ff9e50c9b40490fa",
-  "workflow_run_id": 32043211772
+  "source_commit": "a63727655552dae53e8b4d6dfa4aef5c4369f656",
+  "workflow_run_id": 32058078785
 }
