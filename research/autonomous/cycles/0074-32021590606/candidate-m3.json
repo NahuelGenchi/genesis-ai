@@ -1,0 +1,47 @@
+{
+  "checkpoint_sha256": "41791d203d28a5997cb407a7eac242e9519a0d5f069dd052437fd1325c5c4e8d",
+  "contamination": {
+    "blocking": false,
+    "exact_overlap_count": 0,
+    "examples": [],
+    "method": "sha256-nfkc-collapsed-whitespace",
+    "train_documents": 975,
+    "validation_documents": 107
+  },
+  "data_manifest_sha256": "8126c6a8008ea39fa9db138078c5b0f15becf510eebf6160053807d665149a76",
+  "evaluation": {
+    "batches": 20,
+    "checkpoint_step": 4885,
+    "data_manifest_sha256": "8126c6a8008ea39fa9db138078c5b0f15becf510eebf6160053807d665149a76",
+    "documents": 107,
+    "loss": 3.2116607427597046,
+    "parameter_count": 1895808,
+    "perplexity": 24.82027210273563,
+    "split": "validation",
+    "tokens": 29360
+  },
+  "generations": [
+    {
+      "prompt": "The ",
+      "sha256": "eef3003184b96a059722a3952ff693deee79be8707a74dbed3f47e2a6640efbf",
+      "text": "The and it caling the\nwith as and not w and falce of the in "
+    },
+    {
+      "prompt": "Don ",
+      "sha256": "ed48419bdc3a22e359e7356786017ee25b0924f76e3920ad95555465fd0edbe4",
+      "text": "Don édit\ncalieute; que le la de vait flaues fla le "
+    },
+    {
+      "prompt": "Il ",
+      "sha256": "89d967693734a0c1edefab64cbd907c23f94ca1c3b80516660de4fac2af1e384",
+      "text": "Il mit lui valien\ndes etle la de vait flaues fla le "
+    }
+  ],
+  "primary_metric": {
+    "lower_is_better": true,
+    "name": "validation_loss",
+    "value": 3.2116607427597046
+  },
+  "suite_sha256": "e63ccb9a8ea41c030a6bbbbeb41332c5a53c983cc1bf9d7ea466a9862dfc5bb7",
+  "suite_version": "m3-v1"
+}
