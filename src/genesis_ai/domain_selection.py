@@ -106,6 +106,11 @@ def oracle_response(task: dict[str, Any]) -> str:
         response = prompt.rsplit("compute: ", 1)[1]
         if response.endswith("."):
             response = response[:-1]
+        if " modulo " in response:
+            expression, separator, modulus = response.rpartition(" modulo ")
+            if separator != " modulo " or not expression or not modulus.isdigit() or int(modulus) <= 0:
+                raise ValueError("restricted-expression modulo description is not canonical")
+            response = f"({expression}) % {int(modulus)}"
         response = response.replace("^", "**")
     else:
         raise ValueError(f"unsupported verifier kind: {kind}")
