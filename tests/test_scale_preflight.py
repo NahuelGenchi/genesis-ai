@@ -9,6 +9,7 @@ from genesis_ai.scale_preflight import load_preflight_contract
 
 DEFINITION = Path("experiments/m6-scale-5m-rope-preflight-v1.json")
 FINALIST = Path("research/m6-architecture-finalist-v1.json")
+WORKFLOW = Path(".github/workflows/m6-scale-5m-rope-preflight.yml")
 
 
 class ScalePreflightTest(unittest.TestCase):
@@ -50,6 +51,19 @@ class ScalePreflightTest(unittest.TestCase):
             finalist_path.write_text(json.dumps(finalist), encoding="utf-8")
             with self.assertRaises(ValueError):
                 load_preflight_contract(definition_path, finalist_path)
+
+    def test_workflow_is_public_remote_bounded_and_non_promoting(self):
+        workflow = WORKFLOW.read_text(encoding="utf-8")
+        self.assertIn("runs-on: ubuntu-latest", workflow)
+        self.assertNotIn("self-hosted", workflow)
+        self.assertIn("timeout-minutes: 30", workflow)
+        self.assertIn('test "$RUNNER_ENVIRONMENT" = "github-hosted"', workflow)
+        self.assertIn("genesis_ai.scale_preflight", workflow)
+        self.assertIn("research/m6-scale-5m-rope-preflight-v1.json", workflow)
+        self.assertNotIn("genesis_ai.autonomous_gate", workflow)
+        self.assertNotIn("checkpoints/genesis-autonomous-incumbent.pt", workflow)
+        self.assertNotIn("pull_request:", workflow)
+        self.assertNotIn("pull_request_target:", workflow)
 
 
 if __name__ == "__main__":
