@@ -20,9 +20,9 @@ from .scale_training import BASE_LR, CPU_THREADS, GRAD_CLIP, _lr
 from .terminated_training import TerminatedGenerationAlignedDataset
 from .tokenizer import ByteBPETokenizer
 
-TRAINING_POLICY_VERSION = "autonomous-continuation-v1.3"
+TRAINING_POLICY_VERSION = "autonomous-continuation-v1.4"
 TARGET_TOKENS_PER_STEP = 1024
-EXPECTED_PARAMETERS = 1_895_808
+SUPPORTED_INCUMBENT_PARAMETERS = {1_895_808, 4_954_624}
 DOMAINS = ("code", "math", "structured")
 REPLAY_EXAMPLES_BY_BUDGET = {
     3_000_000: 1_024,
@@ -119,10 +119,14 @@ def validate_inputs(
     tokenizer = ByteBPETokenizer.load(tokenizer_path)
     if tokenizer_from_payload(parent_payload).to_dict() != tokenizer.to_dict():
         raise ValueError("incumbent tokenizer differs from autonomous tokenizer")
-    if model.parameter_count() != EXPECTED_PARAMETERS:
-        raise ValueError("autonomous v1 currently requires the micro-2m architecture")
+    parameter_count = model.parameter_count()
+    if parameter_count not in SUPPORTED_INCUMBENT_PARAMETERS:
+        raise ValueError(
+            f"autonomous continuation does not support incumbent parameter count {parameter_count}; "
+            f"allowed={sorted(SUPPORTED_INCUMBENT_PARAMETERS)}"
+        )
     if model.config.context_length != 128:
-        raise ValueError("autonomous v1 currently requires context length 128")
+        raise ValueError("autonomous continuation currently requires context length 128")
 
     plan_sha256 = str(curriculum.get("plan_sha256"))
     records = _read_records(records_path, plan_sha256=plan_sha256)
@@ -134,7 +138,7 @@ def validate_inputs(
 
     target_training_tokens = int(curriculum["target_training_tokens"])
     if target_training_tokens not in REPLAY_EXAMPLES_BY_BUDGET:
-        raise ValueError("autonomous v1 training budget is outside controller contract")
+        raise ValueError("autonomous training budget is outside controller contract")
     expected_replay_records = int(curriculum.get("replay_examples_per_domain", REPLAY_EXAMPLES_BY_BUDGET[target_training_tokens]))
     if expected_replay_records != REPLAY_EXAMPLES_BY_BUDGET[target_training_tokens]:
         raise ValueError("autonomous replay example count is outside budget contract")
@@ -171,6 +175,7 @@ def validate_inputs(
 
     policy = {
         "parent_checkpoint_sha256": parent_sha,
+        "parent_parameter_count": parameter_count,
         "curriculum_lock_sha256": sha256_file(curriculum_lock),
         "records_sha256": sha256_file(records_path),
         "public_manifest_sha256": sha256_file(public_data / "manifest.json"),
@@ -187,7 +192,7 @@ def validate_inputs(
         "plan_sha256": plan_sha256,
     }
     if not math.isclose(policy["procedural_fraction"], 0.8) or not math.isclose(policy["public_fraction"], 0.2):
-        raise ValueError("autonomous v1 requires exact 80/20 mix")
+        raise ValueError("autonomous continuation requires exact 80/20 mix")
     return model, tokenizer, records, curriculum, policy, parent_payload
 
 
@@ -222,7 +227,7 @@ def build_focus_schedule(
     if total_samples < len(anchors):
         raise ValueError("autonomous budget cannot cover mandatory anchors")
     if total_samples > len(dataset):
-        raise ValueError("autonomous v1 forbids duplicate target contexts")
+        raise ValueError("autonomous continuation forbids duplicate target contexts")
 
     anchor_by_domain = {domain: 0 for domain in DOMAINS}
     for index in anchors:
@@ -290,7 +295,7 @@ def train_continuation(
     device: str = "cpu",
 ) -> dict[str, Any]:
     if device != "cpu":
-        raise ValueError("autonomous continuation v1 is frozen to deterministic CPU")
+        raise ValueError("autonomous continuation is frozen to deterministic CPU")
     torch.set_num_threads(CPU_THREADS)
     torch.use_deterministic_algorithms(True)
 
@@ -369,6 +374,7 @@ def train_continuation(
         "training_policy": TRAINING_POLICY_VERSION,
         "plan_sha256": policy["plan_sha256"],
         "parent_checkpoint_sha256": policy["parent_checkpoint_sha256"],
+        "parent_parameter_count": policy["parent_parameter_count"],
         "curriculum_lock_sha256": policy["curriculum_lock_sha256"],
         "public_min_chars": policy["public_min_chars"],
     }
@@ -393,6 +399,7 @@ def train_continuation(
         "replay_examples_per_domain": policy["replay_examples_per_domain"],
         "continuation_update_weights": policy["continuation_update_weights"],
         "parent_checkpoint_sha256": policy["parent_checkpoint_sha256"],
+        "parent_parameter_count": policy["parent_parameter_count"],
         "parent_step": parent_step,
         "final_step": final_step,
         "parameter_count": model.parameter_count(),
@@ -417,7 +424,13 @@ def train_continuation(
         "tokenizer_sha256": policy["tokenizer_sha256"],
         "inference_checkpoint_sha256": sha256_file(export_path),
         "cash_compute_cost_usd": 0.0,
-        "determinism": {"device": "cpu", "torch_threads": torch.get_num_threads(), "deterministic_algorithms": True, "adamw_foreach": False, "adamw_fused": False},
+        "determinism": {
+            "device": "cpu",
+            "torch_threads": torch.get_num_threads(),
+            "deterministic_algorithms": True,
+            "adamw_foreach": False,
+            "adamw_fused": False,
+        },
     }
     Path(run_path).parent.mkdir(parents=True, exist_ok=True)
     rendered = json.dumps(result, indent=2, sort_keys=True) + "\n"
