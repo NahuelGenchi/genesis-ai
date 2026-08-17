@@ -1,0 +1,137 @@
+{
+  "baseline_checkpoint_sha256": "0ba16a931451ffbdc369aa685845b0ddb9b6ed03910ac773b50e837fd9886d7e",
+  "candidate_checkpoint_sha256": "5323c102f75a1075fc547eb9d9ee406280ac6a22355b19f3e45bf5d8fc5b929b",
+  "decision": "reject",
+  "focus_absolute_gain": 0.0,
+  "focus_domain": "structured",
+  "format_version": "1.0",
+  "gate_version": "autonomous-promotion-gate-v1",
+  "gates": [
+    {
+      "name": "focus_absolute_gain",
+      "observed": 0.0,
+      "passed": false,
+      "requirement": 0.1
+    },
+    {
+      "name": "gci_absolute_gain",
+      "observed": 0.5555555555555536,
+      "passed": false,
+      "requirement": 3.0
+    },
+    {
+      "name": "nonfocus_regressions",
+      "observed": {
+        "code": 0.0,
+        "math": 0.016666666666666666
+      },
+      "passed": true,
+      "requirement": {
+        "minimum_delta_each": -0.05
+      }
+    },
+    {
+      "name": "m3_validation_loss",
+      "observed": {
+        "baseline": 3.3551116466522215,
+        "candidate": 3.1783056020736695,
+        "regression_fraction": -0.052697514479129626
+      },
+      "passed": true,
+      "requirement": {
+        "max_regression_fraction": 0.02
+      }
+    },
+    {
+      "name": "m3_exact_contamination",
+      "observed": {
+        "blocking": false,
+        "exact_overlap_count": 0,
+        "examples": [],
+        "method": "sha256-nfkc-collapsed-whitespace",
+        "train_documents": 975,
+        "validation_documents": 107
+      },
+      "passed": true,
+      "requirement": {
+        "blocking": false,
+        "exact_overlap_count": 0
+      }
+    },
+    {
+      "name": "semantic_reproduction",
+      "observed": {
+        "checkpoint_bytes_equal": false,
+        "config_equal": true,
+        "format_version": "1.0",
+        "metadata_equal": true,
+        "primary_checkpoint_sha256": "5323c102f75a1075fc547eb9d9ee406280ac6a22355b19f3e45bf5d8fc5b929b",
+        "replica_checkpoint_sha256": "e745fd6c6babf9e56acea74102548edc814fb2ba4bbfdd7960b0fb76ee606371",
+        "repro_version": "m6-repro-v1",
+        "reproducible": true,
+        "state_keys_equal": true,
+        "step_equal": true,
+        "tokenizer_equal": true,
+        "weights_equal": true
+      },
+      "passed": true,
+      "requirement": true
+    },
+    {
+      "name": "holdout_overlap",
+      "observed": 0,
+      "passed": true,
+      "requirement": 0
+    },
+    {
+      "name": "zero_cash_compute",
+      "observed": {
+        "curriculum": 0.0,
+        "training": 0.0
+      },
+      "passed": true,
+      "requirement": 0.0
+    }
+  ],
+  "gci_v1": {
+    "absolute_point_change": 0.5555555555555536,
+    "baseline": {
+      "checkpoint_sha256": "0ba16a931451ffbdc369aa685845b0ddb9b6ed03910ac773b50e837fd9886d7e",
+      "domain_exact_accuracy": {
+        "code": 0.95,
+        "math": 0.0,
+        "structured": 0.0
+      },
+      "metric_version": "gci-v1",
+      "score": 31.666666666666668,
+      "suite_sha256": "e04f1298d1705c5d00a43170f01e79f129fce53da26dead637b7b74d79d83afc",
+      "suite_version": "m6-domain-selection-v2"
+    },
+    "candidate": {
+      "checkpoint_sha256": "5323c102f75a1075fc547eb9d9ee406280ac6a22355b19f3e45bf5d8fc5b929b",
+      "domain_exact_accuracy": {
+        "code": 0.95,
+        "math": 0.016666666666666666,
+        "structured": 0.0
+      },
+      "metric_version": "gci-v1",
+      "score": 32.22222222222222,
+      "suite_sha256": "e04f1298d1705c5d00a43170f01e79f129fce53da26dead637b7b74d79d83afc",
+      "suite_version": "m6-domain-selection-v2"
+    },
+    "format_version": "1.0",
+    "metric_version": "gci-v1",
+    "relative_percent_change": 1.7543859649122744,
+    "relative_percent_note": null
+  },
+  "nonfocus_deltas": {
+    "code": 0.0,
+    "math": 0.016666666666666666
+  },
+  "plan_sha256": "4c0eb5e78efa0f0b699816c9f8d881bae2492fbac17829563f25ff3dbfc0170a",
+  "promoted": false,
+  "result_provenance": {
+    "source_commit": "c8fd8e52d3c0adf6c63e6e87d75a3fd7fa1a6cef",
+    "workflow_run_id": "32066870782"
+  }
+}
