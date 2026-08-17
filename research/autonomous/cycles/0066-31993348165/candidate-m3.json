@@ -1,0 +1,47 @@
+{
+  "checkpoint_sha256": "bceb9a05e531899a69c9efd3ab6ff2969b4f6dcaee8c3b50c11873528e7ed827",
+  "contamination": {
+    "blocking": false,
+    "exact_overlap_count": 0,
+    "examples": [],
+    "method": "sha256-nfkc-collapsed-whitespace",
+    "train_documents": 975,
+    "validation_documents": 107
+  },
+  "data_manifest_sha256": "8126c6a8008ea39fa9db138078c5b0f15becf510eebf6160053807d665149a76",
+  "evaluation": {
+    "batches": 20,
+    "checkpoint_step": 4885,
+    "data_manifest_sha256": "8126c6a8008ea39fa9db138078c5b0f15becf510eebf6160053807d665149a76",
+    "documents": 107,
+    "loss": 3.208729326725006,
+    "parameter_count": 1895808,
+    "perplexity": 24.74762009776035,
+    "split": "validation",
+    "tokens": 29360
+  },
+  "generations": [
+    {
+      "prompt": "The ",
+      "sha256": "53919f2b7fa9bdac85a11281a2a818201471bc32e3f8035174dd2556114e9a06",
+      "text": "The and her\ncal wed ity and not w and fice of the in "
+    },
+    {
+      "prompt": "Don ",
+      "sha256": "d1321be8d949270884194e5808d8a51498f1d65c20a8718eb12d7a1156ca64e5",
+      "text": "Don and lical al y\nCay se las me la y que de del que "
+    },
+    {
+      "prompt": "Il ",
+      "sha256": "0127742c56b432e7bc25de6470347ff2f60a5823df16663fc9f2493e65dad2ea",
+      "text": "Il mit lui vit plairegait\npas la f la fit, de la le "
+    }
+  ],
+  "primary_metric": {
+    "lower_is_better": true,
+    "name": "validation_loss",
+    "value": 3.208729326725006
+  },
+  "suite_sha256": "e63ccb9a8ea41c030a6bbbbeb41332c5a53c983cc1bf9d7ea466a9862dfc5bb7",
+  "suite_version": "m3-v1"
+}

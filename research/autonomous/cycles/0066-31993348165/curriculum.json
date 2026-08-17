@@ -1,0 +1,106 @@
+{
+  "cash_compute_cost_usd": 0.0,
+  "continuation_update_weights": {
+    "code": 0.3,
+    "math": 0.10000000000000003,
+    "structured": 0.6
+  },
+  "curriculum_version": "autonomous-curriculum-v1",
+  "domain_records": {
+    "code": {
+      "attempts": 1099,
+      "examples": 1024,
+      "role": "replay",
+      "terminated_response_tokens": 16392
+    },
+    "math": {
+      "attempts": 1038,
+      "examples": 1024,
+      "role": "replay",
+      "terminated_response_tokens": 3757
+    },
+    "structured": {
+      "attempts": 2048,
+      "examples": 2048,
+      "role": "focus",
+      "terminated_response_tokens": 44641
+    }
+  },
+  "exact_holdout_prompt_overlap_count": 0,
+  "focus_domain": "structured",
+  "focus_examples": 2048,
+  "format_version": "1.0",
+  "history_summary": {
+    "consecutive_rejections": 65,
+    "cycles_considered": 65,
+    "hint_failures": {
+      "data-filtering/min-chars-80": 56
+    },
+    "last_strategy": "anti-forgetting-v1",
+    "strategy_attempts": {
+      "anti-forgetting-v1": 3,
+      "legacy-focus-heavy-v1": 59,
+      "sequence-depth-v1": 3
+    },
+    "strategy_zero_focus_gain": {
+      "anti-forgetting-v1": 3,
+      "legacy-focus-heavy-v1": 59,
+      "sequence-depth-v1": 3
+    }
+  },
+  "incumbent_checkpoint_sha256": "0ba16a931451ffbdc369aa685845b0ddb9b6ed03910ac773b50e837fd9886d7e",
+  "plan_sha256": "286bd0df309fbf57f65a82bf688c590d47042031a977dcc2292639eb8bc7ef5f",
+  "procedural_fraction": 0.8,
+  "public_fraction": 0.2,
+  "public_manifest_sha256": "8126c6a8008ea39fa9db138078c5b0f15becf510eebf6160053807d665149a76",
+  "public_min_chars": 0,
+  "record_count": 4096,
+  "record_set_sha256": "fdc852b4ae0fad97a984cc5e7ba78d5841b9c5d3e660624f8cdee87489a5f032",
+  "records_file_sha256": "f02f1284d7d7b77296f653537905c6e80f95b63caa12f948f1378b96399487ad",
+  "replay_examples_per_domain": 1024,
+  "research_escalation": {
+    "actions": [
+      "architecture-tournament",
+      "tracked-research-issue"
+    ],
+    "all_predeclared_strategies_exhausted": false,
+    "reason": "legacy/high-level strategy exhausted",
+    "required": true
+  },
+  "research_evidence": {
+    "applied_hint": null,
+    "evidence_sha256": "ccedeae3feed4f0711c4aaea9c5f395bedbee705e61113aa0ff8ac0c3c51e7f3",
+    "farm_version": "cpu-screen-v1",
+    "ignored_eligible_hints": [],
+    "promotion_authority": false,
+    "retired_eligible_hints": [
+      {
+        "end_to_end_zero_gain_rejections": 56,
+        "improvement_fraction": 0.10000000000000003,
+        "lane": "data-filtering",
+        "retirement_threshold": 5,
+        "variant": "min-chars-80"
+      }
+    ],
+    "source_commit": "d4927807d9b912ca1a4f12b690eb625814dd7c67",
+    "workflow_run_id": 31986517678
+  },
+  "research_strategy": {
+    "continuation_update_weights": {
+      "code": 0.3,
+      "math": 0.10000000000000003,
+      "structured": 0.6
+    },
+    "focus_examples": 2048,
+    "id": "balanced-transfer-v1",
+    "max_zero_gain_attempts": 3,
+    "prior_attempts_same_incumbent": 0,
+    "prior_zero_focus_gain_rejections": 0,
+    "strongest_replay_domain": "code"
+  },
+  "target_difficulty": 1,
+  "target_suite_sha256": "e04f1298d1705c5d00a43170f01e79f129fce53da26dead637b7b74d79d83afc",
+  "target_suite_version": "m6-domain-selection-v2",
+  "target_training_tokens": 3000000,
+  "tokenizer_sha256": "6f66eba7d552fd22e4c35ba23c1998bbc549ab26ad89a1e0d245524bc802d398"
+}
