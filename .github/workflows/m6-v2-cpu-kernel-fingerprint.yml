@@ -1,4 +1,4 @@
-name: M6 v2 Python runtime fingerprint
+name: M6 v2 paired Python runtime fingerprint
 
 on:
   workflow_dispatch:
@@ -20,21 +20,9 @@ jobs:
     timeout-minutes: 15
     strategy:
       fail-fast: false
-      max-parallel: 6
+      max-parallel: 3
       matrix:
-        include:
-          - runtime: system
-            repeat: 1
-          - runtime: system
-            repeat: 2
-          - runtime: system
-            repeat: 3
-          - runtime: setup
-            repeat: 1
-          - runtime: setup
-            repeat: 2
-          - runtime: setup
-            repeat: 3
+        repeat: [1, 2, 3]
     env:
       WORK: runs/m6-v2-cpu-kernel-fingerprint
       TARGET_PROBE: "4.228255425977561"
@@ -48,67 +36,59 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Set up current hosted CPython control
-        if: matrix.runtime == 'setup'
+      - name: Set up hosted CPython control
         uses: actions/setup-python@v5
         with:
           python-version: "3.12.13"
 
-      - name: Select Python execution contract
+      - name: Create paired Python runtimes on the same runner
         run: |
-          if [ "${{ matrix.runtime }}" = "system" ]; then
-            /usr/bin/python3 -m venv "$RUNNER_TEMP/v2-probe-venv"
-            echo "PYBIN=$RUNNER_TEMP/v2-probe-venv/bin/python" >> "$GITHUB_ENV"
-          else
-            echo "PYBIN=$(command -v python)" >> "$GITHUB_ENV"
-          fi
+          echo "SETUP_PY=$(command -v python)" >> "$GITHUB_ENV"
+          /usr/bin/python3 -m venv "$RUNNER_TEMP/v2-system-venv"
+          echo "SYSTEM_PY=$RUNNER_TEMP/v2-system-venv/bin/python" >> "$GITHUB_ENV"
 
-      - name: Install pinned CPU PyTorch
+      - name: Install identical pinned CPU PyTorch in both runtimes
         run: |
-          "$PYBIN" -m pip install --index-url https://download.pytorch.org/whl/cpu "torch==2.11.0"
-          "$PYBIN" - <<'PY'
-          import importlib.util, platform, sys, torch
-          print({
-              "python": platform.python_version(),
-              "python_compiler": platform.python_compiler(),
-              "python_executable": sys.executable,
-              "libc": platform.libc_ver(),
-              "numpy_available": importlib.util.find_spec("numpy") is not None,
-              "torch": torch.__version__,
-              "cuda": torch.version.cuda,
-              "mkldnn_available": torch.backends.mkldnn.is_available(),
-              "mkl_available": torch.backends.mkl.is_available(),
-          })
+          "$SETUP_PY" -m pip install --index-url https://download.pytorch.org/whl/cpu "torch==2.11.0"
+          "$SYSTEM_PY" -m pip install --index-url https://download.pytorch.org/whl/cpu "torch==2.11.0"
+          "$SETUP_PY" - <<'PY'
+          import platform, torch
+          print({"runtime": "setup", "python": platform.python_version(), "torch": torch.__version__})
+          PY
+          "$SYSTEM_PY" - <<'PY'
+          import platform, torch
+          print({"runtime": "system", "python": platform.python_version(), "torch": torch.__version__})
           PY
 
-      - name: Rebuild frozen public inputs and curriculum
+      - name: Rebuild one frozen input set shared by both runtimes
         run: |
           rm -rf "$WORK"
           mkdir -p "$WORK"
           cp data/bootstrap-tokenizer-lock.json "$WORK/bootstrap-tokenizer-lock.json"
-          PYTHONPATH=src "$PYBIN" -m genesis_ai.bootstrap_corpus \
+          PYTHONPATH=src "$SETUP_PY" -m genesis_ai.bootstrap_corpus \
             --catalog data/bootstrap-tokenizer-sources.json \
             --workspace "$WORK/public-corpus" \
             --output "$WORK/rebuilt-tokenizer.json" \
             --lock "$WORK/bootstrap-tokenizer-lock.json" \
             --vocab-size 512
           cmp tokenizers/genesis-v0.json "$WORK/rebuilt-tokenizer.json"
-          PYTHONPATH=src "$PYBIN" -m genesis_ai.multidomain_curriculum_v2 \
+          PYTHONPATH=src "$SETUP_PY" -m genesis_ai.multidomain_curriculum_v2 \
             --suite evals/m6-domain-selection-v2.json \
             --tokenizer tokenizers/genesis-v0.json \
             --public-data "$WORK/public-corpus/filtered" \
             --records "$WORK/procedural.jsonl" \
             --output "$WORK/curriculum.json"
 
-      - name: Measure exact pre-training fingerprint, runtime, and runner CPU
+      - name: Write shared fingerprint probe
         run: |
-          PYTHONPATH=src "$PYBIN" - <<'PY'
+          cat > "$RUNNER_TEMP/v2_fingerprint_probe.py" <<'PY'
           import importlib.util, json, os, platform, random, sys
           from pathlib import Path
           import torch
           from genesis_ai.multidomain_training_v2 import SEED, _loss_probe, validate_inputs
           from genesis_ai.terminated_training import TerminatedGenerationAlignedDataset
 
+          runtime, repeat, output = sys.argv[1], int(sys.argv[2]), Path(sys.argv[3])
           cpu = {}
           cpuinfo = Path('/proc/cpuinfo')
           if cpuinfo.exists():
@@ -139,8 +119,8 @@ jobs:
           target = float(os.environ['TARGET_PROBE'])
           result = {
               'format_version': '1.0',
-              'runtime': '${{ matrix.runtime }}',
-              'repeat': int('${{ matrix.repeat }}'),
+              'runtime': runtime,
+              'repeat': repeat,
               'python': platform.python_version(),
               'python_compiler': platform.python_compiler(),
               'python_executable': sys.executable,
@@ -165,14 +145,19 @@ jobs:
               'training_performed': False,
               'promotion_eligible': False,
           }
-          Path('fingerprint.json').write_text(json.dumps(result, indent=2, sort_keys=True) + '\n')
+          output.write_text(json.dumps(result, indent=2, sort_keys=True) + '\n', encoding='utf-8', newline='\n')
           print(json.dumps(result, indent=2, sort_keys=True))
           PY
 
+      - name: Measure both runtimes on this exact runner CPU
+        run: |
+          PYTHONPATH=src "$SETUP_PY" "$RUNNER_TEMP/v2_fingerprint_probe.py" setup "${{ matrix.repeat }}" fingerprint-setup.json
+          PYTHONPATH=src "$SYSTEM_PY" "$RUNNER_TEMP/v2_fingerprint_probe.py" system "${{ matrix.repeat }}" fingerprint-system.json
+
       - uses: actions/upload-artifact@v4
         with:
-          name: v2-python-${{ matrix.runtime }}-${{ matrix.repeat }}
-          path: fingerprint.json
+          name: v2-python-paired-${{ matrix.repeat }}
+          path: fingerprint-*.json
           retention-days: 7
 
   aggregate:
@@ -182,41 +167,57 @@ jobs:
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
-      - name: Download all fingerprint records
+      - name: Download all paired fingerprint records
         uses: actions/download-artifact@v4
         with:
-          pattern: v2-python-*
+          pattern: v2-python-paired-*
           path: fingerprints
-      - name: Build authoritative aggregate
+      - name: Build authoritative paired aggregate
         run: |
           python - <<'PY'
           import json, os
           from pathlib import Path
 
           records = []
-          for path in sorted(Path('fingerprints').glob('*/fingerprint.json')):
+          for path in sorted(Path('fingerprints').glob('**/fingerprint-*.json')):
               records.append(json.loads(path.read_text(encoding='utf-8')))
           if len(records) != 6:
               raise SystemExit(f'expected 6 fingerprint records, found {len(records)}')
-          records.sort(key=lambda item: (item['runtime'], item['repeat']))
-          best = min(records, key=lambda item: (item['absolute_error'], item['runtime'], item['repeat']))
-          unique_probe_losses = sorted({item['probe_loss'] for item in records})
-          cpu_models = sorted({item.get('cpu', {}).get('model name', '') for item in records})
-          python_versions = sorted({item['python'] for item in records})
+          records.sort(key=lambda item: (item['repeat'], item['runtime']))
+          best = min(records, key=lambda item: (item['absolute_error'], item['repeat'], item['runtime']))
+          pairs = []
+          for repeat in (1, 2, 3):
+              pair = {item['runtime']: item for item in records if item['repeat'] == repeat}
+              if set(pair) != {'setup', 'system'}:
+                  raise SystemExit(f'incomplete runtime pair for repeat {repeat}')
+              setup_cpu = pair['setup'].get('cpu', {}).get('model name', '')
+              system_cpu = pair['system'].get('cpu', {}).get('model name', '')
+              if setup_cpu != system_cpu:
+                  raise SystemExit(f'paired runtimes did not share CPU for repeat {repeat}: {setup_cpu!r} != {system_cpu!r}')
+              pairs.append({
+                  'repeat': repeat,
+                  'cpu_model': setup_cpu,
+                  'setup_python': pair['setup']['python'],
+                  'system_python': pair['system']['python'],
+                  'setup_probe_loss': pair['setup']['probe_loss'],
+                  'system_probe_loss': pair['system']['probe_loss'],
+                  'system_minus_setup': pair['system']['probe_loss'] - pair['setup']['probe_loss'],
+                  'same_probe_loss': pair['system']['probe_loss'] == pair['setup']['probe_loss'],
+              })
           result = {
-              'format_version': '1.3',
-              'experiment': 'mkldnn-off-python-runtime',
+              'format_version': '1.4',
+              'experiment': 'mkldnn-off-python-runtime-paired-same-cpu',
               'source_commit': os.environ['GITHUB_SHA'],
               'workflow_run_id': int(os.environ['GITHUB_RUN_ID']),
               'target_probe_loss': records[0]['target_probe_loss'],
               'records': records,
+              'pairs': pairs,
               'best_runtime': best['runtime'],
               'best_repeat': best['repeat'],
               'best_absolute_error': best['absolute_error'],
-              'unique_probe_losses': unique_probe_losses,
-              'unique_probe_loss_count': len(unique_probe_losses),
-              'cpu_models': cpu_models,
-              'python_versions': python_versions,
+              'unique_probe_losses': sorted({item['probe_loss'] for item in records}),
+              'cpu_models': sorted({item.get('cpu', {}).get('model name', '') for item in records}),
+              'python_versions': sorted({item['python'] for item in records}),
               'exact_match_any': any(item['exact_match'] for item in records),
               'cash_compute_cost_usd': 0.0,
               'training_performed': False,
@@ -233,7 +234,7 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add research/m6-v2-cpu-kernel-fingerprint/latest.json
           if ! git diff --cached --quiet; then
-            git commit -m "Research: persist v2 Python runtime fingerprint (#153)"
+            git commit -m "Research: persist paired Python runtime fingerprint (#153)"
             git fetch origin main
             git rebase origin/main
             git push origin HEAD:main
