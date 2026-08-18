@@ -1,4 +1,4 @@
-name: M6 v2 MKLDNN-off MKL fingerprint
+name: M6 v2 runner CPU fingerprint
 
 on:
   workflow_dispatch:
@@ -22,15 +22,7 @@ jobs:
       fail-fast: false
       max-parallel: 4
       matrix:
-        include:
-          - mkl_cbwr_mode: auto
-            mkl_cbwr: ""
-          - mkl_cbwr_mode: compatible
-            mkl_cbwr: COMPATIBLE
-          - mkl_cbwr_mode: avx2
-            mkl_cbwr: AVX2
-          - mkl_cbwr_mode: sse4_2
-            mkl_cbwr: SSE4_2
+        repeat: [1, 2, 3, 4]
     env:
       WORK: runs/m6-v2-cpu-kernel-fingerprint
       TARGET_PROBE: "4.228255425977561"
@@ -39,7 +31,6 @@ jobs:
       OPENBLAS_NUM_THREADS: "1"
       NUMEXPR_NUM_THREADS: "1"
       VECLIB_MAXIMUM_THREADS: "1"
-      MKL_CBWR: ${{ matrix.mkl_cbwr }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -53,14 +44,13 @@ jobs:
         run: |
           python -m pip install --index-url https://download.pytorch.org/whl/cpu "torch==2.11.0"
           python - <<'PY'
-          import os, platform, torch
+          import platform, torch
           print({
               "python": platform.python_version(),
               "torch": torch.__version__,
               "cuda": torch.version.cuda,
               "mkldnn_available": torch.backends.mkldnn.is_available(),
               "mkl_available": torch.backends.mkl.is_available(),
-              "mkl_cbwr": os.environ.get("MKL_CBWR", ""),
           })
           PY
 
@@ -83,7 +73,7 @@ jobs:
             --records "$WORK/procedural.jsonl" \
             --output "$WORK/curriculum.json"
 
-      - name: Measure exact pre-training fingerprint
+      - name: Measure exact pre-training fingerprint and runner CPU
         run: |
           PYTHONPATH=src python - <<'PY'
           import json, os, platform, random
@@ -91,6 +81,17 @@ jobs:
           import torch
           from genesis_ai.multidomain_training_v2 import SEED, _loss_probe, validate_inputs
           from genesis_ai.terminated_training import TerminatedGenerationAlignedDataset
+
+          cpu = {}
+          cpuinfo = Path('/proc/cpuinfo')
+          if cpuinfo.exists():
+              first = cpuinfo.read_text(encoding='utf-8', errors='replace').split('\n\n', 1)[0]
+              for line in first.splitlines():
+                  if ':' not in line:
+                      continue
+                  key, value = (part.strip() for part in line.split(':', 1))
+                  if key in {'vendor_id', 'cpu family', 'model', 'model name', 'stepping', 'microcode'}:
+                      cpu[key] = value
 
           torch.backends.mkldnn.enabled = False
           torch.set_num_threads(1)
@@ -111,14 +112,19 @@ jobs:
           target = float(os.environ['TARGET_PROBE'])
           result = {
               'format_version': '1.0',
+              'repeat': int('${{ matrix.repeat }}'),
               'python': platform.python_version(),
               'torch': torch.__version__,
               'kernel_mode': 'mkldnn-off',
               'aten_cpu_capability': '',
-              'mkl_cbwr_mode': '${{ matrix.mkl_cbwr_mode }}',
               'mkl_cbwr': os.environ.get('MKL_CBWR', ''),
               'mkl_available': torch.backends.mkl.is_available(),
               'mkldnn_enabled': torch.backends.mkldnn.enabled,
+              'cpu': cpu,
+              'machine': platform.machine(),
+              'runner_arch': os.environ.get('RUNNER_ARCH', ''),
+              'image_os': os.environ.get('ImageOS', ''),
+              'image_version': os.environ.get('ImageVersion', ''),
               'probe_loss': observed,
               'target_probe_loss': target,
               'absolute_error': abs(observed - target),
@@ -133,7 +139,7 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
-          name: v2-mkldnn-off-mkl-${{ matrix.mkl_cbwr_mode }}
+          name: v2-runner-cpu-${{ matrix.repeat }}
           path: fingerprint.json
           retention-days: 7
 
@@ -147,7 +153,7 @@ jobs:
       - name: Download all fingerprint records
         uses: actions/download-artifact@v4
         with:
-          pattern: v2-mkldnn-off-mkl-*
+          pattern: v2-runner-cpu-*
           path: fingerprints
       - name: Build authoritative aggregate
         run: |
@@ -160,17 +166,22 @@ jobs:
               records.append(json.loads(path.read_text(encoding='utf-8')))
           if len(records) != 4:
               raise SystemExit(f'expected 4 fingerprint records, found {len(records)}')
-          records.sort(key=lambda item: item['mkl_cbwr_mode'])
-          best = min(records, key=lambda item: (item['absolute_error'], item['mkl_cbwr_mode']))
+          records.sort(key=lambda item: item['repeat'])
+          best = min(records, key=lambda item: (item['absolute_error'], item['repeat']))
+          unique_probe_losses = sorted({item['probe_loss'] for item in records})
+          cpu_models = sorted({item.get('cpu', {}).get('model name', '') for item in records})
           result = {
-              'format_version': '1.1',
-              'experiment': 'mkldnn-off-mkl-cbwr',
+              'format_version': '1.2',
+              'experiment': 'mkldnn-off-runner-cpu-variance',
               'source_commit': os.environ['GITHUB_SHA'],
               'workflow_run_id': int(os.environ['GITHUB_RUN_ID']),
               'target_probe_loss': records[0]['target_probe_loss'],
               'records': records,
-              'best_mkl_cbwr_mode': best['mkl_cbwr_mode'],
+              'best_repeat': best['repeat'],
               'best_absolute_error': best['absolute_error'],
+              'unique_probe_losses': unique_probe_losses,
+              'unique_probe_loss_count': len(unique_probe_losses),
+              'cpu_models': cpu_models,
               'exact_match_any': any(item['exact_match'] for item in records),
               'cash_compute_cost_usd': 0.0,
               'training_performed': False,
@@ -187,7 +198,7 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add research/m6-v2-cpu-kernel-fingerprint/latest.json
           if ! git diff --cached --quiet; then
-            git commit -m "Research: persist v2 MKL fingerprint (#153)"
+            git commit -m "Research: persist v2 runner CPU fingerprint (#153)"
             git fetch origin main
             git rebase origin/main
             git push origin HEAD:main
