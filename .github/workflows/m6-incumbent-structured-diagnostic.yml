@@ -1,0 +1,117 @@
+name: M6 incumbent structured diagnostic
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - src/genesis_ai/incumbent_structured_diagnostic.py
+      - .github/workflows/m6-incumbent-structured-diagnostic.yml
+
+permissions:
+  contents: write
+
+concurrency:
+  group: m6-incumbent-structured-diagnostic
+  cancel-in-progress: false
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      max-parallel: 2
+      matrix:
+        repeat: [1, 2]
+    env:
+      OMP_NUM_THREADS: "1"
+      MKL_NUM_THREADS: "1"
+      OPENBLAS_NUM_THREADS: "1"
+      NUMEXPR_NUM_THREADS: "1"
+      VECLIB_MAXIMUM_THREADS: "1"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12.13"
+
+      - name: Install pinned CPU PyTorch
+        run: python -m pip install --index-url https://download.pytorch.org/whl/cpu "torch==2.11.0"
+
+      - name: Diagnose exact promoted incumbent on frozen structured suite
+        run: |
+          PYTHONPATH=src python -m genesis_ai.incumbent_structured_diagnostic \
+            --checkpoint checkpoints/genesis-micro-2m-v1.pt \
+            --suite evals/m6-domain-selection-v2.json \
+            --output diagnostic.json \
+            --device cpu
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: incumbent-structured-${{ matrix.repeat }}
+          path: diagnostic.json
+          retention-days: 7
+
+  aggregate:
+    needs: diagnose
+    if: always() && needs.diagnose.result == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download replicated diagnostics
+        uses: actions/download-artifact@v4
+        with:
+          pattern: incumbent-structured-*
+          path: diagnostics
+
+      - name: Require replica equality and persist authoritative aggregate
+        run: |
+          python - <<'PY'
+          import hashlib
+          import json
+          import os
+          from pathlib import Path
+
+          paths = sorted(Path('diagnostics').glob('**/diagnostic.json'))
+          if len(paths) != 2:
+              raise SystemExit(f'expected 2 replicated diagnostics, found {len(paths)}')
+          raw = [path.read_bytes() for path in paths]
+          if raw[0] != raw[1]:
+              raise SystemExit('replicated incumbent structured diagnostics differ; fail closed')
+          diagnostic = json.loads(raw[0])
+          result = {
+              'format_version': '1.0',
+              'experiment': 'incumbent-structured-diagnostic-replicated',
+              'source_commit': os.environ['GITHUB_SHA'],
+              'workflow_run_id': int(os.environ['GITHUB_RUN_ID']),
+              'replicas': 2,
+              'replica_byte_equal': True,
+              'replica_sha256': hashlib.sha256(raw[0]).hexdigest(),
+              'diagnostic': diagnostic,
+              'cash_compute_cost_usd': 0.0,
+              'training_performed': False,
+              'promotion_eligible': False,
+          }
+          out = Path('research/m6-incumbent-structured-diagnostic/latest.json')
+          out.parent.mkdir(parents=True, exist_ok=True)
+          out.write_text(json.dumps(result, indent=2, sort_keys=True) + '\n', encoding='utf-8', newline='\n')
+          print(json.dumps(result, indent=2, sort_keys=True))
+          PY
+
+      - name: Persist authoritative diagnostic evidence
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add research/m6-incumbent-structured-diagnostic/latest.json
+          if ! git diff --cached --quiet; then
+            git commit -m "Research: persist incumbent structured diagnostic (#153)"
+            git fetch origin main
+            git rebase origin/main
+            git push origin HEAD:main
+          fi
