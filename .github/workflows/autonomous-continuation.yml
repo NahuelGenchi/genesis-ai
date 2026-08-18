@@ -24,7 +24,7 @@ jobs:
       GH_TOKEN: ${{ github.token }}
       REPOSITORY: ${{ github.repository }}
     steps:
-      - name: Dispatch next canonical cycle only when idle
+      - name: Dispatch next canonical cycle only when safe and idle
         shell: bash
         run: |
           python - <<'PY'
@@ -40,6 +40,19 @@ jobs:
               "Content-Type": "application/json",
               "X-GitHub-Api-Version": "2022-11-28",
           }
+
+          # Fail closed: a research hold must stop the autonomous training chain.
+          state_request = urllib.request.Request(
+              f"https://raw.githubusercontent.com/{repo}/main/research/autonomous/state.json",
+              headers={"Authorization": f"Bearer {token}"},
+          )
+          with urllib.request.urlopen(state_request) as response:
+              state = json.load(response)
+          if state.get("autonomy_status", "running") != "running" or bool((state.get("circuit_breaker") or {}).get("active", False)):
+              breaker = state.get("circuit_breaker") or {}
+              print(f"autonomous training held safely: {breaker.get('reason', state.get('autonomy_status'))}")
+              raise SystemExit(0)
+
           runs_request = urllib.request.Request(
               f"https://api.github.com/repos/{repo}/actions/workflows/autonomous-improvement.yml/runs?per_page=20",
               headers=headers,
