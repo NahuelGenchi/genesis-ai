@@ -1,0 +1,267 @@
+name: Structured long-context research v1
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - src/genesis_ai/structured_long_context.py
+      - .github/workflows/structured-long-context-v1.yml
+
+permissions:
+  contents: write
+  issues: write
+
+concurrency:
+  group: structured-long-context-v1
+  cancel-in-progress: false
+
+jobs:
+  experiment:
+    if: github.event.repository.private == false
+    runs-on: ubuntu-latest
+    timeout-minutes: 300
+    env:
+      PYTHONPATH: src
+      STATE: research/autonomous/state.json
+      SUITE: evals/m6-domain-selection-v2.json
+      WORK: runs/structured-long-context-v1-${{ github.run_id }}
+      RESULT_ROOT: research/structured-long-context-v1
+      OMP_NUM_THREADS: "4"
+      MKL_NUM_THREADS: "4"
+      OPENBLAS_NUM_THREADS: "4"
+      NUMEXPR_NUM_THREADS: "4"
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Sync experiment to latest main
+        id: source
+        run: |
+          git fetch origin main
+          git reset --hard origin/main
+          echo "commit=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Enforce public zero-cash runner contract
+        run: |
+          test "$RUNNER_ENVIRONMENT" = "github-hosted"
+          test "$RUNNER_OS" = "Linux"
+          test "${{ github.event.repository.private }}" = "false"
+          python - <<'PY'
+          import os
+          assert os.environ["RUNNER_ENVIRONMENT"] == "github-hosted"
+          assert os.environ["RUNNER_OS"] == "Linux"
+          PY
+          python -m pip install --disable-pip-version-check --no-input --index-url https://download.pytorch.org/whl/cpu torch
+
+      - name: Require committed research hold and resolve incumbent
+        id: state
+        run: |
+          rm -rf "$WORK"
+          mkdir -p "$WORK"
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+          state = json.loads(Path(os.environ["STATE"]).read_text(encoding="utf-8"))
+          assert state["state_version"] == "autonomous-state-v1"
+          assert state["autonomy_status"] == "research_hold"
+          assert state["circuit_breaker"]["active"] is True
+          assert state["cash_compute_cost_usd"] == 0.0
+          incumbent = Path(state["incumbent_checkpoint"])
+          assert incumbent.is_file(), incumbent
+          with Path(os.environ["GITHUB_OUTPUT"]).open("a", encoding="utf-8") as handle:
+              handle.write(f"incumbent={incumbent.as_posix()}\n")
+          PY
+
+      - name: Score incumbent on unchanged frozen D1 suite
+        run: |
+          python -m genesis_ai.terminated_eval \
+            --checkpoint "${{ steps.state.outputs.incumbent }}" \
+            --suite "$SUITE" \
+            --output "$WORK/baseline-domain.json" \
+            --device cpu
+
+      - name: Freeze research plan before candidate data or training
+        run: |
+          python -m genesis_ai.structured_long_context plan \
+            --evaluation "$WORK/baseline-domain.json" \
+            --state "$STATE" \
+            --suite "$SUITE" \
+            --checkpoint "${{ steps.state.outputs.incumbent }}" \
+            --output "$WORK/plan.json"
+
+      - name: Rebuild provenance-locked public corpus
+        run: |
+          cp data/bootstrap-tokenizer-lock.json "$WORK/bootstrap-tokenizer-lock.json"
+          python -m genesis_ai.bootstrap_corpus \
+            --catalog data/bootstrap-tokenizer-sources.json \
+            --workspace "$WORK/public-corpus" \
+            --output "$WORK/rebuilt-tokenizer.json" \
+            --lock "$WORK/bootstrap-tokenizer-lock.json" \
+            --vocab-size 512
+          cmp data/bootstrap-tokenizer-lock.json "$WORK/bootstrap-tokenizer-lock.json"
+          cmp tokenizers/genesis-v0.json "$WORK/rebuilt-tokenizer.json"
+
+      - name: Build holdout-separated long-context structured curriculum
+        run: |
+          python -m genesis_ai.structured_long_context curriculum \
+            --plan "$WORK/plan.json" \
+            --suite "$SUITE" \
+            --tokenizer tokenizers/genesis-v0.json \
+            --public-data "$WORK/public-corpus/filtered" \
+            --records "$WORK/records.jsonl" \
+            --output "$WORK/curriculum.json"
+
+      - name: Train primary research candidate
+        run: |
+          python -m genesis_ai.autonomous_training \
+            --parent "${{ steps.state.outputs.incumbent }}" \
+            --curriculum-lock "$WORK/curriculum.json" \
+            --records "$WORK/records.jsonl" \
+            --public-data "$WORK/public-corpus/filtered" \
+            --tokenizer tokenizers/genesis-v0.json \
+            --checkpoint "$WORK/candidate-a-training.pt" \
+            --export "$WORK/candidate-a.pt" \
+            --run "$WORK/training.json" \
+            --device cpu
+
+      - name: Train independent replica
+        run: |
+          python -m genesis_ai.autonomous_training \
+            --parent "${{ steps.state.outputs.incumbent }}" \
+            --curriculum-lock "$WORK/curriculum.json" \
+            --records "$WORK/records.jsonl" \
+            --public-data "$WORK/public-corpus/filtered" \
+            --tokenizer tokenizers/genesis-v0.json \
+            --checkpoint "$WORK/candidate-b-training.pt" \
+            --export "$WORK/candidate-b.pt" \
+            --run "$WORK/training-replica.json" \
+            --device cpu
+
+      - name: Require independent semantic reproduction
+        run: |
+          python -m genesis_ai.scale_repro \
+            --primary "$WORK/candidate-a.pt" \
+            --replica "$WORK/candidate-b.pt" \
+            --output "$WORK/reproduction.json"
+
+      - name: Evaluate candidate on identical frozen suite
+        run: |
+          python -m genesis_ai.terminated_eval \
+            --checkpoint "$WORK/candidate-a.pt" \
+            --suite "$SUITE" \
+            --output "$WORK/candidate-domain.json" \
+            --device cpu
+
+      - name: Evaluate unchanged M3 regression boundary
+        run: |
+          python -m genesis_ai.eval_lab \
+            --checkpoint "${{ steps.state.outputs.incumbent }}" \
+            --data "$WORK/public-corpus/filtered" \
+            --suite evals/m3-v1.json \
+            --output "$WORK/baseline-m3.json" \
+            --device cpu
+          python -m genesis_ai.eval_lab \
+            --checkpoint "$WORK/candidate-a.pt" \
+            --data "$WORK/public-corpus/filtered" \
+            --suite evals/m3-v1.json \
+            --output "$WORK/candidate-m3.json" \
+            --device cpu
+
+      - name: Apply existing immutable promotion gate as a non-adopting screen
+        id: gate
+        run: |
+          set +e
+          python -m genesis_ai.autonomous_gate \
+            --plan "$WORK/plan.json" \
+            --curriculum "$WORK/curriculum.json" \
+            --baseline-checkpoint "${{ steps.state.outputs.incumbent }}" \
+            --candidate "$WORK/candidate-a.pt" \
+            --training "$WORK/training.json" \
+            --reproduction "$WORK/reproduction.json" \
+            --baseline-domain "$WORK/baseline-domain.json" \
+            --candidate-domain "$WORK/candidate-domain.json" \
+            --baseline-m3 "$WORK/baseline-m3.json" \
+            --candidate-m3 "$WORK/candidate-m3.json" \
+            --output "$WORK/gate.json"
+          STATUS=$?
+          set -e
+          if [ "$STATUS" -ne 0 ] && [ "$STATUS" -ne 2 ]; then exit "$STATUS"; fi
+          python -m genesis_ai.result_provenance \
+            "$WORK/gate.json" \
+            --source-commit "${{ steps.source.outputs.commit }}" \
+            --workflow-run-id "$GITHUB_RUN_ID"
+
+      - name: Record explicit no-promotion authority
+        run: |
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+          work = Path(os.environ["WORK"])
+          gate = json.loads((work / "gate.json").read_text(encoding="utf-8"))
+          curriculum = json.loads((work / "curriculum.json").read_text(encoding="utf-8"))
+          summary = {
+              "format_version": "1.0",
+              "experiment_version": "structured-long-context-v1",
+              "screening_only": True,
+              "promotion_authority": False,
+              "adopted": False,
+              "immutable_gate_decision": gate.get("decision"),
+              "immutable_gate_promoted_signal": bool(gate.get("promoted", False)),
+              "gci_v1": gate.get("gci_v1"),
+              "focus_absolute_gain": gate.get("focus_absolute_gain"),
+              "structured_pool": curriculum.get("structured_pool"),
+              "cash_compute_cost_usd": 0.0,
+              "source_commit": "${{ steps.source.outputs.commit }}",
+              "workflow_run_id": int(os.environ["GITHUB_RUN_ID"]),
+          }
+          (work / "screen-summary.json").write_text(json.dumps(summary, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+          PY
+
+      - name: Validate repository before persistence
+        run: PYTHON_BIN=python ./scripts/test_local.sh
+
+      - name: Persist authoritative screening evidence to main
+        id: persist
+        run: |
+          RESULT_DIR="$RESULT_ROOT/$GITHUB_RUN_ID"
+          mkdir -p "$RESULT_DIR"
+          for FILE in plan curriculum training training-replica reproduction baseline-domain candidate-domain baseline-m3 candidate-m3 gate screen-summary; do
+            cp "$WORK/$FILE.json" "$RESULT_DIR/$FILE.json"
+          done
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add "$RESULT_DIR"
+          git commit -m "Research: record structured long-context screen (#153)"
+          git fetch origin main
+          git rebase origin/main
+          git push origin HEAD:main
+          echo "result_dir=$RESULT_DIR" >> "$GITHUB_OUTPUT"
+
+      - name: Advance tracked research issue
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          BODY=$(python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+          summary = json.loads(Path(os.environ["WORK"], "screen-summary.json").read_text(encoding="utf-8"))
+          gci = summary.get("gci_v1") or {}
+          pool = summary.get("structured_pool") or {}
+          print(
+              "Structured long-context v1 screening result committed from run `" + str(summary["workflow_run_id"]) + "`. "
+              "This predeclared experiment targeted the committed q4 oracle-context collapse by selecting longer structured targets within proportional generator quotas, while preserving replay, frozen D1/M3 gates, holdout separation, independent reproduction, and `$0` public CPU execution. "
+              f"Immutable gate decision: `{summary.get('immutable_gate_decision')}`; GCI change: `{gci.get('absolute_point_change')}` points; structured focus gain: `{summary.get('focus_absolute_gain')}`; "
+              f"mean structured terminated-target length gain in the selected curriculum: `{pool.get('mean_token_length_gain_fraction')}`. "
+              "The screen has no promotion authority and did not mutate the incumbent even if the gate signal were positive. Authoritative evidence is the committed result bundle on `main`."
+          )
+          PY
+          )
+          gh issue comment 153 --repo "$GITHUB_REPOSITORY" --body "$BODY"
