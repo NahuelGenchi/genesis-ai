@@ -1,5 +1,12 @@
 {
+  "autonomy_status": "research_hold",
   "cash_compute_cost_usd": 0.0,
+  "circuit_breaker": {
+    "active": true,
+    "incumbent_gci_v1": 31.666666666666668,
+    "reason": "all predeclared repair strategies are exhausted after 95 consecutive same-incumbent rejections; preserve the incumbent and require new research evidence before more candidate training",
+    "trigger_cycle": 96
+  },
   "cycle_index": 96,
   "difficulty": 1,
   "format_version": "1.0",
