@@ -1,0 +1,62 @@
+{
+  "best_absolute_error": 8.919114335981249e-10,
+  "best_dispatch_mode": "native",
+  "cash_compute_cost_usd": 0.0,
+  "exact_match_any": false,
+  "format_version": "1.0",
+  "promotion_eligible": false,
+  "records": [
+    {
+      "absolute_error": 2.231354301329702e-08,
+      "aten_cpu_capability": "avx2",
+      "cash_compute_cost_usd": 0.0,
+      "dispatch_mode": "avx2",
+      "exact_match": false,
+      "format_version": "1.0",
+      "kernel_mode": "mkldnn-off",
+      "mkldnn_enabled": false,
+      "probe_loss": 4.228255403664018,
+      "promotion_eligible": false,
+      "python": "3.12.13",
+      "target_probe_loss": 4.228255425977561,
+      "torch": "2.11.0+cpu",
+      "training_performed": false
+    },
+    {
+      "absolute_error": 3.156802996784336e-08,
+      "aten_cpu_capability": "default",
+      "cash_compute_cost_usd": 0.0,
+      "dispatch_mode": "default",
+      "exact_match": false,
+      "format_version": "1.0",
+      "kernel_mode": "mkldnn-off",
+      "mkldnn_enabled": false,
+      "probe_loss": 4.228255457545591,
+      "promotion_eligible": false,
+      "python": "3.12.13",
+      "target_probe_loss": 4.228255425977561,
+      "torch": "2.11.0+cpu",
+      "training_performed": false
+    },
+    {
+      "absolute_error": 8.919114335981249e-10,
+      "aten_cpu_capability": "",
+      "cash_compute_cost_usd": 0.0,
+      "dispatch_mode": "native",
+      "exact_match": false,
+      "format_version": "1.0",
+      "kernel_mode": "mkldnn-off",
+      "mkldnn_enabled": false,
+      "probe_loss": 4.228255425085649,
+      "promotion_eligible": false,
+      "python": "3.12.13",
+      "target_probe_loss": 4.228255425977561,
+      "torch": "2.11.0+cpu",
+      "training_performed": false
+    }
+  ],
+  "source_commit": "f00f168971d2b2190dabceae5f665a1a0d9d21ec",
+  "target_probe_loss": 4.228255425977561,
+  "training_performed": false,
+  "workflow_run_id": 32093024022
+}
