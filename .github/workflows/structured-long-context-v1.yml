@@ -16,22 +16,25 @@ concurrency:
   group: structured-long-context-v1
   cancel-in-progress: false
 
+env:
+  PYTHONPATH: src
+  STATE: research/autonomous/state.json
+  SUITE: evals/m6-domain-selection-v2.json
+  WORK: runs/structured-long-context-v1-${{ github.run_id }}
+  RESULT_ROOT: research/structured-long-context-v1
+  OMP_NUM_THREADS: "4"
+  MKL_NUM_THREADS: "4"
+  OPENBLAS_NUM_THREADS: "4"
+  NUMEXPR_NUM_THREADS: "4"
+
 jobs:
-  experiment:
+  prepare:
     if: github.event.repository.private == false
     runs-on: ubuntu-latest
-    timeout-minutes: 360
-    env:
-      PYTHONPATH: src
-      STATE: research/autonomous/state.json
-      SUITE: evals/m6-domain-selection-v2.json
-      WORK: runs/structured-long-context-v1-${{ github.run_id }}
-      RESULT_ROOT: research/structured-long-context-v1
-      OMP_NUM_THREADS: "4"
-      MKL_NUM_THREADS: "4"
-      OPENBLAS_NUM_THREADS: "4"
-      NUMEXPR_NUM_THREADS: "4"
-
+    timeout-minutes: 120
+    outputs:
+      source_commit: ${{ steps.source.outputs.commit }}
+      incumbent: ${{ steps.state.outputs.incumbent }}
     steps:
       - uses: actions/checkout@v4
 
@@ -117,10 +120,44 @@ jobs:
             --records "$WORK/records.jsonl" \
             --output "$WORK/curriculum.json"
 
+      - name: Upload frozen preparation state
+        uses: actions/upload-artifact@v4
+        with:
+          name: structured-long-context-prepared
+          path: ${{ env.WORK }}/
+          if-no-files-found: error
+          retention-days: 1
+
+  train-primary:
+    needs: prepare
+    if: github.event.repository.private == false
+    runs-on: ubuntu-latest
+    timeout-minutes: 300
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.prepare.outputs.source_commit }}
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Enforce public zero-cash runner contract
+        run: |
+          test "$RUNNER_ENVIRONMENT" = "github-hosted"
+          test "$RUNNER_OS" = "Linux"
+          python -m pip install --disable-pip-version-check --no-input --index-url https://download.pytorch.org/whl/cpu torch
+
+      - name: Restore frozen preparation state
+        uses: actions/download-artifact@v4
+        with:
+          name: structured-long-context-prepared
+          path: ${{ env.WORK }}
+
       - name: Train primary research candidate
         run: |
           python -m genesis_ai.autonomous_training \
-            --parent "${{ steps.state.outputs.incumbent }}" \
+            --parent "${{ needs.prepare.outputs.incumbent }}" \
             --curriculum-lock "$WORK/curriculum.json" \
             --records "$WORK/records.jsonl" \
             --public-data "$WORK/public-corpus/filtered" \
@@ -130,10 +167,46 @@ jobs:
             --run "$WORK/training.json" \
             --device cpu
 
+      - name: Upload primary candidate evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: structured-long-context-primary
+          path: |
+            ${{ env.WORK }}/candidate-a.pt
+            ${{ env.WORK }}/training.json
+          if-no-files-found: error
+          retention-days: 1
+
+  train-replica:
+    needs: prepare
+    if: github.event.repository.private == false
+    runs-on: ubuntu-latest
+    timeout-minutes: 300
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.prepare.outputs.source_commit }}
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Enforce public zero-cash runner contract
+        run: |
+          test "$RUNNER_ENVIRONMENT" = "github-hosted"
+          test "$RUNNER_OS" = "Linux"
+          python -m pip install --disable-pip-version-check --no-input --index-url https://download.pytorch.org/whl/cpu torch
+
+      - name: Restore frozen preparation state
+        uses: actions/download-artifact@v4
+        with:
+          name: structured-long-context-prepared
+          path: ${{ env.WORK }}
+
       - name: Train independent replica
         run: |
           python -m genesis_ai.autonomous_training \
-            --parent "${{ steps.state.outputs.incumbent }}" \
+            --parent "${{ needs.prepare.outputs.incumbent }}" \
             --curriculum-lock "$WORK/curriculum.json" \
             --records "$WORK/records.jsonl" \
             --public-data "$WORK/public-corpus/filtered" \
@@ -142,6 +215,54 @@ jobs:
             --export "$WORK/candidate-b.pt" \
             --run "$WORK/training-replica.json" \
             --device cpu
+
+      - name: Upload replica candidate evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: structured-long-context-replica
+          path: |
+            ${{ env.WORK }}/candidate-b.pt
+            ${{ env.WORK }}/training-replica.json
+          if-no-files-found: error
+          retention-days: 1
+
+  evaluate-and-persist:
+    needs: [prepare, train-primary, train-replica]
+    if: github.event.repository.private == false
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.prepare.outputs.source_commit }}
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Enforce public zero-cash runner contract
+        run: |
+          test "$RUNNER_ENVIRONMENT" = "github-hosted"
+          test "$RUNNER_OS" = "Linux"
+          python -m pip install --disable-pip-version-check --no-input --index-url https://download.pytorch.org/whl/cpu torch
+
+      - name: Restore frozen preparation state
+        uses: actions/download-artifact@v4
+        with:
+          name: structured-long-context-prepared
+          path: ${{ env.WORK }}
+
+      - name: Restore primary candidate evidence
+        uses: actions/download-artifact@v4
+        with:
+          name: structured-long-context-primary
+          path: ${{ env.WORK }}
+
+      - name: Restore replica candidate evidence
+        uses: actions/download-artifact@v4
+        with:
+          name: structured-long-context-replica
+          path: ${{ env.WORK }}
 
       - name: Require independent semantic reproduction
         run: |
@@ -161,7 +282,7 @@ jobs:
       - name: Evaluate unchanged M3 regression boundary
         run: |
           python -m genesis_ai.eval_lab \
-            --checkpoint "${{ steps.state.outputs.incumbent }}" \
+            --checkpoint "${{ needs.prepare.outputs.incumbent }}" \
             --data "$WORK/public-corpus/filtered" \
             --suite evals/m3-v1.json \
             --output "$WORK/baseline-m3.json" \
@@ -180,7 +301,7 @@ jobs:
           python -m genesis_ai.autonomous_gate \
             --plan "$WORK/plan.json" \
             --curriculum "$WORK/curriculum.json" \
-            --baseline-checkpoint "${{ steps.state.outputs.incumbent }}" \
+            --baseline-checkpoint "${{ needs.prepare.outputs.incumbent }}" \
             --candidate "$WORK/candidate-a.pt" \
             --training "$WORK/training.json" \
             --reproduction "$WORK/reproduction.json" \
@@ -194,7 +315,7 @@ jobs:
           if [ "$STATUS" -ne 0 ] && [ "$STATUS" -ne 2 ]; then exit "$STATUS"; fi
           python -m genesis_ai.result_provenance \
             "$WORK/gate.json" \
-            --source-commit "${{ steps.source.outputs.commit }}" \
+            --source-commit "${{ needs.prepare.outputs.source_commit }}" \
             --workflow-run-id "$GITHUB_RUN_ID"
 
       - name: Record explicit no-promotion authority
@@ -218,7 +339,7 @@ jobs:
               "focus_absolute_gain": gate.get("focus_absolute_gain"),
               "structured_pool": curriculum.get("structured_pool"),
               "cash_compute_cost_usd": 0.0,
-              "source_commit": "${{ steps.source.outputs.commit }}",
+              "source_commit": "${{ needs.prepare.outputs.source_commit }}",
               "workflow_run_id": int(os.environ["GITHUB_RUN_ID"]),
           }
           (work / "screen-summary.json").write_text(json.dumps(summary, indent=2, sort_keys=True) + "\n", encoding="utf-8")
