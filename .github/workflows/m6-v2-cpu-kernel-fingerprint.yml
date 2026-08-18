@@ -8,7 +8,7 @@ on:
       - .github/workflows/m6-v2-cpu-kernel-fingerprint.yml
 
 permissions:
-  contents: read
+  contents: write
 
 concurrency:
   group: m6-v2-cpu-kernel-fingerprint
@@ -131,3 +131,58 @@ jobs:
           name: v2-mkldnn-off-${{ matrix.dispatch_mode }}
           path: fingerprint.json
           retention-days: 7
+
+  aggregate:
+    needs: probe
+    if: always() && needs.probe.result == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download all fingerprint records
+        uses: actions/download-artifact@v4
+        with:
+          pattern: v2-mkldnn-off-*
+          path: fingerprints
+      - name: Build authoritative aggregate
+        run: |
+          python - <<'PY'
+          import json, os
+          from pathlib import Path
+
+          records = []
+          for path in sorted(Path('fingerprints').glob('*/fingerprint.json')):
+              records.append(json.loads(path.read_text(encoding='utf-8')))
+          if len(records) != 3:
+              raise SystemExit(f'expected 3 fingerprint records, found {len(records)}')
+          records.sort(key=lambda item: item['dispatch_mode'])
+          best = min(records, key=lambda item: (item['absolute_error'], item['dispatch_mode']))
+          result = {
+              'format_version': '1.0',
+              'source_commit': os.environ['GITHUB_SHA'],
+              'workflow_run_id': int(os.environ['GITHUB_RUN_ID']),
+              'target_probe_loss': records[0]['target_probe_loss'],
+              'records': records,
+              'best_dispatch_mode': best['dispatch_mode'],
+              'best_absolute_error': best['absolute_error'],
+              'exact_match_any': any(item['exact_match'] for item in records),
+              'cash_compute_cost_usd': 0.0,
+              'training_performed': False,
+              'promotion_eligible': False,
+          }
+          out = Path('research/m6-v2-cpu-kernel-fingerprint/latest.json')
+          out.parent.mkdir(parents=True, exist_ok=True)
+          out.write_text(json.dumps(result, indent=2, sort_keys=True) + '\n', encoding='utf-8', newline='\n')
+          print(json.dumps(result, indent=2, sort_keys=True))
+          PY
+      - name: Persist authoritative fingerprint evidence
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add research/m6-v2-cpu-kernel-fingerprint/latest.json
+          if ! git diff --cached --quiet; then
+            git commit -m "Research: persist v2 CPU dispatch fingerprint (#153)"
+            git fetch origin main
+            git rebase origin/main
+            git push origin HEAD:main
+          fi
