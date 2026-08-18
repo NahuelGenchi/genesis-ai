@@ -1,4 +1,4 @@
-name: M6 v2 MKLDNN-off dispatch fingerprint
+name: M6 v2 MKLDNN-off MKL fingerprint
 
 on:
   workflow_dispatch:
@@ -20,15 +20,17 @@ jobs:
     timeout-minutes: 15
     strategy:
       fail-fast: false
-      max-parallel: 3
+      max-parallel: 4
       matrix:
         include:
-          - dispatch_mode: native
-            aten_cpu_capability: ""
-          - dispatch_mode: default
-            aten_cpu_capability: default
-          - dispatch_mode: avx2
-            aten_cpu_capability: avx2
+          - mkl_cbwr_mode: auto
+            mkl_cbwr: ""
+          - mkl_cbwr_mode: compatible
+            mkl_cbwr: COMPATIBLE
+          - mkl_cbwr_mode: avx2
+            mkl_cbwr: AVX2
+          - mkl_cbwr_mode: sse4_2
+            mkl_cbwr: SSE4_2
     env:
       WORK: runs/m6-v2-cpu-kernel-fingerprint
       TARGET_PROBE: "4.228255425977561"
@@ -37,7 +39,7 @@ jobs:
       OPENBLAS_NUM_THREADS: "1"
       NUMEXPR_NUM_THREADS: "1"
       VECLIB_MAXIMUM_THREADS: "1"
-      ATEN_CPU_CAPABILITY: ${{ matrix.aten_cpu_capability }}
+      MKL_CBWR: ${{ matrix.mkl_cbwr }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -57,7 +59,8 @@ jobs:
               "torch": torch.__version__,
               "cuda": torch.version.cuda,
               "mkldnn_available": torch.backends.mkldnn.is_available(),
-              "aten_cpu_capability": os.environ.get("ATEN_CPU_CAPABILITY", ""),
+              "mkl_available": torch.backends.mkl.is_available(),
+              "mkl_cbwr": os.environ.get("MKL_CBWR", ""),
           })
           PY
 
@@ -111,8 +114,10 @@ jobs:
               'python': platform.python_version(),
               'torch': torch.__version__,
               'kernel_mode': 'mkldnn-off',
-              'dispatch_mode': '${{ matrix.dispatch_mode }}',
-              'aten_cpu_capability': os.environ.get('ATEN_CPU_CAPABILITY', ''),
+              'aten_cpu_capability': '',
+              'mkl_cbwr_mode': '${{ matrix.mkl_cbwr_mode }}',
+              'mkl_cbwr': os.environ.get('MKL_CBWR', ''),
+              'mkl_available': torch.backends.mkl.is_available(),
               'mkldnn_enabled': torch.backends.mkldnn.enabled,
               'probe_loss': observed,
               'target_probe_loss': target,
@@ -128,7 +133,7 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
-          name: v2-mkldnn-off-${{ matrix.dispatch_mode }}
+          name: v2-mkldnn-off-mkl-${{ matrix.mkl_cbwr_mode }}
           path: fingerprint.json
           retention-days: 7
 
@@ -142,7 +147,7 @@ jobs:
       - name: Download all fingerprint records
         uses: actions/download-artifact@v4
         with:
-          pattern: v2-mkldnn-off-*
+          pattern: v2-mkldnn-off-mkl-*
           path: fingerprints
       - name: Build authoritative aggregate
         run: |
@@ -153,17 +158,18 @@ jobs:
           records = []
           for path in sorted(Path('fingerprints').glob('*/fingerprint.json')):
               records.append(json.loads(path.read_text(encoding='utf-8')))
-          if len(records) != 3:
-              raise SystemExit(f'expected 3 fingerprint records, found {len(records)}')
-          records.sort(key=lambda item: item['dispatch_mode'])
-          best = min(records, key=lambda item: (item['absolute_error'], item['dispatch_mode']))
+          if len(records) != 4:
+              raise SystemExit(f'expected 4 fingerprint records, found {len(records)}')
+          records.sort(key=lambda item: item['mkl_cbwr_mode'])
+          best = min(records, key=lambda item: (item['absolute_error'], item['mkl_cbwr_mode']))
           result = {
-              'format_version': '1.0',
+              'format_version': '1.1',
+              'experiment': 'mkldnn-off-mkl-cbwr',
               'source_commit': os.environ['GITHUB_SHA'],
               'workflow_run_id': int(os.environ['GITHUB_RUN_ID']),
               'target_probe_loss': records[0]['target_probe_loss'],
               'records': records,
-              'best_dispatch_mode': best['dispatch_mode'],
+              'best_mkl_cbwr_mode': best['mkl_cbwr_mode'],
               'best_absolute_error': best['absolute_error'],
               'exact_match_any': any(item['exact_match'] for item in records),
               'cash_compute_cost_usd': 0.0,
@@ -181,7 +187,7 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add research/m6-v2-cpu-kernel-fingerprint/latest.json
           if ! git diff --cached --quiet; then
-            git commit -m "Research: persist v2 CPU dispatch fingerprint (#153)"
+            git commit -m "Research: persist v2 MKL fingerprint (#153)"
             git fetch origin main
             git rebase origin/main
             git push origin HEAD:main
