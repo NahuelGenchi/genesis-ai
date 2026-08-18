@@ -20,7 +20,7 @@ jobs:
   experiment:
     if: github.event.repository.private == false
     runs-on: ubuntu-latest
-    timeout-minutes: 300
+    timeout-minutes: 360
     env:
       PYTHONPATH: src
       STATE: research/autonomous/state.json
