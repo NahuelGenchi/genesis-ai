@@ -1,4 +1,4 @@
-name: M6 v2 runner CPU fingerprint
+name: M6 v2 Python runtime fingerprint
 
 on:
   workflow_dispatch:
@@ -20,9 +20,21 @@ jobs:
     timeout-minutes: 15
     strategy:
       fail-fast: false
-      max-parallel: 4
+      max-parallel: 6
       matrix:
-        repeat: [1, 2, 3, 4]
+        include:
+          - runtime: system
+            repeat: 1
+          - runtime: system
+            repeat: 2
+          - runtime: system
+            repeat: 3
+          - runtime: setup
+            repeat: 1
+          - runtime: setup
+            repeat: 2
+          - runtime: setup
+            repeat: 3
     env:
       WORK: runs/m6-v2-cpu-kernel-fingerprint
       TARGET_PROBE: "4.228255425977561"
@@ -36,17 +48,32 @@ jobs:
         with:
           persist-credentials: false
 
-      - uses: actions/setup-python@v5
+      - name: Set up current hosted CPython control
+        if: matrix.runtime == 'setup'
+        uses: actions/setup-python@v5
         with:
-          python-version: "3.12"
+          python-version: "3.12.13"
+
+      - name: Select Python execution contract
+        run: |
+          if [ "${{ matrix.runtime }}" = "system" ]; then
+            /usr/bin/python3 -m venv "$RUNNER_TEMP/v2-probe-venv"
+            echo "PYBIN=$RUNNER_TEMP/v2-probe-venv/bin/python" >> "$GITHUB_ENV"
+          else
+            echo "PYBIN=$(command -v python)" >> "$GITHUB_ENV"
+          fi
 
       - name: Install pinned CPU PyTorch
         run: |
-          python -m pip install --index-url https://download.pytorch.org/whl/cpu "torch==2.11.0"
-          python - <<'PY'
-          import platform, torch
+          "$PYBIN" -m pip install --index-url https://download.pytorch.org/whl/cpu "torch==2.11.0"
+          "$PYBIN" - <<'PY'
+          import importlib.util, platform, sys, torch
           print({
               "python": platform.python_version(),
+              "python_compiler": platform.python_compiler(),
+              "python_executable": sys.executable,
+              "libc": platform.libc_ver(),
+              "numpy_available": importlib.util.find_spec("numpy") is not None,
               "torch": torch.__version__,
               "cuda": torch.version.cuda,
               "mkldnn_available": torch.backends.mkldnn.is_available(),
@@ -59,24 +86,24 @@ jobs:
           rm -rf "$WORK"
           mkdir -p "$WORK"
           cp data/bootstrap-tokenizer-lock.json "$WORK/bootstrap-tokenizer-lock.json"
-          PYTHONPATH=src python -m genesis_ai.bootstrap_corpus \
+          PYTHONPATH=src "$PYBIN" -m genesis_ai.bootstrap_corpus \
             --catalog data/bootstrap-tokenizer-sources.json \
             --workspace "$WORK/public-corpus" \
             --output "$WORK/rebuilt-tokenizer.json" \
             --lock "$WORK/bootstrap-tokenizer-lock.json" \
             --vocab-size 512
           cmp tokenizers/genesis-v0.json "$WORK/rebuilt-tokenizer.json"
-          PYTHONPATH=src python -m genesis_ai.multidomain_curriculum_v2 \
+          PYTHONPATH=src "$PYBIN" -m genesis_ai.multidomain_curriculum_v2 \
             --suite evals/m6-domain-selection-v2.json \
             --tokenizer tokenizers/genesis-v0.json \
             --public-data "$WORK/public-corpus/filtered" \
             --records "$WORK/procedural.jsonl" \
             --output "$WORK/curriculum.json"
 
-      - name: Measure exact pre-training fingerprint and runner CPU
+      - name: Measure exact pre-training fingerprint, runtime, and runner CPU
         run: |
-          PYTHONPATH=src python - <<'PY'
-          import json, os, platform, random
+          PYTHONPATH=src "$PYBIN" - <<'PY'
+          import importlib.util, json, os, platform, random, sys
           from pathlib import Path
           import torch
           from genesis_ai.multidomain_training_v2 import SEED, _loss_probe, validate_inputs
@@ -112,8 +139,13 @@ jobs:
           target = float(os.environ['TARGET_PROBE'])
           result = {
               'format_version': '1.0',
+              'runtime': '${{ matrix.runtime }}',
               'repeat': int('${{ matrix.repeat }}'),
               'python': platform.python_version(),
+              'python_compiler': platform.python_compiler(),
+              'python_executable': sys.executable,
+              'libc': list(platform.libc_ver()),
+              'numpy_available': importlib.util.find_spec('numpy') is not None,
               'torch': torch.__version__,
               'kernel_mode': 'mkldnn-off',
               'aten_cpu_capability': '',
@@ -139,7 +171,7 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
-          name: v2-runner-cpu-${{ matrix.repeat }}
+          name: v2-python-${{ matrix.runtime }}-${{ matrix.repeat }}
           path: fingerprint.json
           retention-days: 7
 
@@ -153,7 +185,7 @@ jobs:
       - name: Download all fingerprint records
         uses: actions/download-artifact@v4
         with:
-          pattern: v2-runner-cpu-*
+          pattern: v2-python-*
           path: fingerprints
       - name: Build authoritative aggregate
         run: |
@@ -164,24 +196,27 @@ jobs:
           records = []
           for path in sorted(Path('fingerprints').glob('*/fingerprint.json')):
               records.append(json.loads(path.read_text(encoding='utf-8')))
-          if len(records) != 4:
-              raise SystemExit(f'expected 4 fingerprint records, found {len(records)}')
-          records.sort(key=lambda item: item['repeat'])
-          best = min(records, key=lambda item: (item['absolute_error'], item['repeat']))
+          if len(records) != 6:
+              raise SystemExit(f'expected 6 fingerprint records, found {len(records)}')
+          records.sort(key=lambda item: (item['runtime'], item['repeat']))
+          best = min(records, key=lambda item: (item['absolute_error'], item['runtime'], item['repeat']))
           unique_probe_losses = sorted({item['probe_loss'] for item in records})
           cpu_models = sorted({item.get('cpu', {}).get('model name', '') for item in records})
+          python_versions = sorted({item['python'] for item in records})
           result = {
-              'format_version': '1.2',
-              'experiment': 'mkldnn-off-runner-cpu-variance',
+              'format_version': '1.3',
+              'experiment': 'mkldnn-off-python-runtime',
               'source_commit': os.environ['GITHUB_SHA'],
               'workflow_run_id': int(os.environ['GITHUB_RUN_ID']),
               'target_probe_loss': records[0]['target_probe_loss'],
               'records': records,
+              'best_runtime': best['runtime'],
               'best_repeat': best['repeat'],
               'best_absolute_error': best['absolute_error'],
               'unique_probe_losses': unique_probe_losses,
               'unique_probe_loss_count': len(unique_probe_losses),
               'cpu_models': cpu_models,
+              'python_versions': python_versions,
               'exact_match_any': any(item['exact_match'] for item in records),
               'cash_compute_cost_usd': 0.0,
               'training_performed': False,
@@ -198,7 +233,7 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add research/m6-v2-cpu-kernel-fingerprint/latest.json
           if ! git diff --cached --quiet; then
-            git commit -m "Research: persist v2 runner CPU fingerprint (#153)"
+            git commit -m "Research: persist v2 Python runtime fingerprint (#153)"
             git fetch origin main
             git rebase origin/main
             git push origin HEAD:main
