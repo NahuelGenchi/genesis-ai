@@ -1,0 +1,180 @@
+name: Staged autonomous training identity proof
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - src/genesis_ai/staged_autonomous_training.py
+      - .github/workflows/staged-autonomous-training-identity.yml
+
+permissions:
+  contents: write
+  issues: write
+
+concurrency:
+  group: staged-autonomous-training-identity
+  cancel-in-progress: false
+
+env:
+  PYTHONPATH: src
+  STATE: research/autonomous/state.json
+  SUITE: evals/m6-domain-selection-v2.json
+  WORK: runs/staged-autonomous-training-identity-${{ github.run_id }}
+  RESULT_ROOT: research/staged-autonomous-training-identity
+  OMP_NUM_THREADS: "4"
+  MKL_NUM_THREADS: "4"
+  OPENBLAS_NUM_THREADS: "4"
+  NUMEXPR_NUM_THREADS: "4"
+
+jobs:
+  prove-identity:
+    if: github.event.repository.private == false
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Enforce public zero-cash runner contract
+        run: |
+          test "$RUNNER_ENVIRONMENT" = "github-hosted"
+          test "$RUNNER_OS" = "Linux"
+          test "${{ github.event.repository.private }}" = "false"
+          python -m pip install --disable-pip-version-check --no-input --index-url https://download.pytorch.org/whl/cpu torch
+
+      - name: Require research hold and resolve incumbent
+        run: |
+          rm -rf "$WORK"
+          mkdir -p "$WORK"
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+          state = json.loads(Path(os.environ["STATE"]).read_text(encoding="utf-8"))
+          assert state["state_version"] == "autonomous-state-v1"
+          assert state["autonomy_status"] == "research_hold"
+          assert state["circuit_breaker"]["active"] is True
+          assert state["cash_compute_cost_usd"] == 0.0
+          incumbent = Path(state["incumbent_checkpoint"])
+          assert incumbent.is_file(), incumbent
+          with Path(os.environ["GITHUB_ENV"]).open("a", encoding="utf-8") as handle:
+              handle.write(f"INCUMBENT={incumbent.as_posix()}\n")
+          PY
+
+      - name: Freeze the existing structured-long-context plan
+        run: |
+          python -m genesis_ai.terminated_eval \
+            --checkpoint "$INCUMBENT" \
+            --suite "$SUITE" \
+            --output "$WORK/baseline-domain.json" \
+            --device cpu
+          python -m genesis_ai.structured_long_context plan \
+            --evaluation "$WORK/baseline-domain.json" \
+            --state "$STATE" \
+            --suite "$SUITE" \
+            --checkpoint "$INCUMBENT" \
+            --output "$WORK/plan.json"
+
+      - name: Rebuild provenance-locked public corpus and curriculum
+        run: |
+          cp data/bootstrap-tokenizer-lock.json "$WORK/bootstrap-tokenizer-lock.json"
+          python -m genesis_ai.bootstrap_corpus \
+            --catalog data/bootstrap-tokenizer-sources.json \
+            --workspace "$WORK/public-corpus" \
+            --output "$WORK/rebuilt-tokenizer.json" \
+            --lock "$WORK/bootstrap-tokenizer-lock.json" \
+            --vocab-size 512
+          cmp data/bootstrap-tokenizer-lock.json "$WORK/bootstrap-tokenizer-lock.json"
+          cmp tokenizers/genesis-v0.json "$WORK/rebuilt-tokenizer.json"
+          python -m genesis_ai.structured_long_context curriculum \
+            --plan "$WORK/plan.json" \
+            --suite "$SUITE" \
+            --tokenizer tokenizers/genesis-v0.json \
+            --public-data "$WORK/public-corpus/filtered" \
+            --records "$WORK/records.jsonl" \
+            --output "$WORK/curriculum.json"
+
+      - name: Run uninterrupted 20-step control
+        run: |
+          python -m genesis_ai.staged_autonomous_training train \
+            --parent "$INCUMBENT" \
+            --curriculum-lock "$WORK/curriculum.json" \
+            --records "$WORK/records.jsonl" \
+            --public-data "$WORK/public-corpus/filtered" \
+            --tokenizer tokenizers/genesis-v0.json \
+            --checkpoint "$WORK/control-20.pt" \
+            --stop-after-steps 20 \
+            --device cpu
+
+      - name: Run staged 10 plus 10 trajectory
+        run: |
+          python -m genesis_ai.staged_autonomous_training train \
+            --parent "$INCUMBENT" \
+            --curriculum-lock "$WORK/curriculum.json" \
+            --records "$WORK/records.jsonl" \
+            --public-data "$WORK/public-corpus/filtered" \
+            --tokenizer tokenizers/genesis-v0.json \
+            --checkpoint "$WORK/stage-10.pt" \
+            --stop-after-steps 10 \
+            --device cpu
+          python -m genesis_ai.staged_autonomous_training train \
+            --parent "$INCUMBENT" \
+            --curriculum-lock "$WORK/curriculum.json" \
+            --records "$WORK/records.jsonl" \
+            --public-data "$WORK/public-corpus/filtered" \
+            --tokenizer tokenizers/genesis-v0.json \
+            --resume "$WORK/stage-10.pt" \
+            --checkpoint "$WORK/staged-20.pt" \
+            --stop-after-steps 10 \
+            --device cpu
+
+      - name: Fail closed unless staged trajectory is identical
+        run: |
+          python -m genesis_ai.staged_autonomous_training compare \
+            --left "$WORK/control-20.pt" \
+            --right "$WORK/staged-20.pt" \
+            --output "$WORK/identity.json"
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+          path = Path(os.environ["WORK"], "identity.json")
+          result = json.loads(path.read_text(encoding="utf-8"))
+          assert result["trajectory_identity"] is True
+          result.update({
+              "experiment_version": "staged-autonomous-training-identity-v1",
+              "control_steps": 20,
+              "staged_steps": [10, 10],
+              "screening_only": True,
+              "promotion_authority": False,
+              "model_training_for_capability_claim": False,
+              "source_commit": os.environ["GITHUB_SHA"],
+              "workflow_run_id": int(os.environ["GITHUB_RUN_ID"]),
+          })
+          path.write_text(json.dumps(result, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+          PY
+
+      - name: Validate repository
+        run: PYTHON_BIN=python ./scripts/test_local.sh
+
+      - name: Persist authoritative identity evidence to main
+        run: |
+          mkdir -p "$RESULT_ROOT"
+          cp "$WORK/identity.json" "$RESULT_ROOT/latest.json"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add "$RESULT_ROOT/latest.json"
+          git commit -m "Research: record staged training identity proof (#153)"
+          git fetch origin main
+          git rebase origin/main
+          git push origin HEAD:main
+
+      - name: Advance tracked research issue
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh issue comment 153 --repo "$GITHUB_REPOSITORY" --body "Staged-training identity proof completed and committed to \`main\` from run \`$GITHUB_RUN_ID\`. The proof compares an uninterrupted 20-step control with the same deterministic trajectory split 10+10 through a saved model/optimizer/RNG/schedule state. It fails closed unless model weights, optimizer state, step, and RNG state are exactly equal. This is $0 public GitHub-hosted research infrastructure only: no frozen evaluation or promotion gate changed, no incumbent mutation, and no capability claim. Authoritative evidence: \`research/staged-autonomous-training-identity/latest.json\`."
