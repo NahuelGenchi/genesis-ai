@@ -56,14 +56,14 @@
     },
     "optimizer": {
       "baseline": "adamw",
-      "baseline_metric": 3.8234434127807617,
+      "baseline_metric": 3.8234472274780273,
       "improvement_fraction": 0.0,
       "kind": "candidate",
       "objective": "minimize",
       "survives_cpu_screen": false,
       "threshold_fraction": 0.01,
       "winner": "adamw",
-      "winner_metric": 3.8234434127807617
+      "winner_metric": 3.8234472274780273
     },
     "tiny-model": {
       "baseline": "tiny-96x2",
@@ -109,6 +109,6 @@
   "promotion_eligible": false,
   "runner_contract": "ubuntu-latest",
   "screening_only": true,
-  "source_commit": "b6a81e124a062e212c5c050318c9f26adcfd7c49",
-  "workflow_run_id": 32239831486
+  "source_commit": "109c498594fba3b9f65ffe70420b309e13074612",
+  "workflow_run_id": 32256876170
 }
