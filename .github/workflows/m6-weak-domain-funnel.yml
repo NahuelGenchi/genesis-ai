@@ -1,0 +1,1087 @@
+name: M6 weak-domain successive-halving v1
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/m6-weak-domain-funnel.yml"
+      - "src/genesis_ai/research_funnel.py"
+      - "src/genesis_ai/screen_training.py"
+      - "src/genesis_ai/weak_domain_curriculum.py"
+      - "src/genesis_ai/weak_domain_screen_runner.py"
+      - "src/genesis_ai/weak_domain_adoption.py"
+      - "evals/m6-weak-domain-dev-v1.json"
+      - "tests/test_research_funnel.py"
+      - "tests/test_screen_training.py"
+      - "tests/test_weak_domain_curriculum.py"
+      - "tests/test_weak_domain_adoption.py"
+
+permissions:
+  contents: write
+  issues: write
+
+concurrency:
+  group: m6-weak-domain-successive-halving-v1
+  cancel-in-progress: false
+
+env:
+  PYTHONPATH: src
+  STATE: research/autonomous/state.json
+  TRAIN_SUITE: evals/m6-domain-selection-v2.json
+  DEV_SUITE: evals/m6-weak-domain-dev-v1.json
+  RESULT_ROOT: research/weak-domain-funnel-v1
+  OMP_NUM_THREADS: "4"
+  MKL_NUM_THREADS: "4"
+  OPENBLAS_NUM_THREADS: "4"
+  NUMEXPR_NUM_THREADS: "4"
+
+jobs:
+  prepare:
+    if: github.event.repository.private == false
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    outputs:
+      incumbent: ${{ steps.baseline.outputs.checkpoint }}
+      baseline_sha: ${{ steps.baseline.outputs.sha256 }}
+      source_commit: ${{ steps.source.outputs.commit }}
+    env:
+      WORK: runs/weak-domain-prepared-${{ github.run_id }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Bind experiment to source commit
+        id: source
+        run: |
+          SOURCE_COMMIT=$(git rev-parse HEAD)
+          echo "commit=$SOURCE_COMMIT" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Enforce public zero-cash runner and install deterministic CPU PyTorch
+        run: |
+          test "$RUNNER_ENVIRONMENT" = "github-hosted"
+          test "$RUNNER_OS" = "Linux"
+          python -m pip install --disable-pip-version-check --no-input --index-url https://download.pytorch.org/whl/cpu torch
+
+      - name: Resolve promoted difficulty-1 incumbent
+        id: baseline
+        run: |
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+          from genesis_ai.ingest import sha256_file
+
+          state = json.loads(Path(os.environ["STATE"]).read_text(encoding="utf-8"))
+          assert state["state_version"] == "autonomous-state-v1"
+          assert state["cash_compute_cost_usd"] == 0.0
+          if int(state["difficulty"]) != 1:
+              raise SystemExit("fail-closed: weak-domain v1 research is bound to the frozen difficulty-1 bottleneck")
+          checkpoint = Path(state["incumbent_checkpoint"])
+          assert checkpoint.is_file(), checkpoint
+          with Path(os.environ["GITHUB_OUTPUT"]).open("a", encoding="utf-8") as handle:
+              handle.write(f"checkpoint={checkpoint.as_posix()}\n")
+              handle.write(f"sha256={sha256_file(checkpoint)}\n")
+          PY
+
+      - name: Rebuild provenance-locked public corpus once
+        run: |
+          rm -rf "$WORK"
+          mkdir -p "$WORK"
+          cp data/bootstrap-tokenizer-lock.json "$WORK/bootstrap-tokenizer-lock.json"
+          python -m genesis_ai.bootstrap_corpus \
+            --catalog data/bootstrap-tokenizer-sources.json \
+            --workspace "$WORK/public-corpus" \
+            --output "$WORK/rebuilt-tokenizer.json" \
+            --lock "$WORK/bootstrap-tokenizer-lock.json" \
+            --vocab-size 512
+          cmp data/bootstrap-tokenizer-lock.json "$WORK/bootstrap-tokenizer-lock.json"
+          cmp tokenizers/genesis-v0.json "$WORK/rebuilt-tokenizer.json"
+
+      - name: Score incumbent once on development screen
+        run: |
+          python -m genesis_ai.terminated_eval \
+            --checkpoint "${{ steps.baseline.outputs.checkpoint }}" \
+            --suite "$DEV_SUITE" \
+            --output "$WORK/baseline-dev.json" \
+            --device cpu
+
+      - name: Package reusable prepared inputs
+        run: |
+          mkdir -p "$WORK/artifact/public-corpus"
+          cp -R "$WORK/public-corpus/filtered" "$WORK/artifact/public-corpus/filtered"
+          cp "$WORK/baseline-dev.json" "$WORK/artifact/baseline-dev.json"
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+          payload = {
+              "format_version": "1.0",
+              "source_commit": "${{ steps.source.outputs.commit }}",
+              "baseline_checkpoint_sha256": "${{ steps.baseline.outputs.sha256 }}",
+              "cash_compute_cost_usd": 0.0,
+              "promotion_authority": False,
+          }
+          path = Path(os.environ["WORK"], "artifact", "prepared.json")
+          path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8", newline="\n")
+          PY
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: weak-domain-prepared-${{ github.run_id }}
+          path: ${{ env.WORK }}/artifact
+          retention-days: 14
+          if-no-files-found: error
+
+  tiny:
+    needs: prepare
+    if: needs.prepare.result == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    strategy:
+      fail-fast: false
+      max-parallel: 4
+      matrix:
+        variant:
+          - structured-full-sort-v1
+          - structured-pairwise-rank-v1
+          - structured-prefix-next-v1
+          - structured-partial-completion-v1
+          - structured-short-to-long-v1
+          - structured-mixed-decomposition-v1
+          - math-operation-decomposition-v1
+          - math-direct-plus-steps-v1
+    env:
+      WORK: runs/weak-domain-tiny-${{ github.run_id }}-${{ matrix.variant }}
+      VARIANT: ${{ matrix.variant }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install deterministic CPU runtime
+        run: |
+          test "$RUNNER_ENVIRONMENT" = "github-hosted"
+          test "$RUNNER_OS" = "Linux"
+          python -m pip install --disable-pip-version-check --no-input --index-url https://download.pytorch.org/whl/cpu torch
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: weak-domain-prepared-${{ github.run_id }}
+          path: ${{ env.WORK }}/prepared
+
+      - name: Verify incumbent identity
+        run: |
+          ACTUAL=$(sha256sum "${{ needs.prepare.outputs.incumbent }}" | awk '{print $1}')
+          test "$ACTUAL" = "${{ needs.prepare.outputs.baseline_sha }}"
+
+      - name: Build 5% non-promoting curriculum
+        run: |
+          HOLDOUTS=(
+            "$DEV_SUITE"
+            evals/m6-domain-selection-v2.json
+            evals/m6-domain-ladder-d2-v1.json
+            evals/m6-domain-ladder-d3-v1.json
+            evals/m6-domain-ladder-d4-v1.json
+            evals/m6-domain-ladder-d5-v1.json
+          )
+          mkdir -p "$WORK/candidate"
+          python -m genesis_ai.weak_domain_curriculum \
+            --parent "${{ needs.prepare.outputs.incumbent }}" \
+            --suite "$TRAIN_SUITE" \
+            --holdout-suites "${HOLDOUTS[@]}" \
+            --tokenizer tokenizers/genesis-v0.json \
+            --public-data "$WORK/prepared/public-corpus/filtered" \
+            --variant "$VARIANT" \
+            --stage tiny \
+            --records "$WORK/candidate/records.jsonl" \
+            --plan "$WORK/candidate/plan.json" \
+            --output "$WORK/candidate/curriculum.json"
+
+      - name: Train tiny screen and measure CPU time
+        run: |
+          START=$(date +%s)
+          python -m genesis_ai.screen_training \
+            --parent "${{ needs.prepare.outputs.incumbent }}" \
+            --curriculum-lock "$WORK/candidate/curriculum.json" \
+            --records "$WORK/candidate/records.jsonl" \
+            --public-data "$WORK/prepared/public-corpus/filtered" \
+            --tokenizer tokenizers/genesis-v0.json \
+            --checkpoint "$WORK/candidate/training.pt" \
+            --export "$WORK/candidate/candidate.pt" \
+            --run "$WORK/candidate/training.json" \
+            --device cpu
+          END=$(date +%s)
+          export ELAPSED=$((END-START))
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+          path = Path(os.environ["WORK"], "candidate", "training.json")
+          value = json.loads(path.read_text(encoding="utf-8"))
+          value["wall_time_seconds"] = float(os.environ["ELAPSED"])
+          value["quality_measurement_scope"] = "development-screen-only"
+          path.write_text(json.dumps(value, indent=2, sort_keys=True) + "\n", encoding="utf-8", newline="\n")
+          PY
+
+      - name: Evaluate tiny candidate on development screen only
+        run: |
+          python -m genesis_ai.terminated_eval \
+            --checkpoint "$WORK/candidate/candidate.pt" \
+            --suite "$DEV_SUITE" \
+            --output "$WORK/candidate/evaluation.json" \
+            --device cpu
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+          path = Path(os.environ["WORK"], "candidate", "evaluation.json")
+          value = json.loads(path.read_text(encoding="utf-8"))
+          value["development_screen_only"] = True
+          value["promotion_authority"] = False
+          path.write_text(json.dumps(value, indent=2, sort_keys=True) + "\n", encoding="utf-8", newline="\n")
+          PY
+
+      - name: Persist aggregate screen evidence only
+        run: |
+          mkdir -p "$WORK/artifact/$VARIANT"
+          cp "$WORK/candidate/plan.json" "$WORK/artifact/$VARIANT/plan.json"
+          cp "$WORK/candidate/curriculum.json" "$WORK/artifact/$VARIANT/curriculum.json"
+          cp "$WORK/candidate/records.jsonl" "$WORK/artifact/$VARIANT/records.jsonl"
+          cp "$WORK/candidate/training.json" "$WORK/artifact/$VARIANT/training.json"
+          cp "$WORK/candidate/evaluation.json" "$WORK/artifact/$VARIANT/evaluation.json"
+          rm -f "$WORK/candidate/training.pt" "$WORK/candidate/candidate.pt"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: weak-domain-tiny-${{ matrix.variant }}-${{ github.run_id }}
+          path: ${{ env.WORK }}/artifact
+          retention-days: 14
+          if-no-files-found: error
+
+  rank_tiny:
+    needs: [prepare, tiny]
+    if: always() && needs.prepare.result == 'success'
+    runs-on: ubuntu-slim
+    timeout-minutes: 10
+    outputs:
+      advance: ${{ steps.rank.outputs.advance }}
+      matrix: ${{ steps.rank.outputs.matrix }}
+    env:
+      WORK: runs/weak-domain-rank-tiny-${{ github.run_id }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: weak-domain-tiny-*-${{ github.run_id }}
+          path: ${{ env.WORK }}/candidates
+          merge-multiple: true
+
+      - name: Rank by quality per CPU-hour and token
+        id: rank
+        run: |
+          mkdir -p "$WORK"
+          python -m genesis_ai.research_funnel rank \
+            --baseline /dev/null \
+            --candidates "$WORK/candidates" \
+            --stage tiny \
+            --output "$WORK/tiny-summary.json" || true
+          # The baseline is supplied from the prepared artifact below; rerun the rank
+          # after downloading it to keep this job tiny and avoid PyTorch installation.
+        shell: bash
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: weak-domain-prepared-${{ github.run_id }}
+          path: ${{ env.WORK }}/prepared
+
+      - name: Produce authoritative tiny ranking
+        id: final_rank
+        run: |
+          python -m genesis_ai.research_funnel rank \
+            --baseline "$WORK/prepared/baseline-dev.json" \
+            --candidates "$WORK/candidates" \
+            --stage tiny \
+            --output "$WORK/tiny-summary.json"
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+          summary = json.loads(Path(os.environ["WORK"], "tiny-summary.json").read_text(encoding="utf-8"))
+          survivors = list(summary["survivor_ids"])
+          matrix = survivors if survivors else ["__none__"]
+          with Path(os.environ["GITHUB_OUTPUT"]).open("a", encoding="utf-8") as handle:
+              handle.write(f"advance={'true' if survivors else 'false'}\n")
+              handle.write("matrix=" + json.dumps(matrix, separators=(",", ":")) + "\n")
+          PY
+
+      - name: Forward outputs
+        id: rank
+        run: |
+          echo "advance=${{ steps.final_rank.outputs.advance }}" >> "$GITHUB_OUTPUT"
+          echo 'matrix=${{ steps.final_rank.outputs.matrix }}' >> "$GITHUB_OUTPUT"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: weak-domain-tiny-ranking-${{ github.run_id }}
+          path: ${{ env.WORK }}/tiny-summary.json
+          retention-days: 14
+          if-no-files-found: error
+
+  medium:
+    needs: [prepare, rank_tiny]
+    if: needs.rank_tiny.outputs.advance == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 240
+    strategy:
+      fail-fast: false
+      max-parallel: 3
+      matrix:
+        variant: ${{ fromJSON(needs.rank_tiny.outputs.matrix) }}
+    env:
+      WORK: runs/weak-domain-medium-${{ github.run_id }}-${{ matrix.variant }}
+      VARIANT: ${{ matrix.variant }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install deterministic CPU runtime
+        run: |
+          test "$RUNNER_ENVIRONMENT" = "github-hosted"
+          test "$RUNNER_OS" = "Linux"
+          python -m pip install --disable-pip-version-check --no-input --index-url https://download.pytorch.org/whl/cpu torch
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: weak-domain-prepared-${{ github.run_id }}
+          path: ${{ env.WORK }}/prepared
+
+      - name: Verify incumbent identity
+        run: |
+          ACTUAL=$(sha256sum "${{ needs.prepare.outputs.incumbent }}" | awk '{print $1}')
+          test "$ACTUAL" = "${{ needs.prepare.outputs.baseline_sha }}"
+
+      - name: Build 25% non-promoting curriculum
+        run: |
+          HOLDOUTS=(
+            "$DEV_SUITE"
+            evals/m6-domain-selection-v2.json
+            evals/m6-domain-ladder-d2-v1.json
+            evals/m6-domain-ladder-d3-v1.json
+            evals/m6-domain-ladder-d4-v1.json
+            evals/m6-domain-ladder-d5-v1.json
+          )
+          mkdir -p "$WORK/candidate"
+          python -m genesis_ai.weak_domain_curriculum \
+            --parent "${{ needs.prepare.outputs.incumbent }}" \
+            --suite "$TRAIN_SUITE" \
+            --holdout-suites "${HOLDOUTS[@]}" \
+            --tokenizer tokenizers/genesis-v0.json \
+            --public-data "$WORK/prepared/public-corpus/filtered" \
+            --variant "$VARIANT" \
+            --stage medium \
+            --records "$WORK/candidate/records.jsonl" \
+            --plan "$WORK/candidate/plan.json" \
+            --output "$WORK/candidate/curriculum.json"
+
+      - name: Train medium screen and measure CPU time
+        run: |
+          START=$(date +%s)
+          python -m genesis_ai.screen_training \
+            --parent "${{ needs.prepare.outputs.incumbent }}" \
+            --curriculum-lock "$WORK/candidate/curriculum.json" \
+            --records "$WORK/candidate/records.jsonl" \
+            --public-data "$WORK/prepared/public-corpus/filtered" \
+            --tokenizer tokenizers/genesis-v0.json \
+            --checkpoint "$WORK/candidate/training.pt" \
+            --export "$WORK/candidate/candidate.pt" \
+            --run "$WORK/candidate/training.json" \
+            --device cpu
+          END=$(date +%s)
+          export ELAPSED=$((END-START))
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+          path = Path(os.environ["WORK"], "candidate", "training.json")
+          value = json.loads(path.read_text(encoding="utf-8"))
+          value["wall_time_seconds"] = float(os.environ["ELAPSED"])
+          value["quality_measurement_scope"] = "development-screen-only"
+          path.write_text(json.dumps(value, indent=2, sort_keys=True) + "\n", encoding="utf-8", newline="\n")
+          PY
+
+      - name: Evaluate medium candidate on development screen only
+        run: |
+          python -m genesis_ai.terminated_eval \
+            --checkpoint "$WORK/candidate/candidate.pt" \
+            --suite "$DEV_SUITE" \
+            --output "$WORK/candidate/evaluation.json" \
+            --device cpu
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+          path = Path(os.environ["WORK"], "candidate", "evaluation.json")
+          value = json.loads(path.read_text(encoding="utf-8"))
+          value["development_screen_only"] = True
+          value["promotion_authority"] = False
+          path.write_text(json.dumps(value, indent=2, sort_keys=True) + "\n", encoding="utf-8", newline="\n")
+          PY
+
+      - name: Persist aggregate medium-screen evidence only
+        run: |
+          mkdir -p "$WORK/artifact/$VARIANT"
+          cp "$WORK/candidate/plan.json" "$WORK/artifact/$VARIANT/plan.json"
+          cp "$WORK/candidate/curriculum.json" "$WORK/artifact/$VARIANT/curriculum.json"
+          cp "$WORK/candidate/records.jsonl" "$WORK/artifact/$VARIANT/records.jsonl"
+          cp "$WORK/candidate/training.json" "$WORK/artifact/$VARIANT/training.json"
+          cp "$WORK/candidate/evaluation.json" "$WORK/artifact/$VARIANT/evaluation.json"
+          rm -f "$WORK/candidate/training.pt" "$WORK/candidate/candidate.pt"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: weak-domain-medium-${{ matrix.variant }}-${{ github.run_id }}
+          path: ${{ env.WORK }}/artifact
+          retention-days: 14
+          if-no-files-found: error
+
+  rank_medium:
+    needs: [prepare, rank_tiny, medium]
+    if: always() && needs.prepare.result == 'success' && needs.rank_tiny.result == 'success' && needs.rank_tiny.outputs.advance == 'true'
+    runs-on: ubuntu-slim
+    timeout-minutes: 10
+    outputs:
+      advance: ${{ steps.rank.outputs.advance }}
+      winner: ${{ steps.rank.outputs.winner }}
+    env:
+      WORK: runs/weak-domain-rank-medium-${{ github.run_id }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: weak-domain-medium-*-${{ github.run_id }}
+          path: ${{ env.WORK }}/candidates
+          merge-multiple: true
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: weak-domain-prepared-${{ github.run_id }}
+          path: ${{ env.WORK }}/prepared
+
+      - name: Select one evidence-backed full candidate
+        id: rank
+        run: |
+          python -m genesis_ai.research_funnel rank \
+            --baseline "$WORK/prepared/baseline-dev.json" \
+            --candidates "$WORK/candidates" \
+            --stage medium \
+            --output "$WORK/medium-summary.json"
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+          summary = json.loads(Path(os.environ["WORK"], "medium-summary.json").read_text(encoding="utf-8"))
+          survivors = list(summary["survivor_ids"])
+          winner = survivors[0] if survivors else ""
+          with Path(os.environ["GITHUB_OUTPUT"]).open("a", encoding="utf-8") as handle:
+              handle.write(f"advance={'true' if winner else 'false'}\n")
+              handle.write(f"winner={winner}\n")
+          PY
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: weak-domain-medium-ranking-${{ github.run_id }}
+          path: ${{ env.WORK }}/medium-summary.json
+          retention-days: 14
+          if-no-files-found: error
+
+  persist_no_full:
+    needs: [prepare, rank_tiny, rank_medium]
+    if: always() && needs.prepare.result == 'success' && needs.rank_tiny.result == 'success' && (needs.rank_tiny.outputs.advance != 'true' || (needs.rank_medium.result == 'success' && needs.rank_medium.outputs.advance != 'true'))
+    runs-on: ubuntu-slim
+    timeout-minutes: 15
+    env:
+      WORK: runs/weak-domain-screen-persist-${{ github.run_id }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: weak-domain-tiny-*-${{ github.run_id }}
+          path: ${{ env.WORK }}/tiny
+          merge-multiple: true
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: weak-domain-tiny-ranking-${{ github.run_id }}
+          path: ${{ env.WORK }}/tiny-ranking
+
+      - uses: actions/download-artifact@v4
+        if: needs.rank_tiny.outputs.advance == 'true'
+        with:
+          pattern: weak-domain-medium-*-${{ github.run_id }}
+          path: ${{ env.WORK }}/medium
+          merge-multiple: true
+
+      - uses: actions/download-artifact@v4
+        if: needs.rank_tiny.outputs.advance == 'true'
+        with:
+          name: weak-domain-medium-ranking-${{ github.run_id }}
+          path: ${{ env.WORK }}/medium-ranking
+
+      - name: Persist screening result without touching incumbent
+        run: |
+          git fetch origin main
+          git rebase origin/main
+          RESULT_DIR="$RESULT_ROOT/runs/$GITHUB_RUN_ID-screen"
+          rm -rf "$RESULT_DIR"
+          mkdir -p "$RESULT_DIR"
+          cp -R "$WORK/tiny" "$RESULT_DIR/tiny-candidates"
+          cp "$WORK/tiny-ranking/tiny-summary.json" "$RESULT_DIR/tiny-summary.json"
+          if [ -d "$WORK/medium" ]; then cp -R "$WORK/medium" "$RESULT_DIR/medium-candidates"; fi
+          if [ -f "$WORK/medium-ranking/medium-summary.json" ]; then cp "$WORK/medium-ranking/medium-summary.json" "$RESULT_DIR/medium-summary.json"; fi
+          export RESULT_DIR
+          mkdir -p "$RESULT_ROOT"
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+          root = Path(os.environ["RESULT_DIR"])
+          tiny = json.loads((root / "tiny-summary.json").read_text(encoding="utf-8"))
+          medium_path = root / "medium-summary.json"
+          medium = json.loads(medium_path.read_text(encoding="utf-8")) if medium_path.is_file() else None
+          final = medium if medium is not None else tiny
+          summary = {
+              "format_version": "1.0",
+              "funnel_version": "weak-domain-successive-halving-v1",
+              "workflow_run_id": int(os.environ["GITHUB_RUN_ID"]),
+              "source_commit": "${{ needs.prepare.outputs.source_commit }}",
+              "baseline_checkpoint_sha256": "${{ needs.prepare.outputs.baseline_sha }}",
+              "decision": "no-full-candidate",
+              "reason": "no screen survived the predeclared quality-per-compute and code-retention filters",
+              "tiny_candidate_count": tiny["candidate_count"],
+              "medium_candidate_count": 0 if medium is None else medium["candidate_count"],
+              "screening_processed_tokens": tiny["candidate_count"] * tiny["target_training_tokens_per_candidate"] + (0 if medium is None else medium["candidate_count"] * medium["target_training_tokens_per_candidate"]),
+              "promoted": False,
+              "adopted": False,
+              "promotion_authority": False,
+              "cash_compute_cost_usd": 0.0,
+          }
+          latest = Path(os.environ["RESULT_ROOT"], "latest.json")
+          latest.write_text(json.dumps(summary, indent=2, sort_keys=True) + "\n", encoding="utf-8", newline="\n")
+          PY
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -- "$RESULT_DIR" "$RESULT_ROOT/latest.json"
+          if ! git diff --cached --quiet; then
+            git commit -m "Research: persist weak-domain screen result (#246)"
+            git push origin HEAD:main
+          fi
+          gh issue comment 246 --repo "$GITHUB_REPOSITORY" --body "Weak-domain successive-halving screening completed with no full-run survivor. Tiny/medium evidence was committed under \`$RESULT_DIR\`; no incumbent change, no promotion, cash compute \`$0\`."
+          gh issue comment 248 --repo "$GITHUB_REPOSITORY" --body "Weak-domain screening completed with no evidence-backed full candidate. Genesis remains on research hold at GCI-v1 31.6667; detailed screen evidence is committed under \`$RESULT_DIR\`."
+
+  prepare_full:
+    needs: [prepare, rank_tiny, rank_medium]
+    if: needs.rank_medium.result == 'success' && needs.rank_medium.outputs.advance == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      WORK: runs/weak-domain-full-input-${{ github.run_id }}
+      WINNER: ${{ needs.rank_medium.outputs.winner }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install CPU runtime for deterministic curriculum imports
+        run: python -m pip install --disable-pip-version-check --no-input --index-url https://download.pytorch.org/whl/cpu torch
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: weak-domain-prepared-${{ github.run_id }}
+          path: ${{ env.WORK }}/prepared
+
+      - name: Build one promotion-eligible full curriculum
+        run: |
+          ACTUAL=$(sha256sum "${{ needs.prepare.outputs.incumbent }}" | awk '{print $1}')
+          test "$ACTUAL" = "${{ needs.prepare.outputs.baseline_sha }}"
+          HOLDOUTS=(
+            "$DEV_SUITE"
+            evals/m6-domain-selection-v2.json
+            evals/m6-domain-ladder-d2-v1.json
+            evals/m6-domain-ladder-d3-v1.json
+            evals/m6-domain-ladder-d4-v1.json
+            evals/m6-domain-ladder-d5-v1.json
+          )
+          mkdir -p "$WORK/full"
+          python -m genesis_ai.weak_domain_curriculum \
+            --parent "${{ needs.prepare.outputs.incumbent }}" \
+            --suite "$TRAIN_SUITE" \
+            --holdout-suites "${HOLDOUTS[@]}" \
+            --tokenizer tokenizers/genesis-v0.json \
+            --public-data "$WORK/prepared/public-corpus/filtered" \
+            --variant "$WINNER" \
+            --stage full \
+            --records "$WORK/full/records.jsonl" \
+            --plan "$WORK/full/plan.json" \
+            --output "$WORK/full/curriculum.json"
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+          curriculum = json.loads(Path(os.environ["WORK"], "full", "curriculum.json").read_text(encoding="utf-8"))
+          assert curriculum["screening_only"] is False
+          assert curriculum["promotion_eligible"] is True
+          assert curriculum["promotion_authority"] == "immutable-gate-only"
+          assert curriculum["exact_holdout_prompt_overlap_count"] == 0
+          assert curriculum["exact_source_holdout_prompt_overlap_count"] == 0
+          PY
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: weak-domain-full-input-${{ github.run_id }}
+          path: ${{ env.WORK }}/full
+          retention-days: 14
+          if-no-files-found: error
+
+  train_primary:
+    needs: [prepare, rank_medium, prepare_full]
+    if: needs.prepare_full.result == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 330
+    env:
+      WORK: runs/weak-domain-primary-${{ github.run_id }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install deterministic CPU runtime
+        run: |
+          test "$RUNNER_ENVIRONMENT" = "github-hosted"
+          test "$RUNNER_OS" = "Linux"
+          python -m pip install --disable-pip-version-check --no-input --index-url https://download.pytorch.org/whl/cpu torch
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: weak-domain-prepared-${{ github.run_id }}
+          path: ${{ env.WORK }}/prepared
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: weak-domain-full-input-${{ github.run_id }}
+          path: ${{ env.WORK }}/full
+
+      - name: Train full primary survivor
+        run: |
+          ACTUAL=$(sha256sum "${{ needs.prepare.outputs.incumbent }}" | awk '{print $1}')
+          test "$ACTUAL" = "${{ needs.prepare.outputs.baseline_sha }}"
+          START=$(date +%s)
+          python -m genesis_ai.autonomous_training \
+            --parent "${{ needs.prepare.outputs.incumbent }}" \
+            --curriculum-lock "$WORK/full/curriculum.json" \
+            --records "$WORK/full/records.jsonl" \
+            --public-data "$WORK/prepared/public-corpus/filtered" \
+            --tokenizer tokenizers/genesis-v0.json \
+            --checkpoint "$WORK/primary-training.pt" \
+            --export "$WORK/primary.pt" \
+            --run "$WORK/primary-training.json" \
+            --device cpu
+          END=$(date +%s)
+          export ELAPSED=$((END-START))
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+          path = Path(os.environ["WORK"], "primary-training.json")
+          value = json.loads(path.read_text(encoding="utf-8"))
+          value["wall_time_seconds"] = float(os.environ["ELAPSED"])
+          path.write_text(json.dumps(value, indent=2, sort_keys=True) + "\n", encoding="utf-8", newline="\n")
+          PY
+
+      - name: Upload primary checkpoint before any evaluation
+        uses: actions/upload-artifact@v4
+        with:
+          name: weak-domain-primary-${{ github.run_id }}
+          path: |
+            ${{ env.WORK }}/primary-training.pt
+            ${{ env.WORK }}/primary.pt
+            ${{ env.WORK }}/primary-training.json
+          retention-days: 14
+          if-no-files-found: error
+
+  train_replica:
+    needs: [prepare, rank_medium, prepare_full]
+    if: needs.prepare_full.result == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 330
+    env:
+      WORK: runs/weak-domain-replica-${{ github.run_id }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install deterministic CPU runtime
+        run: |
+          test "$RUNNER_ENVIRONMENT" = "github-hosted"
+          test "$RUNNER_OS" = "Linux"
+          python -m pip install --disable-pip-version-check --no-input --index-url https://download.pytorch.org/whl/cpu torch
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: weak-domain-prepared-${{ github.run_id }}
+          path: ${{ env.WORK }}/prepared
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: weak-domain-full-input-${{ github.run_id }}
+          path: ${{ env.WORK }}/full
+
+      - name: Train independent full replica
+        run: |
+          ACTUAL=$(sha256sum "${{ needs.prepare.outputs.incumbent }}" | awk '{print $1}')
+          test "$ACTUAL" = "${{ needs.prepare.outputs.baseline_sha }}"
+          START=$(date +%s)
+          python -m genesis_ai.autonomous_training \
+            --parent "${{ needs.prepare.outputs.incumbent }}" \
+            --curriculum-lock "$WORK/full/curriculum.json" \
+            --records "$WORK/full/records.jsonl" \
+            --public-data "$WORK/prepared/public-corpus/filtered" \
+            --tokenizer tokenizers/genesis-v0.json \
+            --checkpoint "$WORK/replica-training.pt" \
+            --export "$WORK/replica.pt" \
+            --run "$WORK/replica-training.json" \
+            --device cpu
+          END=$(date +%s)
+          export ELAPSED=$((END-START))
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+          path = Path(os.environ["WORK"], "replica-training.json")
+          value = json.loads(path.read_text(encoding="utf-8"))
+          value["wall_time_seconds"] = float(os.environ["ELAPSED"])
+          path.write_text(json.dumps(value, indent=2, sort_keys=True) + "\n", encoding="utf-8", newline="\n")
+          PY
+
+      - name: Upload replica checkpoint before any evaluation
+        uses: actions/upload-artifact@v4
+        with:
+          name: weak-domain-replica-${{ github.run_id }}
+          path: |
+            ${{ env.WORK }}/replica-training.pt
+            ${{ env.WORK }}/replica.pt
+            ${{ env.WORK }}/replica-training.json
+          retention-days: 14
+          if-no-files-found: error
+
+  evaluate:
+    needs: [prepare, rank_tiny, rank_medium, prepare_full, train_primary, train_replica]
+    if: needs.train_primary.result == 'success' && needs.train_replica.result == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    env:
+      WORK: runs/weak-domain-evaluate-${{ github.run_id }}
+      GH_TOKEN: ${{ github.token }}
+      WINNER: ${{ needs.rank_medium.outputs.winner }}
+      BASELINE_SHA: ${{ needs.prepare.outputs.baseline_sha }}
+      SOURCE_COMMIT: ${{ needs.prepare.outputs.source_commit }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install deterministic CPU runtime
+        run: |
+          test "$RUNNER_ENVIRONMENT" = "github-hosted"
+          test "$RUNNER_OS" = "Linux"
+          python -m pip install --disable-pip-version-check --no-input --index-url https://download.pytorch.org/whl/cpu torch
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: weak-domain-prepared-${{ github.run_id }}
+          path: ${{ env.WORK }}/prepared
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: weak-domain-full-input-${{ github.run_id }}
+          path: ${{ env.WORK }}/full
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: weak-domain-primary-${{ github.run_id }}
+          path: ${{ env.WORK }}/primary
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: weak-domain-replica-${{ github.run_id }}
+          path: ${{ env.WORK }}/replica
+
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: weak-domain-tiny-*-${{ github.run_id }}
+          path: ${{ env.WORK }}/screening/tiny
+          merge-multiple: true
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: weak-domain-tiny-ranking-${{ github.run_id }}
+          path: ${{ env.WORK }}/screening/tiny-ranking
+
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: weak-domain-medium-*-${{ github.run_id }}
+          path: ${{ env.WORK }}/screening/medium
+          merge-multiple: true
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: weak-domain-medium-ranking-${{ github.run_id }}
+          path: ${{ env.WORK }}/screening/medium-ranking
+
+      - name: Require deterministic independent reproduction
+        run: |
+          python -m genesis_ai.scale_repro \
+            --primary "$WORK/primary/primary.pt" \
+            --replica "$WORK/replica/replica.pt" \
+            --output "$WORK/reproduction.json"
+
+      - name: Evaluate frozen difficulty-1 capability
+        run: |
+          python -m genesis_ai.terminated_eval \
+            --checkpoint "${{ needs.prepare.outputs.incumbent }}" \
+            --suite "$TRAIN_SUITE" \
+            --output "$WORK/baseline-domain.json" \
+            --device cpu
+          python -m genesis_ai.terminated_eval \
+            --checkpoint "$WORK/primary/primary.pt" \
+            --suite "$TRAIN_SUITE" \
+            --output "$WORK/candidate-domain.json" \
+            --device cpu
+
+      - name: Evaluate M3 regression boundary
+        run: |
+          python -m genesis_ai.eval_lab \
+            --checkpoint "${{ needs.prepare.outputs.incumbent }}" \
+            --data "$WORK/prepared/public-corpus/filtered" \
+            --suite evals/m3-v1.json \
+            --output "$WORK/baseline-m3.json" \
+            --device cpu
+          python -m genesis_ai.eval_lab \
+            --checkpoint "$WORK/primary/primary.pt" \
+            --data "$WORK/prepared/public-corpus/filtered" \
+            --suite evals/m3-v1.json \
+            --output "$WORK/candidate-m3.json" \
+            --device cpu
+
+      - name: Apply unchanged immutable autonomous promotion gate
+        id: gate
+        run: |
+          set +e
+          python -m genesis_ai.autonomous_gate \
+            --plan "$WORK/full/plan.json" \
+            --curriculum "$WORK/full/curriculum.json" \
+            --baseline-checkpoint "${{ needs.prepare.outputs.incumbent }}" \
+            --candidate "$WORK/primary/primary.pt" \
+            --training "$WORK/primary/primary-training.json" \
+            --reproduction "$WORK/reproduction.json" \
+            --baseline-domain "$WORK/baseline-domain.json" \
+            --candidate-domain "$WORK/candidate-domain.json" \
+            --baseline-m3 "$WORK/baseline-m3.json" \
+            --candidate-m3 "$WORK/candidate-m3.json" \
+            --output "$WORK/gate.json"
+          STATUS=$?
+          set -e
+          if [ "$STATUS" -ne 0 ] && [ "$STATUS" -ne 2 ]; then exit "$STATUS"; fi
+          python -m genesis_ai.result_provenance \
+            "$WORK/gate.json" \
+            --source-commit "$SOURCE_COMMIT" \
+            --workflow-run-id "$GITHUB_RUN_ID"
+          PROMOTED=$(python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+          gate = json.loads(Path(os.environ["WORK"], "gate.json").read_text(encoding="utf-8"))
+          print(str(bool(gate["promoted"])).lower())
+          PY
+          )
+          echo "promoted=$PROMOTED" >> "$GITHUB_OUTPUT"
+
+      - name: Report GCI-Ladder only for a gate-passing candidate
+        if: steps.gate.outputs.promoted == 'true'
+        run: |
+          cp "$WORK/baseline-domain.json" "$WORK/baseline-d1-ladder.json"
+          cp "$WORK/candidate-domain.json" "$WORK/candidate-d1-ladder.json"
+          for D in 2 3 4 5; do
+            python -m genesis_ai.terminated_eval \
+              --checkpoint "${{ needs.prepare.outputs.incumbent }}" \
+              --suite "evals/m6-domain-ladder-d${D}-v1.json" \
+              --output "$WORK/baseline-d${D}-ladder.json" \
+              --device cpu
+            python -m genesis_ai.terminated_eval \
+              --checkpoint "$WORK/primary/primary.pt" \
+              --suite "evals/m6-domain-ladder-d${D}-v1.json" \
+              --output "$WORK/candidate-d${D}-ladder.json" \
+              --device cpu
+          done
+          python -m genesis_ai.gci_ladder score \
+            --result "$WORK/baseline-d1-ladder.json" \
+            --result "$WORK/baseline-d2-ladder.json" \
+            --result "$WORK/baseline-d3-ladder.json" \
+            --result "$WORK/baseline-d4-ladder.json" \
+            --result "$WORK/baseline-d5-ladder.json" \
+            --output "$WORK/baseline-ladder.json"
+          python -m genesis_ai.gci_ladder score \
+            --result "$WORK/candidate-d1-ladder.json" \
+            --result "$WORK/candidate-d2-ladder.json" \
+            --result "$WORK/candidate-d3-ladder.json" \
+            --result "$WORK/candidate-d4-ladder.json" \
+            --result "$WORK/candidate-d5-ladder.json" \
+            --output "$WORK/candidate-ladder.json"
+
+      - name: Persist evidence; adopt only if incumbent is still identical
+        env:
+          GATE_PROMOTED: ${{ steps.gate.outputs.promoted }}
+        run: |
+          git fetch origin main
+          git rebase origin/main
+
+          python -m genesis_ai.weak_domain_adoption \
+            --state "$STATE" \
+            --baseline-sha256 "$BASELINE_SHA" \
+            --gate "$WORK/gate.json" \
+            --candidate-evaluation "$WORK/candidate-domain.json" \
+            --candidate "$WORK/primary/primary.pt" \
+            --destination checkpoints/genesis-autonomous-incumbent.pt \
+            --output "$WORK/adoption.json"
+
+          RESULT_DIR="$RESULT_ROOT/runs/$GITHUB_RUN_ID"
+          rm -rf "$RESULT_DIR"
+          mkdir -p "$RESULT_DIR"
+          cp -R "$WORK/screening/tiny" "$RESULT_DIR/tiny-candidates"
+          cp "$WORK/screening/tiny-ranking/tiny-summary.json" "$RESULT_DIR/tiny-summary.json"
+          cp -R "$WORK/screening/medium" "$RESULT_DIR/medium-candidates"
+          cp "$WORK/screening/medium-ranking/medium-summary.json" "$RESULT_DIR/medium-summary.json"
+          cp "$WORK/full/plan.json" "$RESULT_DIR/plan.json"
+          cp "$WORK/full/curriculum.json" "$RESULT_DIR/curriculum.json"
+          cp "$WORK/full/records.jsonl" "$RESULT_DIR/records.jsonl"
+          cp "$WORK/primary/primary-training.json" "$RESULT_DIR/primary-training.json"
+          cp "$WORK/replica/replica-training.json" "$RESULT_DIR/replica-training.json"
+          cp "$WORK/reproduction.json" "$RESULT_DIR/reproduction.json"
+          cp "$WORK/baseline-domain.json" "$RESULT_DIR/baseline-domain.json"
+          cp "$WORK/candidate-domain.json" "$RESULT_DIR/candidate-domain.json"
+          cp "$WORK/baseline-m3.json" "$RESULT_DIR/baseline-m3.json"
+          cp "$WORK/candidate-m3.json" "$RESULT_DIR/candidate-m3.json"
+          cp "$WORK/gate.json" "$RESULT_DIR/gate.json"
+          cp "$WORK/adoption.json" "$RESULT_DIR/adoption.json"
+          if [ -f "$WORK/baseline-ladder.json" ]; then cp "$WORK/baseline-ladder.json" "$RESULT_DIR/baseline-ladder.json"; fi
+          if [ -f "$WORK/candidate-ladder.json" ]; then cp "$WORK/candidate-ladder.json" "$RESULT_DIR/candidate-ladder.json"; fi
+          export RESULT_DIR
+
+          mkdir -p "$RESULT_ROOT"
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+          work = Path(os.environ["WORK"])
+          result_dir = Path(os.environ["RESULT_DIR"])
+          gate = json.loads((work / "gate.json").read_text(encoding="utf-8"))
+          adoption = json.loads((work / "adoption.json").read_text(encoding="utf-8"))
+          tiny = json.loads((work / "screening", "tiny-ranking", "tiny-summary.json").read_text(encoding="utf-8"))
+          medium = json.loads((work / "screening", "medium-ranking", "medium-summary.json").read_text(encoding="utf-8"))
+          primary = json.loads((work / "primary", "primary-training.json").read_text(encoding="utf-8"))
+          replica = json.loads((work / "replica", "replica-training.json").read_text(encoding="utf-8"))
+          screening_cpu_seconds = sum(float(item.get("wall_time_seconds") or 0.0) for item in tiny["ranking"] + medium["ranking"])
+          screening_tokens = tiny["candidate_count"] * tiny["target_training_tokens_per_candidate"] + medium["candidate_count"] * medium["target_training_tokens_per_candidate"]
+          gci = gate["gci_v1"]
+          summary = {
+              "format_version": "1.0",
+              "funnel_version": "weak-domain-successive-halving-v1",
+              "workflow_run_id": int(os.environ["GITHUB_RUN_ID"]),
+              "source_commit": os.environ["SOURCE_COMMIT"],
+              "winner_variant": os.environ["WINNER"],
+              "baseline_checkpoint_sha256": os.environ["BASELINE_SHA"],
+              "candidate_checkpoint_sha256": gate["candidate_checkpoint_sha256"],
+              "gate_decision": gate["decision"],
+              "adopted": adoption["adopted"],
+              "baseline_gci_v1": gci["baseline"]["score"],
+              "candidate_gci_v1": gci["candidate"]["score"],
+              "gci_change_points": gci["absolute_point_change"],
+              "screening_processed_tokens": screening_tokens,
+              "screening_wall_time_seconds": screening_cpu_seconds,
+              "primary_processed_tokens": primary["processed_tokens"],
+              "replica_processed_tokens": replica["processed_tokens"],
+              "primary_wall_time_seconds": primary.get("wall_time_seconds"),
+              "replica_wall_time_seconds": replica.get("wall_time_seconds"),
+              "training_artifacts_retained_days": 14,
+              "promotion_authority": "immutable-autonomous-gate-only",
+              "cash_compute_cost_usd": 0.0,
+          }
+          Path(os.environ["RESULT_ROOT"], "latest.json").write_text(
+              json.dumps(summary, indent=2, sort_keys=True) + "\n",
+              encoding="utf-8",
+              newline="\n",
+          )
+          PY
+
+          ADOPTED=$(python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+          value = json.loads(Path(os.environ["WORK"], "adoption.json").read_text(encoding="utf-8"))
+          print(str(bool(value["adopted"])).lower())
+          PY
+          )
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -- "$RESULT_DIR" "$RESULT_ROOT/latest.json"
+          if [ "$ADOPTED" = "true" ]; then
+            git add -- "$STATE" checkpoints/genesis-autonomous-incumbent.pt
+          fi
+          if ! git diff --cached --quiet; then
+            git commit -m "Research: persist weak-domain funnel result (#246)"
+            git push origin HEAD:main
+          fi
+
+          BODY=$(python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+          latest = json.loads(Path(os.environ["RESULT_ROOT"], "latest.json").read_text(encoding="utf-8"))
+          print(
+              f"Weak-domain funnel completed: winner `{latest['winner_variant']}`, "
+              f"GCI-v1 `{latest['baseline_gci_v1']:.4f} -> {latest['candidate_gci_v1']:.4f}` "
+              f"({latest['gci_change_points']:+.4f} points), gate `{latest['gate_decision']}`, "
+              f"adopted `{latest['adopted']}`. Tiny/medium screens had no promotion authority; "
+              f"primary/replica checkpoints were uploaded before evaluation; cash compute `$0`."
+          )
+          PY
+          )
+          gh issue comment 246 --repo "$GITHUB_REPOSITORY" --body "$BODY"
+          gh issue comment 248 --repo "$GITHUB_REPOSITORY" --body "$BODY"
+          if [ "$ADOPTED" = "true" ]; then
+            gh issue comment 153 --repo "$GITHUB_REPOSITORY" --body "Promoted weak-domain winner cleared the current transformation bottleneck gate. See #246 and committed \`$RESULT_ROOT/latest.json\` for authoritative metrics."
+            gh issue comment 203 --repo "$GITHUB_REPOSITORY" --body "New incumbent promoted by the weak-domain funnel; same-incumbent strategy exhaustion reset and autonomous research may resume from the new checkpoint."
+          fi
