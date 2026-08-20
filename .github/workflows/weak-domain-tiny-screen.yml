@@ -1,0 +1,313 @@
+name: Weak-domain tiny screen
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - src/genesis_ai/weak_domain_funnel.py
+      - src/genesis_ai/weak_domain_training.py
+      - src/genesis_ai/weak_domain_curriculum.py
+      - src/genesis_ai/weak_domain_screen.py
+      - .github/workflows/weak-domain-tiny-screen.yml
+
+permissions:
+  contents: write
+  issues: write
+
+concurrency:
+  group: weak-domain-tiny-screen
+  cancel-in-progress: false
+
+env:
+  PYTHONPATH: src
+  OMP_NUM_THREADS: "4"
+  MKL_NUM_THREADS: "4"
+  OPENBLAS_NUM_THREADS: "4"
+  NUMEXPR_NUM_THREADS: "4"
+
+jobs:
+  prepare:
+    if: github.event.repository.private == false
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Enforce zero-cash public-runner contract
+        run: |
+          test "$RUNNER_ENVIRONMENT" = "github-hosted"
+          test "$RUNNER_OS" = "Linux"
+          test "${{ github.event.repository.private }}" = "false"
+
+      - name: Install deterministic CPU runtime
+        run: python -m pip install --disable-pip-version-check --no-input torch==2.11.0 --index-url https://download.pytorch.org/whl/cpu
+
+      - name: Resolve incumbent and frozen suite
+        id: state
+        run: |
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+          state = json.loads(Path("research/autonomous/state.json").read_text(encoding="utf-8"))
+          assert state["cash_compute_cost_usd"] == 0.0
+          incumbent = Path(state["incumbent_checkpoint"])
+          assert incumbent.is_file(), incumbent
+          suites = {
+              1: "evals/m6-domain-selection-v2.json",
+              2: "evals/m6-domain-ladder-d2-v1.json",
+              3: "evals/m6-domain-ladder-d3-v1.json",
+              4: "evals/m6-domain-ladder-d4-v1.json",
+              5: "evals/m6-domain-ladder-d5-v1.json",
+          }
+          suite = Path(suites[int(state["difficulty"])])
+          assert suite.is_file(), suite
+          with Path(os.environ["GITHUB_OUTPUT"]).open("a", encoding="utf-8") as handle:
+              handle.write(f"incumbent={incumbent.as_posix()}\n")
+              handle.write(f"suite={suite.as_posix()}\n")
+          PY
+
+      - name: Freeze catalog and development verifier
+        run: |
+          rm -rf runs/weak-domain-tiny-prep
+          mkdir -p runs/weak-domain-tiny-prep
+          python -m genesis_ai.weak_domain_funnel catalog --output runs/weak-domain-tiny-prep/catalog.json
+          python -m genesis_ai.weak_domain_screen build-dev-suite \
+            --frozen-suite "${{ steps.state.outputs.suite }}" \
+            --output runs/weak-domain-tiny-prep/development-suite.json
+
+      - name: Rebuild provenance-locked public corpus
+        run: |
+          cp data/bootstrap-tokenizer-lock.json runs/weak-domain-tiny-prep/bootstrap-tokenizer-lock.json
+          python -m genesis_ai.bootstrap_corpus \
+            --catalog data/bootstrap-tokenizer-sources.json \
+            --workspace runs/weak-domain-tiny-prep/public-corpus \
+            --output runs/weak-domain-tiny-prep/rebuilt-tokenizer.json \
+            --lock runs/weak-domain-tiny-prep/bootstrap-tokenizer-lock.json \
+            --vocab-size 512
+          cmp data/bootstrap-tokenizer-lock.json runs/weak-domain-tiny-prep/bootstrap-tokenizer-lock.json
+          cmp tokenizers/genesis-v0.json runs/weak-domain-tiny-prep/rebuilt-tokenizer.json
+
+      - name: Evaluate common incumbent baseline on development verifier
+        run: |
+          python -m genesis_ai.terminated_eval \
+            --checkpoint "${{ steps.state.outputs.incumbent }}" \
+            --suite runs/weak-domain-tiny-prep/development-suite.json \
+            --output runs/weak-domain-tiny-prep/baseline-development.json \
+            --device cpu
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          meta = {
+              "format_version": "1.0",
+              "source_commit": "${{ github.sha }}",
+              "research_funnel_version": "weak-domain-successive-halving-v1",
+              "funnel_stage": "tiny",
+              "screening_only": True,
+              "promotion_authority": False,
+              "cash_compute_cost_usd": 0.0,
+          }
+          Path("runs/weak-domain-tiny-prep/source.json").write_text(json.dumps(meta, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+          PY
+
+      - name: Upload immutable preparation artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: weak-domain-tiny-prep-${{ github.sha }}
+          path: runs/weak-domain-tiny-prep/
+          if-no-files-found: error
+          retention-days: 7
+
+  train:
+    needs: prepare
+    if: github.event.repository.private == false
+    strategy:
+      fail-fast: false
+      matrix:
+        variant:
+          - structured-full-sort
+          - structured-pairwise-rank
+          - structured-prefix-next
+          - structured-partial-completion
+          - structured-length-progression
+          - structured-mixed-decomposition
+          - math-operation-level
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Enforce zero-cash public-runner contract
+        run: |
+          test "$RUNNER_ENVIRONMENT" = "github-hosted"
+          test "$RUNNER_OS" = "Linux"
+          test "${{ github.event.repository.private }}" = "false"
+
+      - name: Install deterministic CPU runtime
+        run: python -m pip install --disable-pip-version-check --no-input torch==2.11.0 --index-url https://download.pytorch.org/whl/cpu
+
+      - name: Download frozen preparation artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: weak-domain-tiny-prep-${{ github.sha }}
+          path: runs/weak-domain-tiny/prep
+
+      - name: Resolve incumbent and frozen suite
+        id: state
+        run: |
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+          state = json.loads(Path("research/autonomous/state.json").read_text(encoding="utf-8"))
+          incumbent = Path(state["incumbent_checkpoint"])
+          suites = {1:"evals/m6-domain-selection-v2.json",2:"evals/m6-domain-ladder-d2-v1.json",3:"evals/m6-domain-ladder-d3-v1.json",4:"evals/m6-domain-ladder-d4-v1.json",5:"evals/m6-domain-ladder-d5-v1.json"}
+          suite = Path(suites[int(state["difficulty"])])
+          assert incumbent.is_file() and suite.is_file()
+          with Path(os.environ["GITHUB_OUTPUT"]).open("a", encoding="utf-8") as handle:
+              handle.write(f"incumbent={incumbent.as_posix()}\n")
+              handle.write(f"suite={suite.as_posix()}\n")
+          PY
+
+      - name: Build deterministic holdout-separated curriculum
+        run: |
+          mkdir -p "runs/weak-domain-tiny/${{ matrix.variant }}"
+          python -m genesis_ai.weak_domain_curriculum \
+            --catalog runs/weak-domain-tiny/prep/catalog.json \
+            --variant "${{ matrix.variant }}" \
+            --stage tiny \
+            --suite "${{ steps.state.outputs.suite }}" \
+            --tokenizer tokenizers/genesis-v0.json \
+            --public-data runs/weak-domain-tiny/prep/public-corpus/filtered \
+            --parent-checkpoint "${{ steps.state.outputs.incumbent }}" \
+            --records "runs/weak-domain-tiny/${{ matrix.variant }}/records.jsonl" \
+            --output "runs/weak-domain-tiny/${{ matrix.variant }}/curriculum.json"
+
+      - name: Train exactly 225k-token screening candidate
+        run: |
+          python -m genesis_ai.weak_domain_training \
+            --parent-checkpoint "${{ steps.state.outputs.incumbent }}" \
+            --curriculum-lock "runs/weak-domain-tiny/${{ matrix.variant }}/curriculum.json" \
+            --records "runs/weak-domain-tiny/${{ matrix.variant }}/records.jsonl" \
+            --public-data runs/weak-domain-tiny/prep/public-corpus/filtered \
+            --tokenizer tokenizers/genesis-v0.json \
+            --checkpoint "runs/weak-domain-tiny/${{ matrix.variant }}/training.pt" \
+            --export "runs/weak-domain-tiny/${{ matrix.variant }}/candidate.pt" \
+            --run "runs/weak-domain-tiny/${{ matrix.variant }}/training.json"
+
+      - name: Hash checkpoint before downstream evaluation
+        id: checkpoint
+        run: |
+          SHA=$(sha256sum "runs/weak-domain-tiny/${{ matrix.variant }}/candidate.pt" | awk '{print $1}')
+          echo "sha256=$SHA" >> "$GITHUB_OUTPUT"
+          python - <<PY
+          import json
+          from pathlib import Path
+          payload = {"variant_id":"${{ matrix.variant }}","checkpoint_sha256":"$SHA","screening_only":True,"promotion_authority":False,"cash_compute_cost_usd":0.0}
+          Path("runs/weak-domain-tiny/${{ matrix.variant }}/checkpoint-ref.json").write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+          PY
+
+      - name: Persist hash-addressed checkpoint artifact before evaluation
+        uses: actions/upload-artifact@v4
+        with:
+          name: weak-domain-tiny-checkpoint-${{ matrix.variant }}-${{ steps.checkpoint.outputs.sha256 }}
+          path: |
+            runs/weak-domain-tiny/${{ matrix.variant }}/candidate.pt
+            runs/weak-domain-tiny/${{ matrix.variant }}/checkpoint-ref.json
+            runs/weak-domain-tiny/${{ matrix.variant }}/curriculum.json
+            runs/weak-domain-tiny/${{ matrix.variant }}/training.json
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Evaluate development verifier only
+        run: |
+          python -m genesis_ai.terminated_eval \
+            --checkpoint "runs/weak-domain-tiny/${{ matrix.variant }}/candidate.pt" \
+            --suite runs/weak-domain-tiny/prep/development-suite.json \
+            --output "runs/weak-domain-tiny/${{ matrix.variant }}/development-eval.json" \
+            --device cpu
+          python -m genesis_ai.weak_domain_screen summarize \
+            --variant "${{ matrix.variant }}" \
+            --curriculum "runs/weak-domain-tiny/${{ matrix.variant }}/curriculum.json" \
+            --training "runs/weak-domain-tiny/${{ matrix.variant }}/training.json" \
+            --baseline-eval runs/weak-domain-tiny/prep/baseline-development.json \
+            --candidate-eval "runs/weak-domain-tiny/${{ matrix.variant }}/development-eval.json" \
+            --checkpoint "runs/weak-domain-tiny/${{ matrix.variant }}/candidate.pt" \
+            --output "runs/weak-domain-tiny/${{ matrix.variant }}/result-${{ matrix.variant }}.json"
+
+      - name: Upload screening result
+        uses: actions/upload-artifact@v4
+        with:
+          name: weak-domain-tiny-result-${{ matrix.variant }}
+          path: runs/weak-domain-tiny/${{ matrix.variant }}/result-${{ matrix.variant }}.json
+          if-no-files-found: error
+          retention-days: 7
+
+  aggregate:
+    needs: train
+    if: github.event.repository.private == false
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Download all seven screening results
+        uses: actions/download-artifact@v4
+        with:
+          pattern: weak-domain-tiny-result-*
+          path: runs/weak-domain-tiny-results
+          merge-multiple: true
+
+      - name: Rank top three at equal processed tokens
+        run: |
+          python -m genesis_ai.weak_domain_screen rank \
+            --results-dir runs/weak-domain-tiny-results \
+            --keep 3 \
+            --output runs/weak-domain-tiny-aggregate.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          path = Path("runs/weak-domain-tiny-aggregate.json")
+          payload = json.loads(path.read_text(encoding="utf-8"))
+          payload["source_commit"] = "${{ github.sha }}"
+          payload["development_only"] = True
+          payload["frozen_promotion_evaluation_run"] = False
+          path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+          PY
+
+      - name: Persist authoritative screening evidence to main
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git fetch origin main
+          git rebase origin/main
+          HASH=$(sha256sum runs/weak-domain-tiny-aggregate.json | awk '{print $1}')
+          mkdir -p research/weak-domain-funnel/tiny
+          cp runs/weak-domain-tiny-aggregate.json "research/weak-domain-funnel/tiny/${HASH}.json"
+          cp runs/weak-domain-tiny-aggregate.json research/weak-domain-funnel/tiny/latest.json
+          git add -- "research/weak-domain-funnel/tiny/${HASH}.json" research/weak-domain-funnel/tiny/latest.json
+          git commit -m "Research: persist weak-domain tiny-screen result (#246)"
+          git push origin HEAD:main
+          SURVIVORS=$(python - <<'PY'
+          import json
+          from pathlib import Path
+          data=json.loads(Path("runs/weak-domain-tiny-aggregate.json").read_text(encoding="utf-8"))
+          print(", ".join(f"`{item}`" for item in data["survivors"]))
+          PY
+          )
+          gh issue comment 246 --repo "$GITHUB_REPOSITORY" --body "Tiny-screen result persisted to committed main from source `${{ github.sha }}`. Top-three medium-stage survivors: $SURVIVORS. All seven candidates used equal processed tokens, development-only verifier evidence, zero promotion authority, zero frozen-holdout overlap, and \$0 cash compute. No incumbent mutation or capability/promotion claim is made from this screening stage."
