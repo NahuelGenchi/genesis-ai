@@ -6,6 +6,10 @@
   {"title":"M4 — Efficiency Research","description":"Improve quality per FLOP through controlled architecture experiments."},
   {"title":"M5 — Self-Improvement Loop","description":"Build challenger, verifier, candidate-training, and promotion workflows."},
   {"title":"M6 — Scale Useful Capability","description":"Scale only validated improvements toward a genuinely useful small model."},
+  {"title":"M6A — Weak-Domain Breakthrough","description":"Move math and structured transformation capability above the current zero-exact bottleneck using evidence-efficient research."},
+  {"title":"M6B — GCI Capability Improvement","description":"Promote checkpoints only when frozen GCI capability improves without unacceptable regression."},
+  {"title":"M6C — Efficient Scaling","description":"Scale parameters only after capability-per-compute evidence justifies the larger model."},
+  {"title":"M6D — Autonomous Research System","description":"Make remote autonomy scientifically efficient, restartable, traceable, and independent of personal hardware."},
   {"title":"M7 — Free Serving & Community","description":"Provide reproducible zero-cost demos, releases, and contribution workflows."},
   {"title":"M8 — Frontier Efficiency","description":"Long-term research toward frontier-adjacent capability at radically lower inference cost."}
 ]
