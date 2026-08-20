@@ -1,0 +1,77 @@
+name: Weak-domain funnel contract
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - src/genesis_ai/weak_domain_funnel.py
+      - tests/test_weak_domain_funnel.py
+      - .github/workflows/weak-domain-funnel-ci.yml
+  push:
+    branches: [main]
+    paths:
+      - src/genesis_ai/weak_domain_funnel.py
+      - tests/test_weak_domain_funnel.py
+      - .github/workflows/weak-domain-funnel-ci.yml
+
+permissions:
+  contents: read
+
+concurrency:
+  group: weak-domain-funnel-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  PYTHONPATH: src
+  WORK: runs/weak-domain-funnel-${{ github.run_id }}
+
+jobs:
+  validate-funnel:
+    if: github.event.repository.private == false
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Enforce zero-cash public-runner contract
+        run: |
+          test "$RUNNER_ENVIRONMENT" = "github-hosted"
+          test "$RUNNER_OS" = "Linux"
+          test "${{ github.event.repository.private }}" = "false"
+
+      - name: Test fail-closed funnel logic
+        run: python -m unittest tests.test_weak_domain_funnel -v
+
+      - name: Prove deterministic catalog generation
+        run: |
+          rm -rf "$WORK"
+          mkdir -p "$WORK"
+          python -m genesis_ai.weak_domain_funnel catalog --output "$WORK/catalog-a.json"
+          python -m genesis_ai.weak_domain_funnel catalog --output "$WORK/catalog-b.json"
+          cmp "$WORK/catalog-a.json" "$WORK/catalog-b.json"
+          python -m genesis_ai.weak_domain_funnel validate --catalog "$WORK/catalog-a.json"
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+          catalog = json.loads(Path(os.environ["WORK"], "catalog-a.json").read_text(encoding="utf-8"))
+          assert catalog["safety_contract"]["cash_compute_cost_usd"] == 0.0
+          assert catalog["safety_contract"]["promotion_authority"] is False
+          assert catalog["selection_contract"]["equal_processed_tokens_required"] is True
+          assert catalog["selection_contract"]["holdout_prompt_overlap_must_be_zero"] is True
+          assert len(catalog["variants"]) == 7
+          assert catalog["stages"]["tiny"]["fraction_of_normal"] == 0.075
+          assert catalog["stages"]["medium"]["fraction_of_normal"] == 0.25
+          PY
+
+      - name: Upload deterministic research-plan artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: weak-domain-funnel-catalog-${{ github.sha }}
+          path: ${{ env.WORK }}/catalog-a.json
+          if-no-files-found: error
+          retention-days: 7

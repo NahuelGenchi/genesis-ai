@@ -63,6 +63,7 @@ def write_cycle(root: Path, index: int, *, strategy=None, hint=True, focus_gain=
         "baseline_checkpoint_sha256": SHA,
         "decision": decision,
         "focus_absolute_gain": focus_gain,
+        "gci_v1": {"absolute_point_change": 0.0},
     }
     (cycle / "plan.json").write_text(json.dumps(plan), encoding="utf-8")
     (cycle / "gate.json").write_text(json.dumps(gate), encoding="utf-8")
