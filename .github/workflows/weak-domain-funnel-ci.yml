@@ -7,20 +7,26 @@ on:
       - src/genesis_ai/weak_domain_funnel.py
       - src/genesis_ai/weak_domain_training.py
       - src/genesis_ai/weak_domain_curriculum.py
+      - src/genesis_ai/weak_domain_screen.py
       - tests/test_weak_domain_funnel.py
       - tests/test_weak_domain_training.py
       - tests/test_weak_domain_curriculum.py
+      - tests/test_weak_domain_screen.py
       - .github/workflows/weak-domain-funnel-ci.yml
+      - .github/workflows/weak-domain-tiny-screen.yml
   push:
     branches: [main]
     paths:
       - src/genesis_ai/weak_domain_funnel.py
       - src/genesis_ai/weak_domain_training.py
       - src/genesis_ai/weak_domain_curriculum.py
+      - src/genesis_ai/weak_domain_screen.py
       - tests/test_weak_domain_funnel.py
       - tests/test_weak_domain_training.py
       - tests/test_weak_domain_curriculum.py
+      - tests/test_weak_domain_screen.py
       - .github/workflows/weak-domain-funnel-ci.yml
+      - .github/workflows/weak-domain-tiny-screen.yml
 
 permissions:
   contents: read
@@ -54,8 +60,8 @@ jobs:
       - name: Install deterministic CPU runtime
         run: python -m pip install --disable-pip-version-check torch==2.11.0 --index-url https://download.pytorch.org/whl/cpu
 
-      - name: Test fail-closed funnel, execution adapter, and curriculum families
-        run: python -m unittest tests.test_weak_domain_funnel tests.test_weak_domain_training tests.test_weak_domain_curriculum -v
+      - name: Test fail-closed funnel, execution adapter, curricula, and tiny-screen ranking
+        run: python -m unittest tests.test_weak_domain_funnel tests.test_weak_domain_training tests.test_weak_domain_curriculum tests.test_weak_domain_screen -v
 
       - name: Prove deterministic catalog generation
         run: |
@@ -79,10 +85,19 @@ jobs:
           assert catalog["stages"]["medium"]["fraction_of_normal"] == 0.25
           PY
 
+      - name: Prove deterministic development verifier generation
+        run: |
+          python -m genesis_ai.weak_domain_screen build-dev-suite --frozen-suite evals/m6-domain-selection-v2.json --output "$WORK/dev-a.json"
+          python -m genesis_ai.weak_domain_screen build-dev-suite --frozen-suite evals/m6-domain-selection-v2.json --output "$WORK/dev-b.json"
+          cmp "$WORK/dev-a.json" "$WORK/dev-b.json"
+          python -m genesis_ai.terminated_eval --help >/dev/null
+
       - name: Upload deterministic research-plan artifact
         uses: actions/upload-artifact@v4
         with:
           name: weak-domain-funnel-catalog-${{ github.sha }}
-          path: ${{ env.WORK }}/catalog-a.json
+          path: |
+            ${{ env.WORK }}/catalog-a.json
+            ${{ env.WORK }}/dev-a.json
           if-no-files-found: error
           retention-days: 7
