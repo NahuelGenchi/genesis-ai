@@ -9,9 +9,10 @@ from __future__ import annotations
 import json
 import os
 import urllib.error
-import urllib.parse
 import urllib.request
 from pathlib import Path
+
+from render_current_research_state import render_body
 
 ROOT = Path(__file__).resolve().parents[1]
 API = "https://api.github.com"
@@ -87,6 +88,17 @@ def _close_cycle_issues(repo: str, token: str, issues: list[dict]) -> None:
         print(f"closed noisy cycle Issue #{issue['number']}; durable state lives in {CURRENT_RESEARCH_TITLE}")
 
 
+def _desired_body(spec: dict) -> str | None:
+    if spec["title"] == CURRENT_RESEARCH_TITLE:
+        return render_body(ROOT)
+    if bool(spec.get("preserve_body", False)):
+        return None
+    body = spec.get("body")
+    if not isinstance(body, str):
+        raise RuntimeError(f"managed Issue requires body text: {spec['title']}")
+    return body
+
+
 def main() -> None:
     token = os.environ.get("GITHUB_TOKEN")
     repo = os.environ.get("GITHUB_REPOSITORY")
@@ -130,12 +142,13 @@ def main() -> None:
         milestone_number = by_title[spec["milestone"]]["number"]
         labels = spec.get("labels", [])
         desired_state = spec.get("state", "open")
-        preserve_body = bool(spec.get("preserve_body", False))
+        desired_body = _desired_body(spec)
+        preserve_body = bool(spec.get("preserve_body", False)) and title != CURRENT_RESEARCH_TITLE
         existing = issue_by_title.get(title)
         if existing is not None:
             patch: dict = {}
-            if not preserve_body and existing.get("body") != spec["body"]:
-                patch["body"] = spec["body"]
+            if desired_body is not None and existing.get("body") != desired_body:
+                patch["body"] = desired_body
             if (existing.get("milestone") or {}).get("number") != milestone_number:
                 patch["milestone"] = milestone_number
             existing_labels = sorted(item["name"] for item in existing.get("labels", []))
@@ -157,7 +170,7 @@ def main() -> None:
             )
         payload = {
             "title": title,
-            "body": spec["body"],
+            "body": desired_body,
             "milestone": milestone_number,
             "labels": labels,
         }
