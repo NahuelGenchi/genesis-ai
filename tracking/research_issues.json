@@ -28,6 +28,13 @@
     "preserve_body": true
   },
   {
+    "milestone": "M6D — Autonomous Research System",
+    "title": "Autonomous research strategy transitions",
+    "labels": ["area:model", "area:eval", "area:research"],
+    "state": "open",
+    "preserve_body": true
+  },
+  {
     "milestone": "M6A — Weak-Domain Breakthrough",
     "title": "Weak-domain successive-halving research funnel",
     "labels": ["area:model", "area:eval", "area:research"],
