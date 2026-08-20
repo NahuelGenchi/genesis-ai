@@ -5,12 +5,17 @@ from pathlib import Path
 from unittest.mock import patch
 
 from genesis_ai import autonomous_training
-from genesis_ai.screen_training import SCREEN_BUDGETS, train_screen
+from genesis_ai.screen_training import train_screen
 
 
 class ScreenTrainingTest(unittest.TestCase):
     def test_screen_budget_extension_is_temporary_and_non_promoting(self):
         original = dict(autonomous_training.REPLAY_EXAMPLES_BY_BUDGET)
+
+        def fake_train(**kwargs):
+            self.assertEqual(autonomous_training.REPLAY_EXAMPLES_BY_BUDGET[150_000], 64)
+            return {"processed_tokens": 150_528, "cash_compute_cost_usd": 0.0}
+
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             curriculum = root / "curriculum.json"
@@ -32,10 +37,7 @@ class ScreenTrainingTest(unittest.TestCase):
             run = root / "training.json"
             with patch(
                 "genesis_ai.screen_training.autonomous_training.train_continuation",
-                return_value={
-                    "processed_tokens": 150_528,
-                    "cash_compute_cost_usd": 0.0,
-                },
+                side_effect=fake_train,
             ) as trainer:
                 result = train_screen(
                     parent_checkpoint=root / "parent.pt",
@@ -47,7 +49,6 @@ class ScreenTrainingTest(unittest.TestCase):
                     export_path=root / "candidate.pt",
                     run_path=run,
                 )
-                self.assertIn(150_000, autonomous_training.REPLAY_EXAMPLES_BY_BUDGET)
                 trainer.assert_called_once()
             self.assertEqual(autonomous_training.REPLAY_EXAMPLES_BY_BUDGET, original)
             self.assertFalse(result["promotion_authority"])
