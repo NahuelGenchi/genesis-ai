@@ -1,0 +1,89 @@
+name: Weak-domain tiny-screen execution inspection
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - agent/246-tiny-screen-run-inspection
+    paths:
+      - .github/workflows/weak-domain-tiny-screen-inspect.yml
+
+permissions:
+  actions: read
+  contents: read
+  issues: write
+
+jobs:
+  inspect:
+    if: github.event.repository.private == false
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      TARGET_SHA: 7e0c537832212f0ee7992b31be3296a31b18f97a
+      TARGET_WORKFLOW: weak-domain-tiny-screen.yml
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - name: Enforce zero-cash public-runner contract
+        run: |
+          test "$RUNNER_ENVIRONMENT" = "github-hosted"
+          test "$RUNNER_OS" = "Linux"
+          test "${{ github.event.repository.private }}" = "false"
+
+      - name: Locate exact source run and inventory jobs/artifacts
+        id: inspect
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p inspection
+          RUNS=$(gh api \
+            -H "Accept: application/vnd.github+json" \
+            "/repos/$GITHUB_REPOSITORY/actions/workflows/$TARGET_WORKFLOW/runs?branch=main&per_page=50")
+          RUN=$(jq -c --arg sha "$TARGET_SHA" '[.workflow_runs[] | select(.head_sha == $sha)] | sort_by(.created_at) | last // empty' <<<"$RUNS")
+          test -n "$RUN"
+          RUN_ID=$(jq -r '.id' <<<"$RUN")
+          echo "run_id=$RUN_ID" >> "$GITHUB_OUTPUT"
+
+          gh api \
+            -H "Accept: application/vnd.github+json" \
+            "/repos/$GITHUB_REPOSITORY/actions/runs/$RUN_ID/jobs?per_page=100" > inspection/jobs.json
+          gh api \
+            -H "Accept: application/vnd.github+json" \
+            "/repos/$GITHUB_REPOSITORY/actions/runs/$RUN_ID/artifacts?per_page=100" > inspection/artifacts.json
+
+          jq -n \
+            --argjson run "$RUN" \
+            --slurpfile jobs inspection/jobs.json \
+            --slurpfile artifacts inspection/artifacts.json \
+            '{
+              format_version:"1.0",
+              issue:246,
+              target_source_commit:$run.head_sha,
+              workflow_run:{id:$run.id,status:$run.status,conclusion:$run.conclusion,event:$run.event,created_at:$run.created_at,updated_at:$run.updated_at,run_attempt:$run.run_attempt,html_url:$run.html_url},
+              jobs:[$jobs[0].jobs[] | {id,name,status,conclusion,started_at,completed_at}],
+              artifacts:[$artifacts[0].artifacts[] | {id,name,size_in_bytes,expired,created_at,expires_at}],
+              screening_only:true,
+              promotion_authority:false,
+              cash_compute_cost_usd:0.0
+            }' > inspection/latest.json
+
+          jq -e '.target_source_commit == env.TARGET_SHA' inspection/latest.json >/dev/null
+          jq -e '.screening_only == true and .promotion_authority == false and .cash_compute_cost_usd == 0.0' inspection/latest.json >/dev/null
+
+      - name: Upload immutable execution inventory
+        uses: actions/upload-artifact@v4
+        with:
+          name: weak-domain-tiny-execution-inspection-${{ steps.inspect.outputs.run_id }}
+          path: inspection/latest.json
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Advance tracked issue with exact run conclusions
+        shell: bash
+        run: |
+          set -euo pipefail
+          RUN_ID=$(jq -r '.workflow_run.id' inspection/latest.json)
+          RUN_STATUS=$(jq -r '.workflow_run.status' inspection/latest.json)
+          RUN_CONCLUSION=$(jq -r '.workflow_run.conclusion // "null"' inspection/latest.json)
+          JOBS=$(jq -r '.jobs[] | "- `\(.name)`: status=`\(.status)`, conclusion=`\(.conclusion // "null")`"' inspection/latest.json)
+          ARTIFACTS=$(jq -r 'if (.artifacts|length)==0 then "- none" else .artifacts[] | "- `\(.name)` (expired=`\(.expired)`)" end' inspection/latest.json)
+          gh issue comment 246 --repo "$GITHUB_REPOSITORY" --body "Execution-only inspection for the original seven-way 225k tiny screen (source \`$TARGET_SHA\`): exact workflow run is \`$RUN_ID\`, status=\`$RUN_STATUS\`, conclusion=\`$RUN_CONCLUSION\`.\n\nJob conclusions:\n$JOBS\n\nArtifact inventory:\n$ARTIFACTS\n\nThis probe used public GitHub-hosted Linux at \$0, performed no model training, has zero promotion authority, changed no frozen evaluation/promotion gate, and did not mutate the incumbent. The inventory is diagnostic only; any next recovery action must reuse surviving hash-addressed checkpoint artifacts and must not retrain successful variants blindly."
