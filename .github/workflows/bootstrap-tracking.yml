@@ -21,7 +21,7 @@ jobs:
   bootstrap:
     if: github.event.repository.private == false
     runs-on: ubuntu-slim
-    timeout-minutes: 5
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
       - name: Create or reconcile labels, milestones, and durable Issues
