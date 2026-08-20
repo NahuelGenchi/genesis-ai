@@ -1,0 +1,51 @@
+[
+  {
+    "milestone": "M6D — Autonomous Research System",
+    "title": "Autonomous verified research controller",
+    "labels": ["area:model", "area:eval", "area:research"],
+    "state": "open",
+    "preserve_body": true
+  },
+  {
+    "milestone": "M6A — Weak-Domain Breakthrough",
+    "title": "Structured/math transformation bottleneck",
+    "labels": ["area:model", "area:eval", "area:research"],
+    "state": "open",
+    "preserve_body": true
+  },
+  {
+    "milestone": "M6C — Efficient Scaling",
+    "title": "Scale only after capability-per-compute improves",
+    "labels": ["area:model", "area:eval", "area:research"],
+    "state": "open",
+    "preserve_body": true
+  },
+  {
+    "milestone": "M6D — Autonomous Research System",
+    "title": "Remote research orchestration and free-compute routing",
+    "labels": ["area:model", "area:research"],
+    "state": "open",
+    "preserve_body": true
+  },
+  {
+    "milestone": "M6A — Weak-Domain Breakthrough",
+    "title": "Weak-domain successive-halving research funnel",
+    "labels": ["area:model", "area:eval", "area:research"],
+    "state": "open",
+    "preserve_body": true
+  },
+  {
+    "milestone": "M6D — Autonomous Research System",
+    "title": "Current Research State — capability per compute",
+    "labels": ["area:model", "area:eval", "area:research"],
+    "state": "open",
+    "preserve_body": true
+  },
+  {
+    "milestone": "M6C — Efficient Scaling",
+    "title": "Train and gate the first reproduced ~5M RoPE model",
+    "labels": ["area:model", "area:eval", "area:research"],
+    "state": "closed",
+    "preserve_body": true
+  }
+]
