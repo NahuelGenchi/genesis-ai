@@ -16,10 +16,6 @@ DEV_SEED = int.from_bytes(hashlib.sha256(f"{FUNNEL_VERSION}:development-suite".e
 DEV_GENERATION_SEED = int.from_bytes(hashlib.sha256(f"{FUNNEL_VERSION}:development-generation".encode("utf-8")).digest()[:8], "big") % 2_000_000_000
 
 
-def _canonical(value: object) -> str:
-    return json.dumps(value, ensure_ascii=False, separators=(",", ":"), sort_keys=True)
-
-
 def _sha256_text(value: str) -> str:
     return hashlib.sha256(value.encode("utf-8")).hexdigest()
 
@@ -56,20 +52,27 @@ def build_development_suite(*, frozen_suite_path: str | Path) -> dict[str, Any]:
         "termination": dict(frozen["termination"]),
         "selection_rule": frozen["selection_rule"],
     }
-    frozen_hashes = _prompt_hashes(frozen)
-    development_hashes = _prompt_hashes(development)
-    overlap = frozen_hashes & development_hashes
+    overlap = _prompt_hashes(frozen) & _prompt_hashes(development)
     if overlap:
         raise ValueError("development verifier overlaps frozen promotion holdout")
-    development["research_metadata"] = {
-        "research_funnel_version": FUNNEL_VERSION,
-        "screening_only": True,
-        "promotion_authority": False,
-        "cash_compute_cost_usd": 0.0,
-        "frozen_holdout_prompt_overlap_count": 0,
-        "frozen_suite_sha256": sha256_file(frozen_suite_path),
-    }
+    load_terminated_suite_from_payload(development)
     return development
+
+
+def load_terminated_suite_from_payload(payload: dict[str, Any]) -> None:
+    required = {
+        "format_version",
+        "suite_version",
+        "base_seed",
+        "tasks_per_domain",
+        "difficulty",
+        "domains",
+        "generation",
+        "termination",
+        "selection_rule",
+    }
+    if set(payload) != required:
+        raise ValueError("development verifier schema drift")
 
 
 def _load(path: str | Path) -> dict[str, Any]:
@@ -141,9 +144,7 @@ def summarize_candidate(
 
 def rank_results(*, results_dir: str | Path, keep: int = TINY_SURVIVORS) -> dict[str, Any]:
     results_dir = Path(results_dir)
-    results = []
-    for path in sorted(results_dir.glob("result-*.json")):
-        results.append(_load(path))
+    results = [_load(path) for path in sorted(results_dir.glob("result-*.json"))]
     if len(results) != 7:
         raise ValueError(f"tiny screen requires all seven variant results, found {len(results)}")
     survivors = select_survivors(results, keep=keep)
