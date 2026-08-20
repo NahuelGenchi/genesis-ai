@@ -95,6 +95,9 @@ def train_screen(
             "cash_compute_cost_usd": 0.0,
         }
     )
+    rendered = json.dumps(result, indent=2, sort_keys=True) + "\n"
+    Path(run_path).parent.mkdir(parents=True, exist_ok=True)
+    Path(run_path).write_text(rendered, encoding="utf-8", newline="\n")
     return result
 
 

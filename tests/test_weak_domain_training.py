@@ -57,6 +57,7 @@ class WeakDomainTrainingTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             lock = self._write_lock(root)
+            run_path = root / "run.json"
             before = dict(autonomous_training.REPLAY_EXAMPLES_BY_BUDGET)
 
             def fake_train_continuation(**_: object) -> dict[str, object]:
@@ -75,7 +76,7 @@ class WeakDomainTrainingTests(unittest.TestCase):
                     tokenizer_path=root / "tokenizer.json",
                     checkpoint_path=root / "candidate.pt",
                     export_path=root / "candidate-export.pt",
-                    run_path=root / "run.json",
+                    run_path=run_path,
                 )
 
             self.assertEqual(autonomous_training.REPLAY_EXAMPLES_BY_BUDGET, before)
@@ -83,6 +84,10 @@ class WeakDomainTrainingTests(unittest.TestCase):
             self.assertTrue(result["screening_only"])
             self.assertFalse(result["promotion_authority"])
             self.assertEqual(result["cash_compute_cost_usd"], 0.0)
+            persisted = json.loads(run_path.read_text(encoding="utf-8"))
+            self.assertEqual(persisted, result)
+            self.assertEqual(persisted["research_funnel_version"], FUNNEL_VERSION)
+            self.assertEqual(persisted["funnel_stage"], "tiny")
 
     def test_adapter_restores_production_budget_contract_after_failure(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
