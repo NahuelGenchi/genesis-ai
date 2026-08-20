@@ -13,13 +13,18 @@ permissions:
   contents: read
   issues: write
 
+concurrency:
+  group: bootstrap-tracking
+  cancel-in-progress: true
+
 jobs:
   bootstrap:
-    runs-on: [self-hosted, linux, x64]
+    if: github.event.repository.private == false
+    runs-on: ubuntu-slim
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
-      - name: Create or reconcile labels, milestones, and issues
+      - name: Create or reconcile labels, milestones, and durable Issues
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ github.token }}
         run: python3 scripts/bootstrap_github_tracking.py
