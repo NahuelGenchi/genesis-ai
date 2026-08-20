@@ -131,9 +131,16 @@ def _generate_focus_records(
     attempts = 0
     response_tokens = 0
     decomposition_counts: dict[str, int] = {}
+    seen_source_hashes: set[str] = set()
     while len(records) < count and attempts < count * 500:
         attempts += 1
         task = build_task(rng, domain, difficulty)
+        source_prompt = str(task["prompt"])
+        source_prompt_hash = _sha256_text(source_prompt)
+        # A transformed decomposition prompt is not sufficient separation: its
+        # underlying source task must also be disjoint from every frozen/dev holdout.
+        if source_prompt_hash in holdout_prompt_hashes or source_prompt_hash in seen_source_hashes:
+            continue
         prompt, response, decomposition = _focus_example(task, mode=mode, ordinal=len(records))
         prompt_hash = _sha256_text(prompt)
         if prompt_hash in holdout_prompt_hashes or prompt_hash in global_seen_prompt_hashes:
@@ -159,12 +166,14 @@ def _generate_focus_records(
                 "variant_id": variant_id,
                 "decomposition": decomposition,
                 "stage": stage,
+                "source_prompt_sha256": source_prompt_hash,
                 "ordinal": len(records),
                 "attempt": attempts,
             },
         }
         records.append({"id": f"weak-{_sha256_object(base)[:20]}", **base})
         global_seen_prompt_hashes.add(prompt_hash)
+        seen_source_hashes.add(source_prompt_hash)
         response_tokens += len(response_ids)
         decomposition_counts[decomposition] = decomposition_counts.get(decomposition, 0) + 1
     if len(records) != count:
@@ -325,6 +334,15 @@ def build_curriculum(
 
     if seen & holdout_prompt_hashes:
         raise ValueError("blocking weak-domain curriculum overlap with frozen/dev holdout")
+    source_hashes = {
+        str(record.get("provenance", {}).get("source_prompt_sha256"))
+        for record in focus_records
+        if isinstance(record.get("provenance"), dict)
+    }
+    source_hashes.discard("None")
+    if source_hashes & holdout_prompt_hashes:
+        raise ValueError("blocking weak-domain source-task overlap with frozen/dev holdout")
+
     records_path.parent.mkdir(parents=True, exist_ok=True)
     with records_path.open("w", encoding="utf-8", newline="\n") as handle:
         for record in all_records:
@@ -357,6 +375,7 @@ def build_curriculum(
         "target_suite_version": suite["suite_version"],
         "target_suite_sha256": sha256_file(suite_path),
         "exact_holdout_prompt_overlap_count": 0,
+        "exact_source_holdout_prompt_overlap_count": 0,
         "holdout_suite_sha256": {path.as_posix(): sha256_file(path) for path in holdout_paths},
         "tokenizer_sha256": sha256_file(tokenizer_path),
         "public_manifest_sha256": sha256_file(public_data / "manifest.json"),
