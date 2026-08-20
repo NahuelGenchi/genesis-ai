@@ -6,7 +6,13 @@ on:
     paths:
       - "tracking/**"
       - "scripts/bootstrap_github_tracking.py"
+      - "scripts/render_current_research_state.py"
+      - "research/autonomous/state.json"
+      - "research/m6-incumbent-structured-diagnostic/latest.json"
+      - "research/weak-domain-funnel-v1/**"
       - ".github/workflows/bootstrap-tracking.yml"
+  schedule:
+    - cron: "17 6 * * *"
   workflow_dispatch:
 
 permissions:
