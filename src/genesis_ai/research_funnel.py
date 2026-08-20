@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import argparse
 import json
-import math
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -90,6 +89,12 @@ def score_screen(
     if training.get("cash_compute_cost_usd") != 0.0:
         raise ValueError("screen violated zero-cash compute contract")
 
+    wall_time = training.get("wall_time_seconds")
+    if wall_time is not None and (
+        not isinstance(wall_time, (int, float)) or isinstance(wall_time, bool) or float(wall_time) <= 0.0
+    ):
+        raise ValueError("screen wall_time_seconds must be positive when reported")
+
     deltas: dict[str, float] = {}
     loss_reductions: dict[str, float] = {}
     for domain in ("code", "math", "structured"):
@@ -108,6 +113,9 @@ def score_screen(
     # tie-breaker so a 0%-exact tiny run can still reveal useful learning signal.
     raw_quality = 100.0 * weak_exact_gain + 10.0 * weak_loss_reduction + 25.0 * max(focus_gain, 0.0)
     quality_per_million_tokens = raw_quality / (processed_tokens / 1_000_000.0)
+    quality_per_cpu_hour = None
+    if wall_time is not None:
+        quality_per_cpu_hour = raw_quality / (float(wall_time) / 3600.0)
 
     hard_code_regression = code_delta < -0.05
     no_weak_signal = weak_exact_gain <= 0.0 and weak_loss_reduction <= 0.0 and focus_gain <= 0.0
@@ -124,6 +132,7 @@ def score_screen(
         "variant_id": variant_id,
         "focus_domain": focus,
         "processed_tokens": processed_tokens,
+        "wall_time_seconds": None if wall_time is None else float(wall_time),
         "domain_exact_deltas": deltas,
         "domain_oracle_loss_reductions": loss_reductions,
         "weak_exact_gain": weak_exact_gain,
@@ -132,11 +141,19 @@ def score_screen(
         "code_exact_delta": code_delta,
         "quality_score": raw_quality,
         "quality_per_million_tokens": quality_per_million_tokens,
+        "quality_per_cpu_hour": quality_per_cpu_hour,
         "advance_eligible": advance_eligible,
         "early_stop_reason": early_stop_reason,
         "promotion_authority": False,
         "cash_compute_cost_usd": 0.0,
     }
+
+
+def _compute_rank_value(item: dict[str, Any]) -> float:
+    per_hour = item.get("quality_per_cpu_hour")
+    if isinstance(per_hour, (int, float)) and not isinstance(per_hour, bool):
+        return float(per_hour)
+    return float(item["quality_per_million_tokens"])
 
 
 def rank_screen_directory(
@@ -171,6 +188,7 @@ def rank_screen_directory(
     scored.sort(
         key=lambda item: (
             bool(item["advance_eligible"]),
+            _compute_rank_value(item),
             float(item["quality_per_million_tokens"]),
             float(item["weak_exact_gain"]),
             float(item["weak_oracle_loss_reduction"]),
@@ -190,6 +208,7 @@ def rank_screen_directory(
         "advance": bool(survivors),
         "survivor_ids": [str(item["variant_id"]) for item in survivors],
         "ranking": scored,
+        "ranking_objective": "quality_per_cpu_hour_then_quality_per_million_tokens",
         "promotion_authority": False,
         "cash_compute_cost_usd": 0.0,
     }
