@@ -5,13 +5,17 @@ on:
   pull_request:
     paths:
       - src/genesis_ai/weak_domain_funnel.py
+      - src/genesis_ai/weak_domain_training.py
       - tests/test_weak_domain_funnel.py
+      - tests/test_weak_domain_training.py
       - .github/workflows/weak-domain-funnel-ci.yml
   push:
     branches: [main]
     paths:
       - src/genesis_ai/weak_domain_funnel.py
+      - src/genesis_ai/weak_domain_training.py
       - tests/test_weak_domain_funnel.py
+      - tests/test_weak_domain_training.py
       - .github/workflows/weak-domain-funnel-ci.yml
 
 permissions:
@@ -43,8 +47,11 @@ jobs:
           test "$RUNNER_OS" = "Linux"
           test "${{ github.event.repository.private }}" = "false"
 
-      - name: Test fail-closed funnel logic
-        run: python -m unittest tests.test_weak_domain_funnel -v
+      - name: Install deterministic CPU runtime
+        run: python -m pip install --disable-pip-version-check torch==2.11.0 --index-url https://download.pytorch.org/whl/cpu
+
+      - name: Test fail-closed funnel and execution adapter
+        run: python -m unittest tests.test_weak_domain_funnel tests.test_weak_domain_training -v
 
       - name: Prove deterministic catalog generation
         run: |
