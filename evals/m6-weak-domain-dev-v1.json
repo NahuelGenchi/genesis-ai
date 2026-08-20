@@ -1,0 +1,19 @@
+{
+  "format_version": "1.0",
+  "suite_version": "m6-weak-domain-dev-v1",
+  "base_seed": 46001,
+  "tasks_per_domain": 24,
+  "difficulty": 1,
+  "domains": ["math", "structured", "code"],
+  "generation": {
+    "max_new_tokens": 32,
+    "temperature": 1.0,
+    "top_k": 1,
+    "seed": 46101
+  },
+  "termination": {
+    "delimiter": "\n",
+    "required": true
+  },
+  "selection_rule": "research_screen_only_no_promotion_authority"
+}
