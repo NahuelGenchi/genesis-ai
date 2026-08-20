@@ -224,7 +224,7 @@ jobs:
           from pathlib import Path
           path = Path(os.environ["WORK"], "candidate", "training.json")
           value = json.loads(path.read_text(encoding="utf-8"))
-          value["wall_time_seconds"] = float(os.environ["ELAPSED"])
+          value["wall_time_seconds"] = max(1.0, float(os.environ["ELAPSED"]))
           value["quality_measurement_scope"] = "development-screen-only"
           path.write_text(json.dumps(value, indent=2, sort_keys=True) + "\n", encoding="utf-8", newline="\n")
           PY
@@ -283,26 +283,13 @@ jobs:
           path: ${{ env.WORK }}/candidates
           merge-multiple: true
 
-      - name: Rank by quality per CPU-hour and token
-        id: rank
-        run: |
-          mkdir -p "$WORK"
-          python -m genesis_ai.research_funnel rank \
-            --baseline /dev/null \
-            --candidates "$WORK/candidates" \
-            --stage tiny \
-            --output "$WORK/tiny-summary.json" || true
-          # The baseline is supplied from the prepared artifact below; rerun the rank
-          # after downloading it to keep this job tiny and avoid PyTorch installation.
-        shell: bash
-
       - uses: actions/download-artifact@v4
         with:
           name: weak-domain-prepared-${{ github.run_id }}
           path: ${{ env.WORK }}/prepared
 
       - name: Produce authoritative tiny ranking
-        id: final_rank
+        id: rank
         run: |
           python -m genesis_ai.research_funnel rank \
             --baseline "$WORK/prepared/baseline-dev.json" \
@@ -320,12 +307,6 @@ jobs:
               handle.write(f"advance={'true' if survivors else 'false'}\n")
               handle.write("matrix=" + json.dumps(matrix, separators=(",", ":")) + "\n")
           PY
-
-      - name: Forward outputs
-        id: rank
-        run: |
-          echo "advance=${{ steps.final_rank.outputs.advance }}" >> "$GITHUB_OUTPUT"
-          echo 'matrix=${{ steps.final_rank.outputs.matrix }}' >> "$GITHUB_OUTPUT"
 
       - uses: actions/upload-artifact@v4
         with:
@@ -414,7 +395,7 @@ jobs:
           from pathlib import Path
           path = Path(os.environ["WORK"], "candidate", "training.json")
           value = json.loads(path.read_text(encoding="utf-8"))
-          value["wall_time_seconds"] = float(os.environ["ELAPSED"])
+          value["wall_time_seconds"] = max(1.0, float(os.environ["ELAPSED"]))
           value["quality_measurement_scope"] = "development-screen-only"
           path.write_text(json.dumps(value, indent=2, sort_keys=True) + "\n", encoding="utf-8", newline="\n")
           PY
@@ -563,7 +544,6 @@ jobs:
           tiny = json.loads((root / "tiny-summary.json").read_text(encoding="utf-8"))
           medium_path = root / "medium-summary.json"
           medium = json.loads(medium_path.read_text(encoding="utf-8")) if medium_path.is_file() else None
-          final = medium if medium is not None else tiny
           summary = {
               "format_version": "1.0",
               "funnel_version": "weak-domain-successive-halving-v1",
@@ -591,7 +571,7 @@ jobs:
             git push origin HEAD:main
           fi
           gh issue comment 246 --repo "$GITHUB_REPOSITORY" --body "Weak-domain successive-halving screening completed with no full-run survivor. Tiny/medium evidence was committed under \`$RESULT_DIR\`; no incumbent change, no promotion, cash compute \`$0\`."
-          gh issue comment 248 --repo "$GITHUB_REPOSITORY" --body "Weak-domain screening completed with no evidence-backed full candidate. Genesis remains on research hold at GCI-v1 31.6667; detailed screen evidence is committed under \`$RESULT_DIR\`."
+          gh issue comment 248 --repo "$GITHUB_REPOSITORY" --body "Weak-domain screening completed with no evidence-backed full candidate. The incumbent remains unchanged; detailed screen evidence is committed under \`$RESULT_DIR\`."
 
   prepare_full:
     needs: [prepare, rank_tiny, rank_medium]
@@ -712,7 +692,7 @@ jobs:
           from pathlib import Path
           path = Path(os.environ["WORK"], "primary-training.json")
           value = json.loads(path.read_text(encoding="utf-8"))
-          value["wall_time_seconds"] = float(os.environ["ELAPSED"])
+          value["wall_time_seconds"] = max(1.0, float(os.environ["ELAPSED"]))
           path.write_text(json.dumps(value, indent=2, sort_keys=True) + "\n", encoding="utf-8", newline="\n")
           PY
 
@@ -780,7 +760,7 @@ jobs:
           from pathlib import Path
           path = Path(os.environ["WORK"], "replica-training.json")
           value = json.loads(path.read_text(encoding="utf-8"))
-          value["wall_time_seconds"] = float(os.environ["ELAPSED"])
+          value["wall_time_seconds"] = max(1.0, float(os.environ["ELAPSED"]))
           path.write_text(json.dumps(value, indent=2, sort_keys=True) + "\n", encoding="utf-8", newline="\n")
           PY
 
@@ -1006,7 +986,6 @@ jobs:
           import os
           from pathlib import Path
           work = Path(os.environ["WORK"])
-          result_dir = Path(os.environ["RESULT_DIR"])
           gate = json.loads((work / "gate.json").read_text(encoding="utf-8"))
           adoption = json.loads((work / "adoption.json").read_text(encoding="utf-8"))
           tiny = json.loads((work / "screening", "tiny-ranking", "tiny-summary.json").read_text(encoding="utf-8"))
