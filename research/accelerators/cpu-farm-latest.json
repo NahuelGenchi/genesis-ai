@@ -20,14 +20,14 @@
   "lane_summaries": {
     "architecture": {
       "baseline": "layernorm-gelu",
-      "baseline_metric": 3.8234434127807617,
+      "baseline_metric": 3.8234472274780273,
       "improvement_fraction": 0.0,
       "kind": "candidate",
       "objective": "minimize",
       "survives_cpu_screen": false,
       "threshold_fraction": 0.01,
       "winner": "layernorm-gelu",
-      "winner_metric": 3.8234434127807617
+      "winner_metric": 3.8234472274780273
     },
     "data-filtering": {
       "baseline": "min-chars-40",
@@ -109,6 +109,6 @@
   "promotion_eligible": false,
   "runner_contract": "ubuntu-latest",
   "screening_only": true,
-  "source_commit": "94306a4e2022de0dfbd46320a90c523573d3be11",
-  "workflow_run_id": 32574716832
+  "source_commit": "f14e1fe506683070deab56be8d740037d0057138",
+  "workflow_run_id": 32582367982
 }
